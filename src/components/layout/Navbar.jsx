@@ -46,7 +46,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          {user && (
+          {user ? (
             <div className="hidden md:flex items-center gap-1">
               {navItems.map(item => {
                 const isActive = location.pathname === item.path
@@ -65,6 +65,12 @@ export default function Navbar() {
                   </Link>
                 )
               })}
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-8">
+              <a className="text-sm font-medium text-text-secondary hover:text-primary-light transition-colors" href="/#how-it-works">How it Works</a>
+              <a className="text-sm font-medium text-text-secondary hover:text-primary-light transition-colors" href="/#features">Features</a>
+              <a className="text-sm font-medium text-text-secondary hover:text-primary-light transition-colors" href="#">Community</a>
             </div>
           )}
 

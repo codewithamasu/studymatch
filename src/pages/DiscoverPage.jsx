@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -22,7 +22,6 @@ import gsap from 'gsap'
 
 export default function DiscoverPage() {
   const { user } = useAuth()
-  const [candidates, setCandidates] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showMatch, setShowMatch] = useState(false)
   const [matchPartner, setMatchPartner] = useState(null)
@@ -30,15 +29,13 @@ export default function DiscoverPage() {
   const cardRef = useRef(null)
   const matchRef = useRef(null)
 
-  useEffect(() => {
-    // Calculate compatibility for all mock users
+  const candidates = useMemo(() => {
     const withScores = mockUsers.map(u => {
       const compat = calculateCompatibility(user || mockCurrentUser, u)
       return { ...u, compatibility: compat }
     })
-    // Sort by compatibility
     withScores.sort((a, b) => b.compatibility.total - a.compatibility.total)
-    setCandidates(withScores)
+    return withScores
   }, [user])
 
   const currentCard = candidates[currentIndex]

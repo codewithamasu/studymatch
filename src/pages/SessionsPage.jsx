@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -22,7 +21,6 @@ const SUBJECTS = [
 ]
 
 export default function SessionsPage() {
-  const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     subject: '',

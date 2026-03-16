@@ -55,6 +55,8 @@ export default function OnboardingPage() {
   const { updateProfile } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const containerRef = useRef(null)
 
   const [profile, setProfile] = useState({
@@ -104,12 +106,28 @@ export default function OnboardingPage() {
     return false
   }
 
+  const handleComplete = async () => {
+    setSaving(true)
+    setErrorMessage('')
+
+    const { error } = await updateProfile(profile)
+
+    setSaving(false)
+
+    if (error) {
+      setErrorMessage(error.message || 'Profil belum berhasil disimpan. Coba lagi.')
+      return
+    }
+
+    navigate('/discover')
+  }
+
   const handleNext = () => {
     if (step < totalSteps - 1) {
       setStep(step + 1)
+      setErrorMessage('')
     } else {
-      updateProfile(profile)
-      navigate('/discover')
+      handleComplete()
     }
   }
 
@@ -144,6 +162,12 @@ export default function OnboardingPage() {
 
         <Card>
           <CardContent className="p-6 sm:p-8" ref={containerRef}>
+            {errorMessage && (
+              <div className="mb-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                {errorMessage}
+              </div>
+            )}
+
             {/* Step 0: Subjects & Skill */}
             {step === 0 && (
               <div className="space-y-8">
@@ -331,16 +355,16 @@ export default function OnboardingPage() {
               <Button
                 variant="ghost"
                 onClick={() => setStep(step - 1)}
-                disabled={step === 0}
+                disabled={step === 0 || saving}
                 className={step === 0 ? 'invisible' : ''}
               >
                 <ArrowLeft className="w-4 h-4" />
                 Kembali
               </Button>
-              <Button onClick={handleNext} disabled={!canProceed()}>
+              <Button onClick={handleNext} disabled={!canProceed() || saving}>
                 {step === totalSteps - 1 ? (
                   <>
-                    Mulai Matching
+                    {saving ? 'Menyimpan...' : 'Mulai Matching'}
                     <Sparkles className="w-4 h-4" />
                   </>
                 ) : (
