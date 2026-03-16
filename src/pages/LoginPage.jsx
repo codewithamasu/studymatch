@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import navbarLogo from '../assets/navbar-logo.svg';
 import gsap from 'gsap'
 import { useAuth } from '@/context/AuthContext'
 import { formatAuthError } from '@/lib/auth'
@@ -81,15 +82,12 @@ export default function LoginPage() {
 
   return (
     // Distilled background: Solid Alice Blue, no messy gradients
-    <div ref={pageRef} className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center px-6 py-12 lg:px-8">
+    <div ref={pageRef} className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center px-4 py-20 sm:px-6 sm:py-12 lg:px-8">
       
       {/* Mobile Top Navigation (only visible block on small screens) */}
       <div className="absolute top-6 left-6 lg:hidden">
-        <Link to="/" className="flex items-center gap-2 group outline-none rounded">
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-[#136DEC] text-white transition-transform group-hover:scale-105">
-            <span className="material-symbols-outlined text-[18px]">school</span>
-          </div>
-          <span className="text-xl font-bold tracking-tight text-[#136DEC]">StudyMatch</span>
+        <Link to="/" className="flex items-center group outline-none rounded">
+          <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
         </Link>
       </div>
 
@@ -97,11 +95,8 @@ export default function LoginPage() {
         
         {/* Left Column: Distilled Copy & Proof */}
         <section ref={leftContentRef} className="hidden lg:flex flex-col opacity-0">
-          <Link to="/" className="flex items-center gap-2 group outline-none rounded inline-flex w-fit mb-16">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-[#136DEC] text-white transition-transform group-hover:scale-105">
-              <span className="material-symbols-outlined text-[18px]">school</span>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-[#136DEC]">StudyMatch</span>
+          <Link to="/" className="flex items-center group outline-none rounded inline-flex w-fit mb-16">
+            <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
           </Link>
           
           <div className="max-w-md space-y-6">

@@ -45,7 +45,7 @@ export default function SessionsPage() {
   const completedSessions = sessions.filter(s => s.status === 'completed')
 
   return (
-    <div className="min-h-screen px-4 pt-20 pb-8">
+    <div className="min-h-screen px-3 sm:px-4 pt-20 pb-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -271,7 +271,7 @@ function SessionCard({ session, completed }) {
               {session.mode === 'online' ? <><Video className="w-3 h-3 mr-0.5" /> Online</> : <><MapPin className="w-3 h-3 mr-0.5" /> Offline</>}
             </Badge>
           </div>
-          <p className="text-sm text-text-muted flex items-center gap-3">
+          <p className="text-sm text-text-muted flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {sessionDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}

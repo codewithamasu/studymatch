@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import alex from '../assets/profile-landing-page.png';
-
+import navbarLogo from '../assets/navbar-logo.svg';
 gsap.registerPlugin(ScrollTrigger);
-
 export default function LandingPage() {
   const heroRef = useRef(null);
   const howItWorksRef = useRef(null);
@@ -107,11 +106,8 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-6">
           <nav className="flex h-20 items-center justify-between" aria-label="Main Navigation">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded" aria-label="StudyMatch Home">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-[#136DEC] text-white transition-transform group-hover:scale-105">
-                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">school</span>
-              </div>
-              <span className="text-xl font-bold tracking-tight text-[#136DEC]">StudyMatch</span>
+            <Link to="/" className="flex items-center group outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded" aria-label="StudyMatch Home">
+              <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
             </Link>
 
             {/* Desktop Nav Links */}
@@ -139,7 +135,7 @@ export default function LandingPage() {
       <main className="pt-20">
         
         {/* ─── HERO SECTION ─── */}
-        <section ref={heroRef} className="py-24 lg:py-32 bg-[#F8FAFC]" aria-labelledby="hero-heading">
+        <section ref={heroRef} className="py-16 sm:py-24 lg:py-32 bg-[#F8FAFC]" aria-labelledby="hero-heading">
           <div className="mx-auto max-w-6xl px-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               
@@ -155,7 +151,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Heading */}
-                <h1 id="hero-heading" className="hero-anim mb-6 text-6xl font-black leading-[1.05] tracking-tighter text-[#136DEC] sm:text-[5rem]">
+                <h1 id="hero-heading" className="hero-anim mb-6 text-[2.75rem] leading-[1.05] tracking-tighter font-black text-[#136DEC] sm:text-6xl lg:text-[5rem]">
                   Find Your<br />
                   Perfect <span className="bg-gradient-to-br from-cyan-400 via-[#136DEC] to-indigo-600 bg-clip-text text-transparent">Study<br />Partner.</span>
                 </h1>
@@ -249,7 +245,7 @@ export default function LandingPage() {
               <p className="text-lg text-[#64748B] max-w-2xl mx-auto">Three simple steps to start collaborating and learning more effectively.</p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
               {[
                 { icon: 'person', title: 'Create your profile', desc: 'Add your major, subjects, and study preferences.' },
                 { icon: 'search', title: 'Find matches', desc: 'Review compatible students who share your learning goals.' },

@@ -1,55 +1,96 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import navbarLogo from '../assets/navbar-logo.svg';
 import { useAuth } from '@/context/AuthContext'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Card, CardContent } from '@/components/ui/Card'
-import {
-  BookOpen,
-  Clock,
-  Target,
-  BrainCircuit,
-  ArrowRight,
-  ArrowLeft,
-  CheckCircle,
-} from 'lucide-react'
+import { Clock, CheckCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import gsap from 'gsap'
 
-const SUBJECTS = [
-  'Calculus', 'Linear Algebra', 'Statistics', 'Data Structures',
-  'Algorithms', 'Web Development', 'Machine Learning', 'Database Systems',
-  'Physics', 'Chemistry', 'Biology', 'Economics',
-  'Differential Equations', 'Python Programming', 'Data Analysis',
-  'Computer Networks', 'Operating Systems', 'Discrete Math',
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
+const POPULAR_SUBJECTS = [
+  { label: 'Mathematics',      icon: 'functions',       count: '1.2k study groups' },
+  { label: 'Computer Science', icon: 'code',             count: '2.5k study groups' },
+  { label: 'Psychology',       icon: 'psychology',       count: '850 study groups'  },
+  { label: 'Biology',          icon: 'science',          count: '1.1k study groups' },
+  { label: 'Art & Design',     icon: 'brush',            count: '600 study groups'  },
+  { label: 'Economics',        icon: 'account_balance',  count: '920 study groups'  },
+  { label: 'Modern Languages', icon: 'language',         count: '1.4k study groups' },
+  { label: 'History',          icon: 'history_edu',      count: '450 study groups'  },
+]
+
+const ALL_SUBJECTS = [
+  'Calculus', 'Linear Algebra', 'Statistics', 'Discrete Math',
+  'Data Structures', 'Algorithms', 'Computer Networks', 'Operating Systems',
+  'Web Development', 'Machine Learning', 'Database Systems', 'Python Programming',
+  'Physics', 'Chemistry', 'Biology', 'Data Analysis',
+  'Economics', 'Psychology', 'History', 'Modern Languages',
+  'Art & Design', 'Mathematics', 'Computer Science',
 ]
 
 const SKILL_LEVELS = [
-  { value: 'beginner', label: 'Beginner', emoji: '🌱', desc: 'Baru mulai belajar' },
+  { value: 'beginner',     label: 'Beginner',     emoji: '🌱', desc: 'Baru mulai belajar' },
   { value: 'intermediate', label: 'Intermediate', emoji: '📚', desc: 'Sudah paham dasar' },
-  { value: 'advanced', label: 'Advanced', emoji: '🚀', desc: 'Menguasai dengan baik' },
+  { value: 'advanced',     label: 'Advanced',     emoji: '🚀', desc: 'Menguasai dengan baik' },
 ]
 
 const STUDY_GOALS = [
-  { value: 'exam_prep', label: 'Persiapan Ujian', icon: Target, color: 'from-accent to-accent-light' },
-  { value: 'project', label: 'Tugas / Project', icon: BookOpen, color: 'from-primary to-primary-light' },
-  { value: 'skill_building', label: 'Meningkatkan Skill', icon: BrainCircuit, color: 'from-success to-[#69F0AE]' },
+  { value: 'exam_prep',      label: 'Persiapan Ujian',    icon: 'quiz',           color: 'text-rose-500'    },
+  { value: 'project',        label: 'Tugas / Project',     icon: 'folder_open',    color: 'text-[#136DEC]'  },
+  { value: 'skill_building', label: 'Meningkatkan Skill',  icon: 'trending_up',    color: 'text-emerald-500' },
 ]
 
-const DAYS = [
-  { value: 'mon', label: 'Sen' },
-  { value: 'tue', label: 'Sel' },
-  { value: 'wed', label: 'Rab' },
-  { value: 'thu', label: 'Kam' },
-  { value: 'fri', label: 'Jum' },
-  { value: 'sat', label: 'Sab' },
-  { value: 'sun', label: 'Min' },
+const STUDY_GOALS_DETAIL = [
+  { value: 'exam_prep',      label: 'Persiapan Ujian',    desc: 'Fokusin belajar intensif untuk ujian akhir atau sertifikasi.' },
+  { value: 'homework_help',  label: 'Bantuan Tugas',       desc: 'Bantu selesaikan PR dan pertanyaan konsep sehari-hari.' },
+  { value: 'skill_mastery',  label: 'Kuasai Skill Baru',  desc: 'Deep dive jangka panjang untuk tumbuh dan berkembang.' },
+  { value: 'project',        label: 'Project Bareng',      desc: 'Kolaborasi mengerjakan proyek akademis atau portofolio.' },
+]
+
+const MASTERY_LABELS = [
+  { max: 25,  label: 'Pemula',       desc: 'Baru mulai, masih belajar dasar-dasarnya.' },
+  { max: 50,  label: 'Menengah',     desc: 'Paham dasar, tapi masih perlu banyak latihan.' },
+  { max: 75,  label: 'Mahir',        desc: 'Nyaman dengan materi, tinggal polish.' },
+  { max: 100, label: 'Sangat Ahli',  desc: 'Siap jadi tutor, menguasai topik ini.' },
 ]
 
 const LEARNING_STYLES = [
-  { value: 'visual', label: 'Visual', emoji: '👁️', desc: 'Belajar dengan gambar & diagram' },
-  { value: 'auditory', label: 'Auditory', emoji: '👂', desc: 'Belajar dengan mendengar & diskusi' },
-  { value: 'kinesthetic', label: 'Kinesthetic', emoji: '✋', desc: 'Belajar dengan praktik langsung' },
+  { value: 'visual',      label: 'Visual',      emoji: '👁️', desc: 'Gambar & diagram' },
+  { value: 'auditory',    label: 'Auditory',    emoji: '👂', desc: 'Diskusi & mendengar' },
+  { value: 'kinesthetic', label: 'Kinesthetic', emoji: '✋', desc: 'Praktik langsung' },
 ]
+
+const DAYS = [
+  { value: 'mon', label: 'SEN', full: 'Senin' },
+  { value: 'tue', label: 'SEL', full: 'Selasa' },
+  { value: 'wed', label: 'RAB', full: 'Rabu' },
+  { value: 'thu', label: 'KAM', full: 'Kamis' },
+  { value: 'fri', label: 'JUM', full: 'Jumat' },
+  { value: 'sat', label: 'SAB', full: 'Sabtu' },
+  { value: 'sun', label: 'MIN', full: 'Minggu' },
+]
+
+const LANGUAGES = [
+  { value: 'id', label: 'Bahasa Indonesia' },
+  { value: 'en', label: 'English (US)' },
+  { value: 'jv', label: 'Jawa / Sunda' },
+  { value: 'zh', label: 'Mandarin' },
+  { value: 'ar', label: 'Arabic' },
+]
+
+const TIME_SLOTS = [
+  { value: 'morning',    label: 'Pagi',       sub: '06.00 – 12.00' },
+  { value: 'afternoon',  label: 'Siang',      sub: '12.00 – 17.00' },
+  { value: 'evening',    label: 'Malam',      sub: '17.00 – 21.00' },
+  { value: 'late_night', label: 'Late Night', sub: '21.00+' },
+]
+
+const STEP_TITLES = [
+  { heading: 'What are you studying?',       sub: 'Pilih mata kuliah yang ingin kamu pelajari bersama partner-mu.' },
+  { heading: 'Define your mastery & goals.', sub: 'Ceritakan di mana posisimu sekarang dan apa yang ingin kamu capai.' },
+  { heading: 'Preferences & Availability.',  sub: 'Ceritakan cara dan waktu belajar yang paling nyaman buatmu.' },
+]
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
   const { updateProfile } = useAuth()
@@ -57,26 +98,57 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const containerRef = useRef(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const headerRef  = useRef(null)
+  const contentRef = useRef(null)
+  const footerRef  = useRef(null)
 
   const [profile, setProfile] = useState({
     subjects: [],
+    subject_mastery: {},   // { [subject]: 0–100 }
     skill_level: '',
     study_goal: '',
+    study_goals: [],       // multi-select from STUDY_GOALS_DETAIL
+    study_mode: 'online',  // 'online' | 'in-person'
+    language: 'id',
+    preferred_times: [],   // multi-select from TIME_SLOTS
     availability: { days: [], start: '19:00', end: '21:00' },
     learning_style: '',
   })
 
-  const totalSteps = 3
-
+  // ── GSAP: Page entrance ──────────────────────────────────────────────────────
   useEffect(() => {
-    gsap.from(containerRef.current, {
-      opacity: 0,
-      x: 30,
-      duration: 0.4,
-      ease: 'power2.out',
-    })
+    const tl = gsap.timeline()
+    tl.fromTo(
+      headerRef.current,
+      { y: -16, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' },
+    )
+    tl.fromTo(
+      contentRef.current,
+      { y: 24, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' },
+      '-=0.3',
+    )
+    tl.fromTo(
+      footerRef.current,
+      { y: 12, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' },
+      '-=0.4',
+    )
+  }, [])
+
+  // ── GSAP: Step transition ────────────────────────────────────────────────────
+  useEffect(() => {
+    gsap.fromTo(
+      contentRef.current,
+      { x: 20, opacity: 0 },
+      { x: 0, opacity: 1, duration: 0.45, ease: 'power3.out' },
+    )
   }, [step])
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const toggleSubject = (subject) => {
     setProfile(prev => ({
@@ -99,9 +171,37 @@ export default function OnboardingPage() {
     }))
   }
 
+  // helpers
+  const getMasteryLabel = (val) => MASTERY_LABELS.find(m => val <= m.max) ?? MASTERY_LABELS[MASTERY_LABELS.length - 1]
+
+  const toggleStudyGoal = (val) => {
+    setProfile(prev => ({
+      ...prev,
+      study_goals: prev.study_goals.includes(val)
+        ? prev.study_goals.filter(g => g !== val)
+        : [...prev.study_goals, val],
+    }))
+  }
+
+  const setMastery = (subject, value) => {
+    setProfile(prev => ({
+      ...prev,
+      subject_mastery: { ...prev.subject_mastery, [subject]: Number(value) },
+    }))
+  }
+
+  const togglePreferredTime = (val) => {
+    setProfile(prev => ({
+      ...prev,
+      preferred_times: prev.preferred_times.includes(val)
+        ? prev.preferred_times.filter(t => t !== val)
+        : [...prev.preferred_times, val],
+    }))
+  }
+
   const canProceed = () => {
-    if (step === 0) return profile.subjects.length >= 1 && profile.skill_level
-    if (step === 1) return profile.study_goal && profile.learning_style
+    if (step === 0) return profile.subjects.length >= 1
+    if (step === 1) return profile.study_goals.length >= 1
     if (step === 2) return profile.availability.days.length >= 1
     return false
   }
@@ -109,21 +209,17 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     setSaving(true)
     setErrorMessage('')
-
     const { error } = await updateProfile(profile)
-
     setSaving(false)
-
     if (error) {
-      setErrorMessage(error.message || 'Profil belum berhasil disimpan. Coba lagi.')
+      setErrorMessage(error.message || 'Gagal menyimpan profil. Coba lagi.')
       return
     }
-
     navigate('/discover')
   }
 
   const handleNext = () => {
-    if (step < totalSteps - 1) {
+    if (step < 2) {
       setStep(step + 1)
       setErrorMessage('')
     } else {
@@ -131,265 +227,450 @@ export default function OnboardingPage() {
     }
   }
 
+  // ── Filtered subjects for search ─────────────────────────────────────────────
+  const filteredPopular = POPULAR_SUBJECTS.filter(s =>
+    s.label.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  const searchResults = searchQuery.trim()
+    ? ALL_SUBJECTS.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
+    : []
+
+  const progressPct = Math.round(((step + 1) / 3) * 100)
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-20 relative">
-      {/* Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-primary/10 rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 right-1/3 w-72 h-72 bg-secondary/8 rounded-full blur-[80px]" />
-      </div>
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
 
-      <div className="w-full max-w-2xl relative z-10">
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-heading text-xl font-bold">Buat Study Profile</h2>
-            <span className="text-sm text-text-muted">Step {step + 1} / {totalSteps}</span>
-          </div>
-          <div className="flex gap-2">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                  i <= step
-                    ? 'bg-gradient-to-r from-primary to-secondary'
-                    : 'bg-bg-surface'
-                }`}
-              />
-            ))}
-          </div>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header
+        ref={headerRef}
+        className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 opacity-0"
+        style={{ fontFamily: 'Inter, sans-serif' }}
+      >
+        <a href="/" className="flex items-center group">
+          <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
+        </a>
+        <div className="flex items-center gap-6">
+          <a href="#" className="hidden md:block text-sm font-medium text-slate-500 hover:text-[#136DEC] transition-colors">Help</a>
+          <a href="#" className="hidden md:block text-sm font-medium text-slate-500 hover:text-[#136DEC] transition-colors">About</a>
         </div>
+      </header>
 
-        <Card>
-          <CardContent className="p-6 sm:p-8" ref={containerRef}>
+      {/* ── Main ───────────────────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 sm:py-10">
+        <div className="w-full max-w-[900px]">
+
+          {/* Progress */}
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#136DEC]">
+                Step {step + 1} of 3
+              </span>
+              <span className="text-xs font-medium text-slate-400">{progressPct}% Complete</span>
+            </div>
+            <div className="h-[3px] w-full rounded-full bg-slate-200 overflow-hidden">
+              <div
+                className="h-full bg-[#136DEC] rounded-full transition-all duration-700"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+
+          {/* ── Step Content ─────────────────────────────────────────────────── */}
+          <div ref={contentRef} className="opacity-0">
+
+            {/* Hero Title */}
+            <div className="mb-10">
+              <h1
+                className="text-3xl sm:text-4xl md:text-5xl font-black leading-[1.1] text-slate-900 tracking-tight mb-3"
+                style={{ fontFamily: "'Instrument Serif', 'Cormorant', Georgia, serif", letterSpacing: '-0.03em' }}
+              >
+                {STEP_TITLES[step].heading}
+              </h1>
+              <p className="text-base text-slate-500 font-medium leading-relaxed">
+                {STEP_TITLES[step].sub}
+              </p>
+            </div>
+
+            {/* Error banner */}
             {errorMessage && (
-              <div className="mb-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-                {errorMessage}
+              <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 flex items-start gap-3" role="alert">
+                <span className="material-symbols-outlined text-[18px] shrink-0 translate-y-[1px]">error</span>
+                <p>{errorMessage}</p>
               </div>
             )}
 
-            {/* Step 0: Subjects & Skill */}
+            {/* ── Step 0: Subjects ──────────────────────────────────────────── */}
             {step === 0 && (
-              <div className="space-y-8">
+              <div className="space-y-10">
+
+                {/* Search Bar */}
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400 transition-colors duration-200 group-focus-within:text-[#136DEC]">
+                    <span className="material-symbols-outlined">search</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search subjects (e.g. Calculus, Data Structures, Psychology...)"
+                    className="block w-full h-14 pl-12 pr-4 text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#136DEC] focus:ring-4 focus:ring-[#136DEC]/15 placeholder:text-slate-400 transition-all duration-300 text-sm font-medium shadow-sm"
+                  />
+                  {/* Search results dropdown */}
+                  {searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                      {searchResults.slice(0, 6).map(subject => (
+                        <button
+                          key={subject}
+                          onClick={() => { toggleSubject(subject); setSearchQuery('') }}
+                          className="w-full px-4 py-3 text-sm font-medium text-slate-700 text-left hover:bg-slate-50 transition-colors flex items-center gap-3"
+                        >
+                          <span className={`material-symbols-outlined text-[16px] ${profile.subjects.includes(subject) ? 'text-[#136DEC]' : 'text-slate-400'}`}>
+                            {profile.subjects.includes(subject) ? 'check_circle' : 'add_circle'}
+                          </span>
+                          {subject}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Your Selection */}
                 <div>
-                  <h3 className="font-heading font-semibold text-lg mb-1">Pilih Mata Kuliah</h3>
-                  <p className="text-sm text-text-muted mb-4">Pilih mata kuliah yang ingin kamu pelajari bersama</p>
-                  <div className="flex flex-wrap gap-2">
-                    {SUBJECTS.map(subject => (
-                      <button
+                  <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400 mb-4">Your Selection</h3>
+                  <div className={`flex flex-wrap gap-2 min-h-[52px] px-4 py-3 rounded-xl transition-all duration-300 ${
+                    profile.subjects.length > 0
+                      ? 'bg-[#136DEC]/[0.04]'
+                      : 'bg-slate-50'
+                  }`}>
+                    {profile.subjects.length === 0 && (
+                      <span className="text-sm text-slate-400 italic flex items-center">Pilih setidaknya 1 mata kuliah...</span>
+                    )}
+                    {profile.subjects.map(subject => (
+                      <span
                         key={subject}
-                        onClick={() => toggleSubject(subject)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border cursor-pointer ${
-                          profile.subjects.includes(subject)
-                            ? 'bg-primary/20 border-primary text-primary-light scale-105'
-                            : 'bg-bg-surface border-border text-text-secondary hover:border-primary/50'
-                        }`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#136DEC] text-white text-sm font-medium"
                       >
-                        {profile.subjects.includes(subject) && '✓ '}{subject}
-                      </button>
+                        {subject}
+                        <button
+                          onClick={() => toggleSubject(subject)}
+                          className="hover:text-slate-200 transition-colors"
+                          aria-label={`Remove ${subject}`}
+                        >
+                          <span className="material-symbols-outlined text-[14px] leading-none">close</span>
+                        </button>
+                      </span>
                     ))}
                   </div>
                 </div>
 
+                {/* Popular Subjects Grid */}
                 <div>
-                  <h3 className="font-heading font-semibold text-lg mb-1">Skill Level</h3>
-                  <p className="text-sm text-text-muted mb-4">Bagaimana kamu menilai kemampuanmu secara umum?</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {SKILL_LEVELS.map(level => (
-                      <button
-                        key={level.value}
-                        onClick={() => setProfile({ ...profile, skill_level: level.value })}
-                        className={`p-4 rounded-xl border text-center transition-all duration-300 cursor-pointer ${
-                          profile.skill_level === level.value
-                            ? 'bg-primary/15 border-primary'
-                            : 'bg-bg-surface border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <span className="text-2xl block mb-1">{level.emoji}</span>
-                        <span className="text-sm font-medium block">{level.label}</span>
-                        <span className="text-xs text-text-muted">{level.desc}</span>
-                      </button>
-                    ))}
+                  <h3 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#136DEC] text-[20px]">trending_up</span>
+                    Popular Subjects
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {filteredPopular.map(subject => {
+                      const isSelected = profile.subjects.includes(subject.label)
+                      return (
+                        <button
+                          key={subject.label}
+                          onClick={() => toggleSubject(subject.label)}
+                          className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer group ${
+                            isSelected
+                              ? 'border-[#136DEC] bg-[#136DEC]/[0.06]'
+                              : 'border-black/[0.08] bg-white hover:border-black/20 hover:bg-slate-50/80'
+                          }`}
+                          style={{ transitionTimingFunction: 'cubic-bezier(0.25, 1, 0.5, 1)' }}
+                        >
+                          <span className={`material-symbols-outlined text-[22px] mb-3 p-2 rounded-lg transition-colors duration-200 ${
+                            isSelected
+                              ? 'text-[#136DEC] bg-[#136DEC]/10'
+                              : 'text-slate-500 bg-slate-100/80 group-hover:text-[#136DEC] group-hover:bg-[#136DEC]/10'
+                          }`}>
+                            {subject.icon}
+                          </span>
+                          <span className={`text-sm font-bold block mb-0.5 transition-colors duration-200 ${
+                            isSelected ? 'text-[#136DEC]' : 'text-slate-800 group-hover:text-slate-900'
+                          }`}>
+                            {subject.label}
+                          </span>
+                          <span className="text-xs text-slate-400">{subject.count}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 1: Goals & Learning Style */}
+            {/* ── Step 1: Mastery Sliders + Study Goals ────────────────────── */}
             {step === 1 && (
-              <div className="space-y-8">
-                <div>
-                  <h3 className="font-heading font-semibold text-lg mb-1">Tujuan Belajar</h3>
-                  <p className="text-sm text-text-muted mb-4">Apa tujuan utama kamu mencari study partner?</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {STUDY_GOALS.map(goal => (
-                      <button
-                        key={goal.value}
-                        onClick={() => setProfile({ ...profile, study_goal: goal.value })}
-                        className={`p-4 rounded-xl border text-center transition-all duration-300 cursor-pointer ${
-                          profile.study_goal === goal.value
-                            ? 'bg-primary/15 border-primary'
-                            : 'bg-bg-surface border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${goal.color} flex items-center justify-center mx-auto mb-2`}>
-                          <goal.icon className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-sm font-medium">{goal.label}</span>
-                      </button>
-                    ))}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+                {/* ── Left: Per-subject mastery sliders ── */}
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[#136DEC] text-[20px]">bar_chart</span>
+                    <h2 className="text-lg font-bold text-slate-900 leading-tight">Current Mastery</h2>
+                  </div>
+
+                  <div className="rounded-xl border border-black/[0.08] bg-white p-6 space-y-7">
+                    {profile.subjects.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic">Kamu belum memilih mata kuliah di step sebelumnya.</p>
+                    ) : (
+                      profile.subjects.map(subject => {
+                        const val = profile.subject_mastery[subject] ?? 50
+                        const masteryInfo = getMasteryLabel(val)
+                        return (
+                          <div key={subject} className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-slate-800">{subject}</span>
+                              <span className="text-sm font-bold text-[#136DEC]">{val}%</span>
+                            </div>
+                            {/* Slider */}
+                            <div className="relative">
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={5}
+                                value={val}
+                                onChange={e => setMastery(subject, e.target.value)}
+                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                                style={{
+                                  background: `linear-gradient(to right, #136DEC ${val}%, #e2e8f0 ${val}%)`,
+                                  accentColor: '#136DEC',
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs text-slate-400">
+                              <span className="font-semibold text-slate-500">{masteryInfo.label}:</span> {masteryInfo.desc}
+                            </p>
+                          </div>
+                        )
+                      })
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="font-heading font-semibold text-lg mb-1">Gaya Belajar</h3>
-                  <p className="text-sm text-text-muted mb-4">Bagaimana cara belajar yang paling efektif untukmu?</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {LEARNING_STYLES.map(style => (
-                      <button
-                        key={style.value}
-                        onClick={() => setProfile({ ...profile, learning_style: style.value })}
-                        className={`p-4 rounded-xl border text-center transition-all duration-300 cursor-pointer ${
-                          profile.learning_style === style.value
-                            ? 'bg-primary/15 border-primary'
-                            : 'bg-bg-surface border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <span className="text-2xl block mb-1">{style.emoji}</span>
-                        <span className="text-sm font-medium block">{style.label}</span>
-                        <span className="text-xs text-text-muted">{style.desc}</span>
-                      </button>
-                    ))}
+                {/* ── Right: Study Goals checkboxes ── */}
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[#136DEC] text-[20px]">target</span>
+                    <h2 className="text-lg font-bold text-slate-900 leading-tight">Study Goals</h2>
+                  </div>
+
+                  <div className="space-y-3">
+                    {STUDY_GOALS_DETAIL.map(goal => {
+                      const isChecked = profile.study_goals.includes(goal.value)
+                      return (
+                        <label
+                          key={goal.value}
+                          onClick={() => toggleStudyGoal(goal.value)}
+                          className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                            isChecked
+                              ? 'border-[#136DEC] bg-[#136DEC]/[0.05]'
+                              : 'border-black/[0.08] bg-white hover:border-[#136DEC]/40 hover:bg-slate-50/80'
+                          }`}
+                          style={{ transitionTimingFunction: 'cubic-bezier(0.25, 1, 0.5, 1)' }}
+                        >
+                          {/* Custom checkbox */}
+                          <div
+                            className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                              isChecked
+                                ? 'border-[#136DEC] bg-[#136DEC]'
+                                : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {isChecked && (
+                              <span className="material-symbols-outlined text-white text-[14px] leading-none font-bold">check</span>
+                            )}
+                          </div>
+                          <div>
+                            <p className={`text-sm font-bold mb-0.5 ${ isChecked ? 'text-[#136DEC]' : 'text-slate-900' }`}>
+                              {goal.label}
+                            </p>
+                            <p className="text-xs text-slate-500 leading-relaxed">{goal.desc}</p>
+                          </div>
+                        </label>
+                      )
+                    })}
                   </div>
                 </div>
+
               </div>
             )}
 
-            {/* Step 2: Availability */}
+            {/* ── Step 2: Preferences & Availability ────────────────────────── */}
             {step === 2 && (
               <div className="space-y-8">
-                <div>
-                  <h3 className="font-heading font-semibold text-lg mb-1">Jadwal Tersedia</h3>
-                  <p className="text-sm text-text-muted mb-4">Pilih hari dan waktu yang cocok untuk belajar bersama</p>
 
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {DAYS.map(day => (
-                      <button
-                        key={day.value}
-                        onClick={() => toggleDay(day.value)}
-                        className={`w-12 h-12 rounded-xl border text-sm font-medium transition-all duration-300 cursor-pointer ${
-                          profile.availability.days.includes(day.value)
-                            ? 'bg-primary/20 border-primary text-primary-light'
-                            : 'bg-bg-surface border-border text-text-secondary hover:border-primary/50'
-                        }`}
-                      >
-                        {day.label}
-                      </button>
+                {/* Row 1: Study Mode + Language */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                  {/* Study Mode Toggle */}
+                  <div className="p-6 bg-white rounded-xl border border-black/[0.08] flex flex-col gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#136DEC] text-[20px]">distance</span>
+                      <h3 className="text-base font-bold text-slate-900">Mode Belajar</h3>
+                    </div>
+                    {/* Segmented control */}
+                    <div className="flex bg-slate-100 p-1.5 rounded-xl border border-black/[0.06] gap-1">
+                      {[{ value: 'online', label: 'Online' }, { value: 'in-person', label: 'In-Person' }].map(mode => (
+                        <button
+                          key={mode.value}
+                          onClick={() => setProfile({ ...profile, study_mode: mode.value })}
+                          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
+                            profile.study_mode === mode.value
+                              ? 'bg-white text-[#136DEC] shadow-sm border border-black/[0.06]'
+                              : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          {mode.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Language */}
+                  <div className="p-6 bg-white rounded-xl border border-black/[0.08] flex flex-col gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#136DEC] text-[20px]">translate</span>
+                      <h3 className="text-base font-bold text-slate-900">Bahasa</h3>
+                    </div>
+                    <select
+                      value={profile.language}
+                      onChange={e => setProfile({ ...profile, language: e.target.value })}
+                      className="w-full h-11 bg-slate-50 border border-black/[0.08] rounded-xl text-slate-900 text-sm font-medium px-3 focus:outline-none focus:border-[#136DEC] focus:ring-4 focus:ring-[#136DEC]/15 transition-all duration-300 cursor-pointer appearance-none"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                    >
+                      {LANGUAGES.map(lang => (
+                        <option key={lang.value} value={lang.value}>{lang.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Weekly Availability */}
+                <div className="p-6 bg-white rounded-xl border border-black/[0.08]">
+                  <div className="flex items-center gap-2 mb-6">
+                    <span className="material-symbols-outlined text-[#136DEC] text-[20px]">calendar_month</span>
+                    <h3 className="text-base font-bold text-slate-900">Ketersediaan Mingguan</h3>
+                  </div>
+
+                  {/* Day cards */}
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2.5">
+                    {DAYS.map(day => {
+                      const isActive = profile.availability.days.includes(day.value)
+                      return (
+                        <button
+                          key={day.value}
+                          onClick={() => toggleDay(day.value)}
+                          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? 'border-[#136DEC] bg-[#136DEC]/[0.05]'
+                              : 'border-black/[0.06] bg-slate-50 hover:border-black/15 hover:bg-white'
+                          }`}
+                          title={day.full}
+                        >
+                          <span className={`text-[10px] font-black tracking-wider ${ isActive ? 'text-[#136DEC]' : 'text-slate-500'}`}>
+                            {day.label}
+                          </span>
+                          <span className={`material-symbols-outlined text-[20px] transition-colors ${ isActive ? 'text-[#136DEC]' : 'text-slate-300'}`}>
+                            {isActive ? 'check_circle' : 'circle'}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Preferred Times */}
+                  <div className="mt-8">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-[0.14em] mb-4">Waktu Belajar Favorit</h4>
+                    <div className="flex flex-wrap gap-2.5">
+                      {TIME_SLOTS.map(slot => {
+                        const isActive = profile.preferred_times.includes(slot.value)
+                        return (
+                          <button
+                            key={slot.value}
+                            onClick={() => togglePreferredTime(slot.value)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-semibold transition-all duration-200 ${
+                              isActive
+                                ? 'border-[#136DEC] bg-[#136DEC] text-white'
+                                : 'border-black/[0.08] bg-white text-slate-600 hover:border-[#136DEC]/40 hover:text-[#136DEC]'
+                            }`}
+                          >
+                            <span>{slot.label}</span>
+                            <span className="text-[11px] opacity-75 font-medium">{slot.sub}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Profile Summary Card */}
+                <div className="rounded-xl border border-black/[0.07] bg-white p-5">
+                  <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    Ringkasan Profil Kamu
+                  </h4>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                    {[
+                      { label: 'Subjects', value: profile.subjects.join(', ') || '—' },
+                      { label: 'Goals',    value: profile.study_goals.map(g => STUDY_GOALS_DETAIL.find(x => x.value === g)?.label).join(', ') || '—' },
+                      { label: 'Mode',     value: profile.study_mode === 'online' ? 'Online' : 'In-Person' },
+                      { label: 'Hari',     value: profile.availability.days.map(d => DAYS.find(x => x.value === d)?.full).join(', ') || '—' },
+                    ].map(({ label, value }) => (
+                      <div key={label}>
+                        <span className="text-slate-400 text-xs font-semibold uppercase tracking-[0.1em]">{label}</span>
+                        <p className="text-slate-700 font-medium mt-0.5 truncate capitalize">{value}</p>
+                      </div>
                     ))}
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-text-secondary flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Mulai
-                      </label>
-                      <input
-                        type="time"
-                        value={profile.availability.start}
-                        onChange={e => setProfile({
-                          ...profile,
-                          availability: { ...profile.availability, start: e.target.value }
-                        })}
-                        className="w-full h-11 rounded-lg bg-bg-surface border border-border px-4 text-sm text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-text-secondary flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Selesai
-                      </label>
-                      <input
-                        type="time"
-                        value={profile.availability.end}
-                        onChange={e => setProfile({
-                          ...profile,
-                          availability: { ...profile.availability, end: e.target.value }
-                        })}
-                        className="w-full h-11 rounded-lg bg-bg-surface border border-border px-4 text-sm text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                  </div>
                 </div>
 
-                {/* Summary */}
-                <div className="glass-card p-4">
-                  <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    Ringkasan Profil
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Subjects</span>
-                      <span className="text-right">{profile.subjects.join(', ') || '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Level</span>
-                      <span className="capitalize">{profile.skill_level || '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Goal</span>
-                      <span>{STUDY_GOALS.find(g => g.value === profile.study_goal)?.label || '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Style</span>
-                      <span className="capitalize">{profile.learning_style || '-'}</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
+          </div>
 
-            {/* Navigation */}
-            <div className="flex justify-between mt-8">
-              <Button
-                variant="ghost"
-                onClick={() => setStep(step - 1)}
-                disabled={step === 0 || saving}
-                className={step === 0 ? 'invisible' : ''}
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Kembali
-              </Button>
-              <Button onClick={handleNext} disabled={!canProceed() || saving}>
-                {step === totalSteps - 1 ? (
-                  <>
-                    {saving ? 'Menyimpan...' : 'Mulai Matching'}
-                    <Sparkles className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    Lanjut
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* ── Footer ───────────────────────────────────────────────────────── */}
+          <div
+            ref={footerRef}
+            className="mt-12 pt-8 border-t border-slate-200 flex items-center justify-between opacity-0"
+          >
+            <button
+              onClick={() => { setStep(step - 1); setErrorMessage('') }}
+              disabled={step === 0 || saving}
+              className={`px-5 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200 flex items-center gap-2 ${
+                step === 0 ? 'invisible' : ''
+              }`}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali
+            </button>
+
+            <button
+              onClick={handleNext}
+              disabled={!canProceed() || saving}
+              className="group relative flex h-12 items-center gap-2 px-8 rounded-xl bg-[#136DEC] text-sm font-bold text-white shadow-lg shadow-[#136DEC]/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#136DEC]/35 active:translate-y-0 active:shadow-md disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 overflow-hidden"
+            >
+              {saving ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  {step === 2 ? 'Mulai Matching ✨' : 'Next Step'}
+                  {!saving && <ArrowRight className="w-4 h-4" />}
+                </>
+              )}
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+            </button>
+          </div>
+
+        </div>
+      </main>
+
     </div>
-  )
-}
-
-function Sparkles(props) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-      <path d="M5 3v4"/>
-      <path d="M19 17v4"/>
-      <path d="M3 5h4"/>
-      <path d="M17 19h4"/>
-    </svg>
   )
 }

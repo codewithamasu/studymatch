@@ -126,7 +126,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="min-h-screen px-4 pt-20 pb-8 relative">
+    <div className="min-h-screen px-3 sm:px-4 pt-20 pb-8 relative">
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/3 w-72 h-72 bg-primary/10 rounded-full blur-[100px]" />

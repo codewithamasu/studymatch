@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import navbarLogo from '../../assets/navbar-logo.svg';
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import {
@@ -36,13 +37,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center transition-transform group-hover:scale-110">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-heading font-bold text-lg gradient-text">
-              StudyMatch
-            </span>
+          <Link to={user ? '/dashboard' : '/'} className="flex items-center group">
+            <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
           </Link>
 
           {/* Desktop Nav */}
