@@ -17,10 +17,10 @@ export default function MatchesPage() {
   const matches = mockMatches
 
   return (
-    <div className="min-h-screen px-4 pt-20 pb-8">
+    <div className="min-h-screen px-3 sm:px-4 pt-20 pb-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
             <h1 className="font-heading text-2xl font-bold">My Matches</h1>
             <p className="text-sm text-text-muted">{matches.length} study partner ditemukan</p>
