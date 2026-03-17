@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { mockCurrentUser } from '@/data/mockData'
+import { mockCurrentUser, mockUsers } from '@/data/mockData'
 
 const AuthContext = createContext(null)
 
@@ -32,13 +32,16 @@ export function AuthProvider({ children }) {
 
   const signIn = async ({ email, password }) => {
     // Mock sign in
-    const mockUser = {
-      ...mockCurrentUser,
-      email,
+    const allUsers = [...mockUsers, mockCurrentUser]
+    const foundUser = allUsers.find(u => u.email === email && u.password === password)
+
+    if (foundUser) {
+      setUser(foundUser)
+      localStorage.setItem('studymatch_user', JSON.stringify(foundUser))
+      return { user: foundUser, error: null }
+    } else {
+      return { user: null, error: 'Email atau password salah' }
     }
-    setUser(mockUser)
-    localStorage.setItem('studymatch_user', JSON.stringify(mockUser))
-    return { user: mockUser, error: null }
   }
 
   const signOut = async () => {

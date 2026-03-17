@@ -11,14 +11,20 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMsg('')
     const { error } = await signIn(form)
     setLoading(false)
-    if (!error) navigate('/dashboard')
+    if (error) {
+      setErrorMsg(error)
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   return (
@@ -38,6 +44,11 @@ export default function LoginPage() {
           <CardDescription>Masuk ke akun StudyMatch-mu</CardDescription>
         </CardHeader>
         <CardContent>
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium">
+              {errorMsg}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">Email</label>

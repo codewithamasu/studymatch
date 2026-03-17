@@ -9,6 +9,8 @@ import DiscoverPage from '@/pages/DiscoverPage'
 import MatchesPage from '@/pages/MatchesPage'
 import SessionsPage from '@/pages/SessionsPage'
 import DashboardPage from '@/pages/DashboardPage'
+import ChatPage from '@/pages/ChatPage'
+import ChatInboxPage from '@/pages/ChatInboxPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -40,6 +42,8 @@ function AppRoutes() {
         <Route path="/sessions" element={<ProtectedRoute><SessionsPage /></ProtectedRoute>} />
         <Route path="/sessions/new" element={<ProtectedRoute><SessionsPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><ChatInboxPage /></ProtectedRoute>} />
+        <Route path="/chat/:userId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
