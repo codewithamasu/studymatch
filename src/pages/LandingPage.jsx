@@ -1,380 +1,370 @@
-import { useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import {
-  Sparkles,
-  Users,
-  Calendar,
-  BarChart3,
-  ArrowRight,
-  BookOpen,
-  Zap,
-  Target,
-  CheckCircle,
-  Video,
-  MapPin,
-} from 'lucide-react'
-import gsap from 'gsap'
-
+import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import alex from '../assets/profile-landing-page.png';
+import navbarLogo from '../assets/navbar-logo.svg';
+gsap.registerPlugin(ScrollTrigger);
 export default function LandingPage() {
-  const heroRef = useRef(null)
-  const featuresRef = useRef(null)
-  const stepsRef = useRef(null)
+  const heroRef = useRef(null);
+  const howItWorksRef = useRef(null);
+  const featuresRef = useRef(null);
+  const ctaRef = useRef(null);
+  const cardRef = useRef(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Hero animation
-      gsap.from('.hero-title', {
-        y: 60,
-        opacity: 0,
-        duration: 1,
-        ease: 'power3.out',
-      })
-      gsap.from('.hero-subtitle', {
-        y: 40,
-        opacity: 0,
-        duration: 1,
-        delay: 0.2,
-        ease: 'power3.out',
-      })
-      gsap.from('.hero-cta', {
-        y: 30,
-        opacity: 0,
+    // 1. Hero Animations (Clean, Distilled Entrance)
+    const heroElements = heroRef.current.querySelectorAll('.hero-anim');
+    gsap.fromTo(
+      heroElements,
+      { y: 30, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
         duration: 0.8,
-        delay: 0.4,
-        ease: 'power3.out',
-      })
-      gsap.from('.hero-visual', {
-        scale: 0.8,
-        opacity: 0,
-        duration: 1.2,
-        delay: 0.3,
-        ease: 'power3.out',
-      })
-
-      // Features
-      gsap.from('.feature-card', {
-        scrollTrigger: '.feature-card',
-        y: 40,
-        opacity: 0,
-        duration: 0.6,
-        stagger: 0.15,
-        ease: 'power2.out',
-      })
-
-      // Steps
-      gsap.from('.step-item', {
-        y: 30,
-        opacity: 0,
-        duration: 0.5,
         stagger: 0.1,
+        ease: 'power3.out',
+        delay: 0.1,
+      }
+    );
+
+    // Bolder mock card animation - dramatic continuous rotation/float
+    if (cardRef.current) {
+      gsap.to(cardRef.current, {
+        y: -15,
+        rotation: 4,
+        duration: 4,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
         delay: 0.8,
+      });
+    }
+
+    // 2. How it Works (Simple scroll reveal)
+    const stepCards = howItWorksRef.current.querySelectorAll('.step-card');
+    gsap.fromTo(
+      stepCards,
+      { y: 20, opacity: 0 },
+      {
+        scrollTrigger: {
+          trigger: howItWorksRef.current,
+          start: 'top 85%',
+        },
+        y: 0,
+        opacity: 1,
+        duration: 0.6,
+        stagger: 0.1,
         ease: 'power2.out',
-      })
-    })
+      }
+    );
 
-    return () => ctx.revert()
-  }, [])
+    // 3. Features (ScrollTrigger)
+    const featureGroups = featuresRef.current.querySelectorAll('.feat-group');
+    gsap.fromTo(
+      featureGroups,
+      { y: 30, opacity: 0 },
+      {
+        scrollTrigger: {
+          trigger: featuresRef.current,
+          start: 'top 80%',
+        },
+        y: 0,
+        opacity: 1,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: 'power3.out',
+      }
+    );
 
-  const features = [
-    {
-      icon: Sparkles,
-      title: 'Smart Matching',
-      description: 'Temukan partner belajar yang kompatibel berdasarkan mata kuliah, jadwal, dan gaya belajar.',
-      color: 'from-primary to-primary-light',
-    },
-    {
-      icon: Calendar,
-      title: 'Study Session Scheduler',
-      description: 'Jadwalkan sesi belajar online via video call atau offline di lokasi yang disepakati.',
-      color: 'from-secondary to-[#00A3CC]',
-    },
-    {
-      icon: BarChart3,
-      title: 'Progress Tracking',
-      description: 'Pantau progress belajar, total jam, dan pertahankan study streak harianmu.',
-      color: 'from-success to-[#00C853]',
-    },
-    {
-      icon: Users,
-      title: 'Community',
-      description: 'Bangun jaringan partner belajar dan tingkatkan kolaborasi akademik.',
-      color: 'from-accent to-accent-light',
-    },
-  ]
+    // 4. CTA Scale-in
+    gsap.fromTo(
+      ctaRef.current,
+      { opacity: 0, scale: 0.98 },
+      {
+        scrollTrigger: {
+          trigger: ctaRef.current,
+          start: 'top 90%',
+        },
+        opacity: 1,
+        scale: 1,
+        duration: 0.8,
+        ease: 'power2.out',
+      }
+    );
 
-  const steps = [
-    { num: '01', title: 'Buat Profil', desc: 'Isi profil belajar — mata kuliah, skill level, dan jadwal' },
-    { num: '02', title: 'Temukan Partner', desc: 'Swipe partner yang cocok berdasarkan compatibility score' },
-    { num: '03', title: 'Match!', desc: 'Saling tertarik? It\'s a Study Match!' },
-    { num: '04', title: 'Belajar Bersama', desc: 'Jadwalkan sesi belajar online atau offline' },
-  ]
+    return () => {
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen overflow-hidden">
-      {/* Hero Section */}
-      <section ref={heroRef} className="relative min-h-[90vh] flex items-center px-4">
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-secondary/15 rounded-full blur-[100px]" />
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent/10 rounded-full blur-[80px]" />
-        </div>
+    <div className="min-h-screen bg-white text-[#64748B] font-sans selection:bg-[#136DEC]/10 selection:text-[#136DEC]">
+      
+      {/* ─── HEADER ─── */}
+      <header className="fixed top-0 z-50 w-full border-b border-[#F8FAFC] bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto max-w-6xl px-6">
+          <nav className="flex h-20 items-center justify-between" aria-label="Main Navigation">
+            {/* Logo */}
+            <Link to="/" className="flex items-center group outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded" aria-label="StudyMatch Home">
+              <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
+            </Link>
 
-        <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center relative z-10">
-          <div>
-            <Badge className="mb-6 hero-title">
-              <Zap className="w-3 h-3 mr-1" />
-              Subtema: Pendidikan — INNOVATE 2026
-            </Badge>
-            <h1 className="hero-title font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
-              Temukan Partner
-              <br />
-              <span className="gradient-text">Belajar Idealmu</span>
-            </h1>
-            <p className="hero-subtitle text-lg text-text-secondary mb-8 max-w-lg">
-              StudyMatch menghubungkan mahasiswa dengan partner belajar yang kompatibel melalui smart matching.
-              Belajar lebih efektif, bersama.
-            </p>
-            <div className="hero-cta flex flex-wrap gap-4">
-              <Link to="/register">
-                <Button size="xl">
-                  Mulai Sekarang
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
+            {/* Desktop Nav Links */}
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#how-it-works" className="text-sm font-medium text-[#64748B] hover:text-[#136DEC] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded">How it Works</a>
+              <a href="#features" className="text-sm font-medium text-[#64748B] hover:text-[#136DEC] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded">Features</a>
+            </div>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center gap-4">
+              <Link to="/login" className="hidden sm:block text-sm font-medium text-[#64748B] hover:text-[#136DEC] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded">
+                Log in
               </Link>
-              <Link to="/login">
-                <Button variant="outline" size="xl">
-                  Sudah Punya Akun
-                </Button>
-              </Link>
-            </div>
-
-            {/* Social proof */}
-            <div className="hero-cta mt-10 flex items-center gap-6">
-              <div className="flex -space-x-2">
-                {['A', 'S', 'B', 'M'].map((initial, i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full border-2 border-bg-dark flex items-center justify-center text-xs font-bold"
-                    style={{
-                      background: `linear-gradient(135deg, ${
-                        ['#6C5CE7', '#00D2FF', '#FF6B6B', '#00E676'][i]
-                      }, ${['#8B7CF7', '#33DDFF', '#FF8A8A', '#69F0AE'][i]})`,
-                    }}
-                  >
-                    {initial}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-text-primary">1,200+ Mahasiswa</p>
-                <p className="text-xs text-text-muted">sudah menemukan study partner</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Hero Visual - Mock Swipe Card */}
-          <div className="hero-visual hidden lg:flex justify-center items-center">
-            <div className="relative">
-              {/* Background cards */}
-              <div className="absolute -top-4 -left-4 w-72 h-96 glass-card rotate-[-6deg] opacity-40" />
-              <div className="absolute -top-2 -left-2 w-72 h-96 glass-card rotate-[-3deg] opacity-60" />
-
-              {/* Main card */}
-              <div className="relative w-72 h-96 glass-card p-6 flex flex-col items-center justify-between animate-float">
-                <div className="w-full">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary mx-auto mb-4 flex items-center justify-center text-2xl font-bold">
-                    A
-                  </div>
-                  <h3 className="text-center font-heading font-bold text-lg">Andi Pratama</h3>
-                  <p className="text-center text-sm text-text-muted mb-3">Universitas Indonesia</p>
-
-                  <div className="flex flex-wrap justify-center gap-1.5 mb-4">
-                    <Badge variant="default">Data Structures</Badge>
-                    <Badge variant="default">Algorithms</Badge>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-text-secondary">
-                      <Target className="w-3.5 h-3.5 text-primary-light" />
-                      <span>Persiapan Ujian</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-text-secondary">
-                      <Calendar className="w-3.5 h-3.5 text-secondary" />
-                      <span>19:00 – 21:00</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-text-muted">Compatibility</span>
-                    <span className="text-sm font-bold text-success">92%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-bg-surface overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-primary to-success" style={{ width: '92%' }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating elements */}
-              <div className="absolute -right-12 top-8 glass-card px-3 py-2 animate-float" style={{ animationDelay: '0.5s' }}>
-                <span className="text-lg">🎯</span>
-                <span className="text-xs font-medium ml-1">Match!</span>
-              </div>
-              <div className="absolute -left-16 bottom-16 glass-card px-3 py-2 animate-float" style={{ animationDelay: '1s' }}>
-                <span className="text-lg">📚</span>
-                <span className="text-xs font-medium ml-1">Study</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section ref={featuresRef} className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <Badge className="mb-4" variant="secondary">Fitur Unggulan</Badge>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
-              Semua yang Kamu Butuhkan untuk
-              <br />
-              <span className="gradient-text">Belajar Lebih Efektif</span>
-            </h2>
-            <p className="text-text-secondary max-w-2xl mx-auto">
-              StudyMatch mengoptimalkan pengalaman belajarmu dengan fitur-fitur inovatif
-              yang dirancang khusus untuk mahasiswa.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, i) => (
-              <Card
-                key={i}
-                className="feature-card group hover:border-primary/30 transition-all duration-500 hover:-translate-y-2 cursor-pointer"
+              <Link
+                to="/register"
+                className="rounded bg-[#136DEC] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#136DEC]/90 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC]"
               >
-                <CardContent className="p-6 flex flex-col items-start">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-heading font-semibold text-lg mb-2">{feature.title}</h3>
-                  <p className="text-sm text-text-secondary leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                Join Now
+              </Link>
+            </div>
+          </nav>
         </div>
-      </section>
+      </header>
 
-      {/* How it Works */}
-      <section ref={stepsRef} className="py-24 px-4 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
-        </div>
-
-        <div className="max-w-5xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <Badge className="mb-4" variant="secondary">Cara Kerja</Badge>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
-              4 Langkah Menuju
-              <br />
-              <span className="gradient-text">Study Partner Ideal</span>
-            </h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {steps.map((step, i) => (
-              <div key={i} className="step-item text-center group">
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20 flex items-center justify-center group-hover:scale-110 group-hover:border-primary/40 transition-all duration-300">
-                    <span className="font-heading font-bold text-xl gradient-text">{step.num}</span>
-                  </div>
-                  {i < 3 && (
-                    <div className="hidden lg:block absolute top-1/2 left-full w-full h-px bg-gradient-to-r from-primary/30 to-transparent" />
-                  )}
+      <main className="pt-20">
+        
+        {/* ─── HERO SECTION ─── */}
+        <section ref={heroRef} className="py-16 sm:py-24 lg:py-32 bg-[#F8FAFC]" aria-labelledby="hero-heading">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              
+              {/* Left: Text Content (Bolder Structure with Oxford Blue Colors) */}
+              <div className="flex flex-col items-start max-w-xl">
+                {/* Badge */}
+                <div className="hero-anim mb-8 inline-flex items-center gap-2 rounded-full border border-[#136DEC]/20 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#136DEC] shadow-sm">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10B981] opacity-75"></span>
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#10B981]"></span>
+                  </span>
+                  New: Study Groups
                 </div>
-                <h3 className="font-heading font-semibold text-lg mb-2">{step.title}</h3>
-                <p className="text-sm text-text-secondary">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* INNOVATE Theme Section */}
-      <section className="py-24 px-4">
-        <div className="max-w-5xl mx-auto">
-          <Card className="overflow-hidden">
-            <CardContent className="p-8 sm:p-12">
-              <div className="text-center mb-10">
-                <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-2">
-                  Tema <span className="gradient-text">INNOVATE</span>
-                </h2>
-                <p className="text-text-secondary">Bagaimana StudyMatch mengimplementasikan setiap elemen</p>
+                {/* Heading */}
+                <h1 id="hero-heading" className="hero-anim mb-6 text-[2.75rem] leading-[1.05] tracking-tighter font-black text-[#136DEC] sm:text-6xl lg:text-[5rem]">
+                  Find Your<br />
+                  Perfect <span className="bg-gradient-to-br from-cyan-400 via-[#136DEC] to-indigo-600 bg-clip-text text-transparent">Study<br />Partner.</span>
+                </h1>
+
+                {/* Subheading */}
+                <p className="hero-anim mb-10 text-lg font-medium leading-relaxed text-[#64748B] max-w-lg">
+                  Connect with students who share your academic goals, schedule, and learning style. Achieve better results, together.
+                </p>
+
+                {/* CTA Buttons */}
+                <div className="hero-anim flex flex-col sm:flex-row w-full sm:w-auto items-center gap-4">
+                  <Link to="/register" className="w-full sm:w-auto">
+                    <button className="w-full sm:w-auto rounded-full bg-[#136DEC] px-10 py-4 text-base font-bold text-white hover:bg-[#136DEC]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC]">
+                      Get Started
+                    </button>
+                  </Link>
+                  <button className="w-full sm:w-auto rounded-full bg-white border-2 border-[#E2E8F0] px-10 py-4 text-base font-bold text-[#64748B] hover:text-[#136DEC] shadow-sm hover:border-[#136DEC]/30 hover:bg-[#F8FAFC] transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC]">
+                    View Demo
+                  </button>
+                </div>
+
+                {/* Social Proof */}
+                <div className="hero-anim mt-12 flex items-center gap-4">
+                  <div className="flex -space-x-2">
+                    {[
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuAdDgLnOYVIR-D2Qb27h1em8sy7YtjcLoH25aa3pG0f5W-ziIkt5560Pc3QQ9GABp0kXOhOvPRcaS7mSG1LpTdWvqltQeauKNRKCU8eAivpGd7FXWxf9_PEcrGIftra3GrDUb17GykkXVw1928YFuyNnbM6Z5fSTP1nloV8TJtLJhponT2tajfANeAdiABo60iuj3-6rrD_Nb4Krnww_nzVVWmQ-9fRuPFsvJaDxEuE5_8DN2Z_F6hJHTpyIpkmozcah8OyTemuSZgd",
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuBTgxPHENaMk0a0fLW0ulfIbS01J2e0wPInysjpMQqM4sf1WYzytyK2kvb2kKiZDPYaXhc87USYMTQwGHGvg3h3kXTHI8pcSJljqIz2-5UO71hamv2CjyC22x5cFwjfKWYSSRxfVUnCSlbSzcUJdYXkGbYhtQqgyc0-BuJfgVCB5QG_fYkR5KBGsoMArE57mMr4ZZTJFeNBd5EwaLZFlxd6l_uWJ6uCnZG9A82XoDzvDSD-4fU7GqMzpRZOxVL912KKMmySa9_D3li0",
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuCwogMjAgYY6WRGvp_fkpvx_p0MSC9bg3Ds_Vw00plxez_D3tzhcD113xQWhl-XtBdIIJQ-vkp6SZlEsT_Pp_uiUxAUtyJ4r-ICNxfnHD9DT06bJwiOOi_rF3wnkka7Y5fabSy_VueQycZjYIrAJEUiiyLQYtC-cZl4D8Uj5ocD2qMa-O3RIlsXAQqh3DDX85IBBZbmNxd3hDUZ-S6N47ovAuFf1DzD1Zg_JM76Ty-e1ERjwCD-hr45cijMDzDX1y0mCbckVEMqvjDl"
+                    ].map((src, i) => (
+                      <img key={i} alt="" className="h-8 w-8 rounded-full border-2 border-[#F8FAFC] object-cover" src={src} />
+                    ))}
+                  </div>
+                  <p className="text-sm font-medium text-[#94A3B8]">
+                    <strong className="text-[#136DEC]">10k+</strong> students finding partners
+                  </p>
+                </div>
               </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  { letter: 'I', word: 'Impel', desc: 'Mendorong mahasiswa berkolaborasi & belajar bersama' },
-                  { letter: 'N', word: 'Navigate', desc: 'Menavigasi pencarian partner belajar yang ideal' },
-                  { letter: 'N', word: 'Novelty', desc: 'Konsep matching dating-style yang baru di edtech' },
-                  { letter: 'O', word: 'Optimize', desc: 'Mengoptimalkan waktu belajar dengan partner yang tepat' },
-                  { letter: 'V', word: 'Validate', desc: 'Validasi progress dengan tracking & study streak' },
-                  { letter: 'A', word: 'Advance', desc: 'Meningkatkan hasil akademik melalui kolaborasi' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-bg-surface/50 border border-border/50">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
-                      <span className="font-heading font-bold text-white">{item.letter}</span>
+
+              {/* Right: Mock Swipe Card (Interactive Dating-App Style) */}
+              <div className="hero-anim relative hidden lg:block">
+                <div ref={cardRef} className="relative mx-auto w-full max-w-[360px] translate-x-4" aria-label="Interactive mock study match card">
+                  {/* Card Material */}
+                  <div className="relative overflow-hidden rounded-[2.5rem] border border-[#136DEC]/20 shadow-[0_30px_100px_-20px_rgba(19,109,236,0.15)] bg-white will-change-transform">
+                    <div className="aspect-[3/4] p-3 pb-0">
+                      <img
+                        alt="Profile of Alex"
+                        className="h-full w-full object-cover rounded-t-[2rem] rounded-b-xl"
+                        src={alex}
+                      />
+                    </div>
+                    {/* Card overlay */}
+                    <div className="p-6">
+                      <div className="flex justify-between items-end mb-4">
+                        <div>
+                          <h3 className="text-3xl font-black text-[#136DEC] tracking-tight">Alex, 21</h3>
+                          <p className="text-base font-semibold text-[#64748B]">Comp. Science</p>
+                        </div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F8FAFC]">
+                          <span className="material-symbols-outlined text-[#10B981] text-sm font-bold">verified</span>
+                        </div>
+                      </div>
+                      
+                      {/* Swipe Actions - Dating App Style */}
+                      <div className="flex items-center justify-center gap-6 mt-6 pb-2">
+                        <button 
+                          className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border border-[#E2E8F0] bg-white shadow-xl hover:scale-110 active:scale-95 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] text-[#64748B] hover:text-[#EF4444] hover:border-[#EF4444]/30"
+                          aria-label="Pass Profile"
+                        >
+                          <span className="material-symbols-outlined text-3xl font-bold">close</span>
+                        </button>
+                        <button 
+                          className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-gradient-to-tr from-[#136DEC] to-[#0EA5E9] shadow-xl shadow-[#136DEC]/30 hover:scale-110 hover:-rotate-6 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC] text-white"
+                          aria-label="Like Profile"
+                        >
+                          <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── HOW IT WORKS (Distilled) ─── */}
+        <section ref={howItWorksRef} id="how-it-works" className="py-24 bg-white">
+          <div className="mx-auto max-w-6xl px-6">
+            <header className="mb-16 text-center">
+              <h2 className="text-3xl font-bold text-[#136DEC] mb-4">How it works</h2>
+              <p className="text-lg text-[#64748B] max-w-2xl mx-auto">Three simple steps to start collaborating and learning more effectively.</p>
+            </header>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
+              {[
+                { icon: 'person', title: 'Create your profile', desc: 'Add your major, subjects, and study preferences.' },
+                { icon: 'search', title: 'Find matches', desc: 'Review compatible students who share your learning goals.' },
+                { icon: 'chat', title: 'Start studying', desc: 'Connect, schedule sessions, and learn together.' },
+              ].map((step, idx) => (
+                <article key={idx} className="step-card flex flex-col items-center text-center">
+                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#F8FAFC] text-[#136DEC]">
+                    <span className="material-symbols-outlined text-2xl">{step.icon}</span>
+                  </div>
+                  <h3 className="mb-3 text-xl font-bold text-[#136DEC]">{step.title}</h3>
+                  <p className="text-[#64748B] leading-relaxed">{step.desc}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── FEATURES (Clean & Focused) ─── */}
+        <section ref={featuresRef} id="features" className="py-24 bg-[#F8FAFC]">
+           <div className="mx-auto max-w-6xl px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              
+              {/* Text Focus */}
+              <div>
+                <h2 className="mb-12 text-3xl font-bold text-[#136DEC]">Built for academic focus.</h2>
+                
+                <div className="space-y-10">
+                  <div className="feat-group flex gap-4">
+                    <div className="mt-1 flex-shrink-0">
+                      <span className="material-symbols-outlined text-[#6366F1]">psychology</span>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-sm mb-0.5">{item.word}</h4>
-                      <p className="text-xs text-text-muted leading-relaxed">{item.desc}</p>
+                      <h3 className="text-lg font-bold text-[#136DEC] mb-2">Smart Compatibility</h3>
+                      <p className="text-[#64748B] leading-relaxed">Our algorithm ensures you match with partners who complement your learning style, preventing mismatched expectations.</p>
                     </div>
                   </div>
-                ))}
+
+                  <div className="feat-group flex gap-4">
+                    <div className="mt-1 flex-shrink-0">
+                      <span className="material-symbols-outlined text-[#10B981]">monitoring</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#136DEC] mb-2">Progress Tracking</h3>
+                      <p className="text-[#64748B] leading-relaxed">Set joint goals and milestones. Keep each other accountable with session logging and visual progress data.</p>
+                    </div>
+                  </div>
+
+                  <div className="feat-group flex gap-4">
+                    <div className="mt-1 flex-shrink-0">
+                      <span className="material-symbols-outlined text-[#F59E0B]">event_available</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#136DEC] mb-2">Seamless Scheduling</h3>
+                      <p className="text-[#64748B] leading-relaxed">Sync your free time automatically. Find overlapping availability without the endless back-and-forth messaging.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-4 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/15 rounded-full blur-[120px]" />
-        </div>
-        <div className="max-w-3xl mx-auto text-center relative z-10">
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
-            Siap Menemukan Study Partner?
-          </h2>
-          <p className="text-text-secondary mb-8 text-lg">
-            Bergabung dan mulai belajar lebih efektif bersama partner yang cocok.
-          </p>
-          <Link to="/register">
-            <Button size="xl" className="animate-pulse-glow">
-              Mulai Gratis Sekarang
-              <ArrowRight className="w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-8 px-4 border-t border-border/50">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-white" />
+              {/* Minimalist Visual Representation */}
+               <div className="feat-group lg:ml-auto w-full max-w-sm">
+                 <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 shadow-sm">
+                    <h4 className="font-bold text-[#136DEC] mb-6">Upcoming Session</h4>
+                    <div className="rounded border border-[#E2E8F0] p-4 mb-4">
+                      <div className="flex items-center gap-3 mb-3">
+                         <div className="flex h-10 w-10 items-center justify-center rounded bg-[#136DEC]/10 text-[#136DEC]">
+                           <span className="material-symbols-outlined">menu_book</span>
+                         </div>
+                         <div>
+                           <p className="font-semibold text-[#136DEC]">Calculus II Prep</p>
+                           <p className="text-xs text-[#64748B]">Today • 19:00 - 21:00</p>
+                         </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-4 border-t border-[#F8FAFC] pt-4">
+                        <div className="flex -space-x-2">
+                           <img src={alex} alt="User" className="h-6 w-6 rounded-full border border-white" />
+                           <div className="h-6 w-6 rounded-full border border-white bg-[#94A3B8] flex items-center justify-center text-[10px] text-white">Me</div>
+                        </div>
+                        <span className="text-xs font-medium text-[#10B981]">Confirmed</span>
+                      </div>
+                    </div>
+                    <button className="w-full rounded bg-[#136DEC]/10 py-2.5 text-sm font-medium text-[#136DEC] hover:bg-[#136DEC]/20 transition-colors">
+                      Join Audio Room
+                    </button>
+                 </div>
+               </div>
             </div>
-            <span className="font-heading font-bold gradient-text">StudyMatch</span>
+           </div>
+        </section>
+
+        {/* ─── CTA ─── */}
+        <section ref={ctaRef} className="py-24 bg-white text-center">
+          <div className="mx-auto max-w-3xl px-6">
+            <h2 className="mb-6 text-3xl font-bold text-[#136DEC]">Start learning better today.</h2>
+            <p className="mb-10 text-lg text-[#64748B]">Join the community of students achieving their goals through collaboration.</p>
+            <Link to="/register">
+              <button className="rounded bg-[#136DEC] px-10 py-4 text-base font-bold text-white hover:bg-[#136DEC]/90 transition-colors shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC]">
+                Create Free Profile
+              </button>
+            </Link>
           </div>
-          <p className="text-sm text-text-muted">
-            © 2026 StudyMatch — INNOVATE Web Design Competition
-          </p>
+        </section>
+
+      </main>
+
+      {/* ─── FOOTER (Simplified) ─── */}
+      <footer className="border-t border-[#E2E8F0] bg-white py-12">
+        <div className="mx-auto max-w-6xl px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-[#94A3B8] text-sm font-medium">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[20px]">school</span>
+            <span className="text-[#64748B]">© 2024 StudyMatch. All rights reserved.</span>
+          </div>
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-[#136DEC] transition-colors">Help</a>
+            <a href="#" className="hover:text-[#136DEC] transition-colors">Privacy</a>
+            <a href="#" className="hover:text-[#136DEC] transition-colors">Terms</a>
+          </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }

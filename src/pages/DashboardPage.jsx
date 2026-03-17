@@ -61,7 +61,7 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen px-4 pt-20 pb-8">
+    <div className="min-h-screen px-3 sm:px-4 pt-20 pb-8">
       <div className="max-w-6xl mx-auto">
         {/* Welcome */}
         <div className="mb-8">
@@ -104,7 +104,7 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-48">
+              <div className="h-36 sm:h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.weekly_data}>
                     <XAxis
