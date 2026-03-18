@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import {
   Calendar,
@@ -27,6 +27,8 @@ import {
 import { mockUsers, mockCurrentUser } from '@/data/mockData'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { fetchConversationThread, sendConversationMessage, markConversationRead } from '@/lib/studymatchRealtime'
 
 const QUICK_REPLIES = [
   { icon: '📅', label: 'Suggest 4 PM tomorrow' },
@@ -50,30 +52,33 @@ const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
 
 export default function ChatPage() {
   const { userId = '1' } = useParams()
+  const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
-  const conversations = useChatStore((state) => state.conversations)
   const messagesByConversation = useChatStore((state) => state.messagesByConversation)
   const isTypingByConversation = useChatStore((state) => state.isTypingByConversation)
   const reactionPickerId = useChatStore((state) => state.reactionPickerId)
   const drafts = useChatStore((state) => state.drafts)
-  const setConversations = useChatStore((state) => state.setConversations)
   const hydrateConversation = useChatStore((state) => state.hydrateConversation)
   const setTyping = useChatStore((state) => state.setTyping)
   const setReactionPickerId = useChatStore((state) => state.setReactionPickerId)
   const setDraft = useChatStore((state) => state.setDraft)
   const sendMessage = useChatStore((state) => state.sendMessage)
-  const receiveMessage = useChatStore((state) => state.receiveMessage)
   const addReactionToConversation = useChatStore((state) => state.addReaction)
-  const partner =
-    mockUsers.find((candidate) => candidate.id === userId) ||
-    mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson') ||
-    mockUsers[0]
+  const [thread, setThread] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [sendError, setSendError] = useState('')
+  const partner = thread?.peerProfile
+    || mockUsers.find((candidate) => candidate.id === userId)
+    || mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson')
+    || mockUsers[0]
+  const threadId = thread?.conversation?.id || userId
   const messages = useMemo(
-    () => messagesByConversation[userId] || [],
-    [messagesByConversation, userId]
+    () => messagesByConversation[threadId] || [],
+    [messagesByConversation, threadId]
   )
-  const draft = drafts[userId] || ''
-  const isTyping = Boolean(isTypingByConversation[userId])
+  const draft = drafts[threadId] || ''
+  const isTyping = Boolean(isTypingByConversation[threadId])
 
   const [goals, setGoals] = useState(GOALS)
   const [inputFocused, setInputFocused] = useState(false)
@@ -90,29 +95,65 @@ export default function ChatPage() {
   const partnerAvatar = avatar(partner.full_name)
 
   useEffect(() => {
-    if (conversations.length > 0) return
+    let mounted = true
 
-    const seededConversations = mockUsers.slice(0, 4).map((candidate, index) => ({
-      userId: candidate.id,
-      lastMessage: [
-        "I just finished it! I'd be happy to show you how I approached it.",
-        "Sure! Let's do Saturday evening at 7 PM. I'll share my notes.",
-        'Hey, have you started on the database ER diagram yet?',
-        'Physics problem set is harder than I thought 😅',
-      ][index],
-      lastTime: ['2:55 PM', 'Yesterday', 'Mon', 'Sun'][index],
-      unread: [2, 0, 0, 1][index],
-      online: [true, true, false, false][index],
-      subject: ['Data Structures', 'Calculus', 'Database Systems', 'Physics'][index],
-      user: candidate,
-    }))
+    async function loadThread() {
+      setLoading(true)
+      setLoadError('')
 
-    setConversations(seededConversations)
-  }, [conversations.length, setConversations])
+      try {
+        if (!isSupabaseConfigured) {
+          const demoPartner =
+            mockUsers.find((candidate) => candidate.id === userId) ||
+            mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson') ||
+            mockUsers[0]
 
-  useEffect(() => {
-    hydrateConversation(userId, INITIAL_MESSAGES)
-  }, [hydrateConversation, userId])
+          const demoThread = {
+            conversation: { id: userId, conversation_type: 'direct' },
+            peerProfile: {
+              id: demoPartner.id,
+              full_name: demoPartner.full_name,
+              university: demoPartner.university,
+              avatar_url: demoPartner.avatar_url,
+              bio: demoPartner.bio,
+              study_profile: demoPartner.study_profile,
+            },
+            messages: INITIAL_MESSAGES,
+          }
+
+          if (!mounted) return
+          setThread(demoThread)
+          hydrateConversation(userId, INITIAL_MESSAGES)
+          return
+        }
+
+        if (!user?.id) {
+          if (!mounted) return
+          setThread(null)
+          return
+        }
+
+        const data = await fetchConversationThread(user.id, userId)
+        if (!mounted) return
+        setThread(data)
+
+        if (data.conversation?.id) {
+          hydrateConversation(data.conversation.id, data.messages)
+        }
+      } catch (error) {
+        if (!mounted) return
+        setLoadError(error?.message || 'Gagal memuat percakapan.')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    loadThread()
+
+    return () => {
+      mounted = false
+    }
+  }, [hydrateConversation, user?.id, userId])
 
   // GSAP mount animation
   useEffect(() => {
@@ -151,25 +192,69 @@ export default function ChatPage() {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  const sendMsg = (e, override) => {
+  useEffect(() => {
+    if (!thread?.conversation?.id || !user?.id || !isSupabaseConfigured) return
+    markConversationRead(thread.conversation.id, user.id).catch(() => {})
+  }, [thread?.conversation?.id, user?.id])
+
+  const sendMsg = async (e, override) => {
     e?.preventDefault()
     const txt = override ?? draft
     if (!txt.trim()) return
-    sendMessage(userId, txt)
+    if (!thread?.conversation?.id || !user?.id) return
+
+    setSendError('')
+    sendMessage(thread.conversation.id, txt)
     inputRef.current?.focus()
-    setTimeout(() => setTyping(userId, true), 900)
-    setTimeout(() => {
-      setTyping(userId, false)
-      receiveMessage(userId, "Great idea! Let's do it. I'll DM you the details 📖")
-    }, 2800)
+    setTyping(thread.conversation.id, false)
+
+    try {
+      await sendConversationMessage(thread.conversation.id, user.id, txt)
+    } catch (error) {
+      setSendError(error?.message || 'Gagal mengirim pesan.')
+    }
   }
 
   const addReaction = (msgId, emoji) => {
-    addReactionToConversation(userId, msgId, emoji)
+    addReactionToConversation(threadId, msgId, emoji)
   }
 
   const completedGoals = goals.filter(g => g.done).length
   const progressPct = Math.round((completedGoals / goals.length) * 100)
+
+  if (loadError && !loading) {
+    return (
+      <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
+        <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-[0px_12px_40px_rgba(0,0,0,0.08)]">
+          <h1 className="text-2xl font-bold text-[#0f172a]">Gagal memuat chat</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#64748b]">{loadError}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!loading && isSupabaseConfigured && !thread?.conversation) {
+    return (
+      <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
+        <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-[0px_12px_40px_rgba(0,0,0,0.08)]">
+          <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-[#eff6ff] flex items-center justify-center text-[#1a56db]">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <h1 className="text-2xl font-bold text-[#0f172a]">Belum ada conversation</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#64748b]">
+            Kamu belum punya match aktif dengan partner ini. Coba swipe di Discover dulu, lalu balik ke chat.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/discover')}
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-[#1a56db] px-4 py-3 text-sm font-semibold text-white"
+          >
+            Go to Discover
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -197,6 +282,12 @@ export default function ChatPage() {
         .card-hover { transition: box-shadow .2s, transform .2s; }
         .card-hover:hover { box-shadow:0 4px 20px rgba(0,0,0,.06); transform:translateY(-1px); }
       `}</style>
+
+      {sendError && (
+        <div className="fixed top-[76px] left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 shadow-lg">
+          {sendError}
+        </div>
+      )}
 
       {/* Outer container locked to viewport */}
       <div className="-mt-16 flex bg-[#f0f4f8] overflow-hidden" style={{ height: '100vh' }}>
@@ -487,7 +578,10 @@ export default function ChatPage() {
               <input
                 ref={inputRef}
                 value={draft}
-                onChange={e => setDraft(userId, e.target.value)}
+                onChange={e => {
+                  setSendError('')
+                  setDraft(threadId, e.target.value)
+                }}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
                 placeholder="Type a message..."
