@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
+import { useNavigate } from 'react-router-dom'
 import {
   Heart,
   X,
@@ -15,7 +16,8 @@ import {
   Sparkles,
   ChevronDown,
   Star,
-  CheckCircle2
+  CheckCircle2,
+  MessageCircle
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser, calculateCompatibility } from '@/data/mockData'
 import gsap from 'gsap'

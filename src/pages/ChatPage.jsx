@@ -1,3 +1,6 @@
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
@@ -51,34 +54,9 @@ const GOALS = [
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
 
 export default function ChatPage() {
-  const { userId = '1' } = useParams()
+  const { user } = useAuth()
   const navigate = useNavigate()
-  const user = useAuthStore((state) => state.user)
-  const messagesByConversation = useChatStore((state) => state.messagesByConversation)
-  const isTypingByConversation = useChatStore((state) => state.isTypingByConversation)
-  const reactionPickerId = useChatStore((state) => state.reactionPickerId)
-  const drafts = useChatStore((state) => state.drafts)
-  const hydrateConversation = useChatStore((state) => state.hydrateConversation)
-  const setTyping = useChatStore((state) => state.setTyping)
-  const setReactionPickerId = useChatStore((state) => state.setReactionPickerId)
-  const setDraft = useChatStore((state) => state.setDraft)
-  const sendMessage = useChatStore((state) => state.sendMessage)
-  const addReactionToConversation = useChatStore((state) => state.addReaction)
-  const [thread, setThread] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
-  const [sendError, setSendError] = useState('')
-  const partner = thread?.peerProfile
-    || mockUsers.find((candidate) => candidate.id === userId)
-    || mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson')
-    || mockUsers[0]
-  const threadId = thread?.conversation?.id || userId
-  const messages = useMemo(
-    () => messagesByConversation[threadId] || [],
-    [messagesByConversation, threadId]
-  )
-  const draft = drafts[threadId] || ''
-  const isTyping = Boolean(isTypingByConversation[threadId])
+  const partner = mockUsers.find(u => u.full_name === 'Alex Johnson') || mockUsers[0]
 
   const [goals, setGoals] = useState(GOALS)
   const [inputFocused, setInputFocused] = useState(false)
@@ -338,7 +316,9 @@ export default function ChatPage() {
           <div className="sidebar-card bg-white rounded-[20px] px-5 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
             <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-3 px-1">Quick Actions</p>
             <div className="space-y-2">
-              <button className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] bg-[#1a56db] text-white shadow-md shadow-blue-200/60 hover:bg-blue-700 text-left">
+              <button 
+                onClick={() => navigate(`/sessions/new?partnerId=${partner.id}`)}
+                className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] bg-[#1a56db] text-white shadow-md shadow-blue-200/60 hover:bg-blue-700 text-left">
                 <div className="w-9 h-9 rounded-[9px] bg-white/20 flex items-center justify-center shrink-0">
                   <Calendar className="w-4 h-4" />
                 </div>
@@ -622,7 +602,9 @@ export default function ChatPage() {
 
             {/* Upcoming Session Card */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
-              <div className="card-hover rounded-[16px] border border-dashed border-[#cbd5e1] px-4 py-7 text-center cursor-pointer bg-[#fafafa] hover:border-[#93c5fd] hover:bg-[#f0f9ff] transition-colors">
+              <div 
+                onClick={() => navigate(`/sessions/new?partnerId=${partner.id}`)}
+                className="card-hover rounded-[16px] border border-dashed border-[#cbd5e1] px-4 py-7 text-center cursor-pointer bg-[#fafafa] hover:border-[#93c5fd] hover:bg-[#f0f9ff] transition-colors">
                 <div className="w-12 h-12 mx-auto rounded-[14px] bg-white border border-[#e2e8f0] flex items-center justify-center text-[#94a3b8] mb-4 shadow-sm">
                   <Calendar className="w-6 h-6" />
                 </div>

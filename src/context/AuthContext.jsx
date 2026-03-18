@@ -50,19 +50,42 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('studymatch_profile')
   }
 
-  const updateProfile = (profileData) => {
+  const updateProfile = async (profileData) => {
     const updatedUser = { ...user, study_profile: profileData }
     setUser(updatedUser)
     localStorage.setItem('studymatch_user', JSON.stringify(updatedUser))
     localStorage.setItem('studymatch_profile', 'true')
+    return { error: null }
   }
 
   const hasProfile = () => {
     return localStorage.getItem('studymatch_profile') === 'true'
   }
 
+  const signInWithGoogle = async () => {
+    const newUser = {
+      ...mockCurrentUser,
+      id: crypto.randomUUID(),
+    }
+    setUser(newUser)
+    localStorage.setItem('studymatch_user', JSON.stringify(newUser))
+    return { user: newUser, error: null }
+  }
+
+  const signInAnonymously = async () => {
+    const newUser = {
+      ...mockCurrentUser,
+      id: crypto.randomUUID(),
+      full_name: 'Guest User',
+      email: 'guest@studymatch.test'
+    }
+    setUser(newUser)
+    localStorage.setItem('studymatch_user', JSON.stringify(newUser))
+    return { user: newUser, error: null }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, updateProfile, hasProfile }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, updateProfile, hasProfile, signInWithGoogle, signInAnonymously }}>
       {children}
     </AuthContext.Provider>
   )
