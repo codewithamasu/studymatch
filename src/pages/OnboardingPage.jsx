@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import navbarLogo from '../assets/navbar-logo.svg';
-import { useAuth } from '@/context/AuthContext'
 import { Clock, CheckCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import gsap from 'gsap'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useOnboardingStore } from '@/store/useOnboardingStore'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -19,24 +20,17 @@ const POPULAR_SUBJECTS = [
 ]
 
 const ALL_SUBJECTS = [
-  'Calculus', 'Linear Algebra', 'Statistics', 'Discrete Math',
-  'Data Structures', 'Algorithms', 'Computer Networks', 'Operating Systems',
-  'Web Development', 'Machine Learning', 'Database Systems', 'Python Programming',
-  'Physics', 'Chemistry', 'Biology', 'Data Analysis',
-  'Economics', 'Psychology', 'History', 'Modern Languages',
-  'Art & Design', 'Mathematics', 'Computer Science',
+  'Calculus', 'Linear Algebra', 'Statistics', 'Data Structures',
+  'Algorithms', 'Web Development', 'Machine Learning', 'Database Systems',
+  'Python Programming', 'Physics', 'Biology', 'Data Analysis',
+  'Economics', 'Econometrics', 'Psychology', 'History',
+  'Modern Languages', 'Art & Design', 'Mathematics', 'Computer Science',
 ]
 
 const SKILL_LEVELS = [
   { value: 'beginner',     label: 'Beginner',     emoji: '🌱', desc: 'Baru mulai belajar' },
   { value: 'intermediate', label: 'Intermediate', emoji: '📚', desc: 'Sudah paham dasar' },
   { value: 'advanced',     label: 'Advanced',     emoji: '🚀', desc: 'Menguasai dengan baik' },
-]
-
-const STUDY_GOALS = [
-  { value: 'exam_prep',      label: 'Persiapan Ujian',    icon: 'quiz',           color: 'text-rose-500'    },
-  { value: 'project',        label: 'Tugas / Project',     icon: 'folder_open',    color: 'text-[#136DEC]'  },
-  { value: 'skill_building', label: 'Meningkatkan Skill',  icon: 'trending_up',    color: 'text-emerald-500' },
 ]
 
 const STUDY_GOALS_DETAIL = [
@@ -90,32 +84,38 @@ const STEP_TITLES = [
   { heading: 'Preferences & Availability.',  sub: 'Ceritakan cara dan waktu belajar yang paling nyaman buatmu.' },
 ]
 
+function normalizeSubjectInput(value) {
+  return value.trim().replace(/\s+/g, ' ')
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
-  const { updateProfile } = useAuth()
+  const user = useAuthStore((state) => state.user)
+  const updateProfile = useAuthStore((state) => state.updateProfile)
+  const step = useOnboardingStore((state) => state.step)
+  const profile = useOnboardingStore((state) => state.profile)
+  const saving = useOnboardingStore((state) => state.saving)
+  const errorMessage = useOnboardingStore((state) => state.errorMessage)
+  const setStep = useOnboardingStore((state) => state.setStep)
+  const setProfile = useOnboardingStore((state) => state.setProfile)
+  const hydrateProfile = useOnboardingStore((state) => state.hydrateProfile)
+  const toggleSubject = useOnboardingStore((state) => state.toggleSubject)
+  const toggleDay = useOnboardingStore((state) => state.toggleDay)
+  const setMastery = useOnboardingStore((state) => state.setMastery)
+  const toggleStudyGoal = useOnboardingStore((state) => state.toggleStudyGoal)
+  const togglePreferredTime = useOnboardingStore((state) => state.togglePreferredTime)
+  const setSaving = useOnboardingStore((state) => state.setSaving)
+  const setErrorMessage = useOnboardingStore((state) => state.setErrorMessage)
+  const canProceed = useOnboardingStore((state) => state.canProceed)
+  const resetOnboarding = useOnboardingStore((state) => state.resetOnboarding)
   const navigate = useNavigate()
-  const [step, setStep] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
   const headerRef  = useRef(null)
   const contentRef = useRef(null)
   const footerRef  = useRef(null)
-
-  const [profile, setProfile] = useState({
-    subjects: [],
-    subject_mastery: {},   // { [subject]: 0–100 }
-    skill_level: '',
-    study_goal: '',
-    study_goals: [],       // multi-select from STUDY_GOALS_DETAIL
-    study_mode: 'online',  // 'online' | 'in-person'
-    language: 'id',
-    preferred_times: [],   // multi-select from TIME_SLOTS
-    availability: { days: [], start: '19:00', end: '21:00' },
-    learning_style: '',
-  })
+  const hydratedUserIdRef = useRef(null)
 
   // ── GSAP: Page entrance ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -148,63 +148,36 @@ export default function OnboardingPage() {
     )
   }, [step])
 
+  useEffect(() => {
+    if (!user?.id) return
+
+    if (hydratedUserIdRef.current !== user.id) {
+      resetOnboarding()
+      hydratedUserIdRef.current = user.id
+    }
+
+    if (!user.study_profile) return
+
+    hydrateProfile(user.study_profile)
+  }, [hydrateProfile, resetOnboarding, user])
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  const toggleSubject = (subject) => {
-    setProfile(prev => ({
-      ...prev,
-      subjects: prev.subjects.includes(subject)
-        ? prev.subjects.filter(s => s !== subject)
-        : [...prev.subjects, subject],
-    }))
+  const handleSubjectToggle = (subject) => {
+    const normalizedSubject = normalizeSubjectInput(subject)
+    if (!normalizedSubject) return
+    toggleSubject(normalizedSubject)
   }
 
-  const toggleDay = (day) => {
-    setProfile(prev => ({
-      ...prev,
-      availability: {
-        ...prev.availability,
-        days: prev.availability.days.includes(day)
-          ? prev.availability.days.filter(d => d !== day)
-          : [...prev.availability.days, day],
-      },
-    }))
+  const addCustomSubject = () => {
+    const normalizedSubject = normalizeSubjectInput(searchQuery)
+    if (!normalizedSubject) return
+    handleSubjectToggle(normalizedSubject)
+    setSearchQuery('')
   }
 
   // helpers
   const getMasteryLabel = (val) => MASTERY_LABELS.find(m => val <= m.max) ?? MASTERY_LABELS[MASTERY_LABELS.length - 1]
-
-  const toggleStudyGoal = (val) => {
-    setProfile(prev => ({
-      ...prev,
-      study_goals: prev.study_goals.includes(val)
-        ? prev.study_goals.filter(g => g !== val)
-        : [...prev.study_goals, val],
-    }))
-  }
-
-  const setMastery = (subject, value) => {
-    setProfile(prev => ({
-      ...prev,
-      subject_mastery: { ...prev.subject_mastery, [subject]: Number(value) },
-    }))
-  }
-
-  const togglePreferredTime = (val) => {
-    setProfile(prev => ({
-      ...prev,
-      preferred_times: prev.preferred_times.includes(val)
-        ? prev.preferred_times.filter(t => t !== val)
-        : [...prev.preferred_times, val],
-    }))
-  }
-
-  const canProceed = () => {
-    if (step === 0) return profile.subjects.length >= 1
-    if (step === 1) return profile.study_goals.length >= 1
-    if (step === 2) return profile.availability.days.length >= 1
-    return false
-  }
 
   const handleComplete = async () => {
     setSaving(true)
@@ -215,6 +188,7 @@ export default function OnboardingPage() {
       setErrorMessage(error.message || 'Gagal menyimpan profil. Coba lagi.')
       return
     }
+    resetOnboarding()
     navigate('/discover')
   }
 
@@ -231,9 +205,17 @@ export default function OnboardingPage() {
   const filteredPopular = POPULAR_SUBJECTS.filter(s =>
     s.label.toLowerCase().includes(searchQuery.toLowerCase())
   )
+  const normalizedSearchQuery = normalizeSubjectInput(searchQuery)
   const searchResults = searchQuery.trim()
     ? ALL_SUBJECTS.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
     : []
+  const hasExactSuggestedSubject = ALL_SUBJECTS.some(
+    (subject) => subject.toLowerCase() === normalizedSearchQuery.toLowerCase()
+  )
+  const hasExactSelectedSubject = profile.subjects.some(
+    (subject) => subject.toLowerCase() === normalizedSearchQuery.toLowerCase()
+  )
+  const canCreateCustomSubject = normalizedSearchQuery.length >= 2 && !hasExactSuggestedSubject && !hasExactSelectedSubject
 
   const progressPct = Math.round(((step + 1) / 3) * 100)
 
@@ -312,16 +294,31 @@ export default function OnboardingPage() {
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && canCreateCustomSubject) {
+                        event.preventDefault()
+                        addCustomSubject()
+                      }
+                    }}
                     placeholder="Search subjects (e.g. Calculus, Data Structures, Psychology...)"
                     className="block w-full h-14 pl-12 pr-4 text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#136DEC] focus:ring-4 focus:ring-[#136DEC]/15 placeholder:text-slate-400 transition-all duration-300 text-sm font-medium shadow-sm"
                   />
                   {/* Search results dropdown */}
-                  {searchResults.length > 0 && (
+                  {(searchResults.length > 0 || canCreateCustomSubject) && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                      {canCreateCustomSubject && (
+                        <button
+                          onClick={addCustomSubject}
+                          className="w-full px-4 py-3 text-sm font-semibold text-[#136DEC] text-left hover:bg-[#136DEC]/5 transition-colors flex items-center gap-3 border-b border-slate-100"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                          Add "{normalizedSearchQuery}"
+                        </button>
+                      )}
                       {searchResults.slice(0, 6).map(subject => (
                         <button
                           key={subject}
-                          onClick={() => { toggleSubject(subject); setSearchQuery('') }}
+                          onClick={() => { handleSubjectToggle(subject); setSearchQuery('') }}
                           className="w-full px-4 py-3 text-sm font-medium text-slate-700 text-left hover:bg-slate-50 transition-colors flex items-center gap-3"
                         >
                           <span className={`material-symbols-outlined text-[16px] ${profile.subjects.includes(subject) ? 'text-[#136DEC]' : 'text-slate-400'}`}>
@@ -352,7 +349,7 @@ export default function OnboardingPage() {
                       >
                         {subject}
                         <button
-                          onClick={() => toggleSubject(subject)}
+                          onClick={() => handleSubjectToggle(subject)}
                           className="hover:text-slate-200 transition-colors"
                           aria-label={`Remove ${subject}`}
                         >
@@ -375,7 +372,7 @@ export default function OnboardingPage() {
                       return (
                         <button
                           key={subject.label}
-                          onClick={() => toggleSubject(subject.label)}
+                          onClick={() => handleSubjectToggle(subject.label)}
                           className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer group ${
                             isSelected
                               ? 'border-[#136DEC] bg-[#136DEC]/[0.06]'

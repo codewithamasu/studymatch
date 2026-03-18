@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
+import { useAuthStore } from '@/store/useAuthStore'
 
 export default function AuthCallbackPage() {
-  const { user, loading, hasProfile } = useAuth()
+  const user = useAuthStore(state => state.user)
+  const loading = useAuthStore(state => state.loading)
+  const hasProfile = useAuthStore(state => state.hasProfile)
   const navigate = useNavigate()
 
   useEffect(() => {
