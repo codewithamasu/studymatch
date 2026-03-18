@@ -106,11 +106,7 @@ export default function LoginPage() {
               Pick up right where you left off.
             </h1>
             <p className="text-lg leading-relaxed text-slate-600 font-medium">
-<<<<<<< HEAD
               Log back in to check your upcoming sessions, catch up on conversations, and continue crushing your academic goals.
-=======
-              Log back in to check your upcoming sessions, review match requests, and continue crushing your academic goals.
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
             </p>
           </div>
 

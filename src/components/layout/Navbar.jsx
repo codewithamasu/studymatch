@@ -10,10 +10,7 @@ import {
   Menu,
   MessageSquare,
   Sparkles,
-<<<<<<< HEAD
   X,
-=======
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
 } from 'lucide-react'
 
 const appNavItems = [
@@ -39,23 +36,22 @@ function cn(...classes) {
 }
 
 export default function Navbar({ mode = 'app' }) {
-  const user = useAuthStore(state => state.user)
-  const signOut = useAuthStore(state => state.signOut)
+  const user = useAuthStore((state) => state.user)
+  const signOut = useAuthStore((state) => state.signOut)
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
-<<<<<<< HEAD
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef(null)
+
   const isMarketing = mode === 'marketing'
   const isAuthenticated = !isMarketing && Boolean(user)
   const navItems = isAuthenticated ? appNavItems : marketingNavItems
+
   const closeMenus = () => {
     setMobileOpen(false)
     setProfileOpen(false)
   }
-=======
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
 
   const handleSignOut = async () => {
     closeMenus()
@@ -107,7 +103,6 @@ export default function Navbar({ mode = 'app' }) {
     )
 
   return (
-<<<<<<< HEAD
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#E7EAEE] bg-[rgba(249,249,248,0.86)] backdrop-blur-xl supports-[backdrop-filter]:bg-[rgba(249,249,248,0.78)]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex min-h-[4.5rem] items-center justify-between gap-3 sm:gap-6">
@@ -124,46 +119,29 @@ export default function Navbar({ mode = 'app' }) {
           </Link>
 
           <div className="hidden items-center gap-2 md:flex">
-            {isAuthenticated ? (
-              navItems.map((item) => {
-=======
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to={user ? '/dashboard' : '/'} className="flex items-center group">
-            <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
-          </Link>
-
-          {/* Desktop Nav */}
-          {user ? (
-            <div className="hidden md:flex items-center gap-1">
-              {navItems.map(item => {
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
-                const isActive = location.pathname === item.path
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={closeMenus}
-                    className={desktopLinkClass({ active: isActive })}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <item.icon className="h-4 w-4" />
+            {isAuthenticated
+              ? navItems.map((item) => {
+                  const isActive = location.pathname === item.path
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={closeMenus}
+                      className={desktopLinkClass({ active: isActive })}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  )
+                })
+              : navItems.map((item) => (
+                  <a key={item.href} href={item.href} onClick={closeMenus} className={desktopLinkClass()}>
                     {item.label}
-                  </Link>
-                )
-              })
-            ) : (
-              navItems.map((item) => (
-                <a key={item.href} href={item.href} onClick={closeMenus} className={desktopLinkClass()}>
-                  {item.label}
-                </a>
-              ))
-            )}
+                  </a>
+                ))}
           </div>
 
-<<<<<<< HEAD
           <div className="flex items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
               <>
@@ -245,25 +223,8 @@ export default function Navbar({ mode = 'app' }) {
                       <span>Sign Out</span>
                       <LogOut className="h-4 w-4" />
                     </button>
-=======
-          {/* Right Section */}
-          <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                <div className="hidden md:flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-text-primary">{user.full_name}</p>
-                    <p className="text-xs text-text-muted">{user.university}</p>
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold">
-                    {user.full_name?.charAt(0)}
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                    <LogOut className="w-4 h-4" />
-                  </Button>
                 </div>
-<<<<<<< HEAD
 
                 <button
                   type="button"
@@ -273,20 +234,12 @@ export default function Navbar({ mode = 'app' }) {
                     `motion-safe:transition-[color,background-color,border-color,transform] ${interactionTiming}`,
                     'hover:border-[#D4DBE3] hover:bg-white hover:text-[#136DEC]'
                   )}
-                  onClick={() => setMobileOpen(!mobileOpen)}
+                  onClick={() => setMobileOpen((open) => !open)}
                   aria-expanded={mobileOpen}
                   aria-controls="mobile-nav-panel"
                   aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
                 >
                   {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-=======
-                {/* Mobile menu button */}
-                <button
-                  className="md:hidden p-2 text-text-secondary hover:text-text-primary"
-                  onClick={() => setMobileOpen(!mobileOpen)}
-                >
-                  {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
                 </button>
               </>
             ) : (
@@ -323,7 +276,7 @@ export default function Navbar({ mode = 'app' }) {
                     `motion-safe:transition-[color,background-color,border-color] ${interactionTiming}`,
                     'hover:border-[#D4DBE3] hover:bg-white hover:text-[#136DEC]'
                   )}
-                  onClick={() => setMobileOpen(!mobileOpen)}
+                  onClick={() => setMobileOpen((open) => !open)}
                   aria-expanded={mobileOpen}
                   aria-controls="mobile-nav-panel"
                   aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
@@ -336,7 +289,6 @@ export default function Navbar({ mode = 'app' }) {
         </div>
       </div>
 
-<<<<<<< HEAD
       <div
         id="mobile-nav-panel"
         className={cn(
@@ -348,13 +300,6 @@ export default function Navbar({ mode = 'app' }) {
         <div className="space-y-2">
           {isAuthenticated && user ? (
             navItems.map((item) => {
-=======
-      {/* Mobile Menu */}
-      {user && mobileOpen && (
-        <div className="md:hidden glass border-t border-border/50 animate-in slide-in-from-top">
-          <div className="px-4 py-3 space-y-1">
-            {navItems.map(item => {
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
               const isActive = location.pathname === item.path
               return (
                 <Link

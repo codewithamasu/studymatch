@@ -1,9 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom'
-=======
-import { useAuth } from '@/context/AuthContext'
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
 import { Button } from '@/components/ui/Button'
 import {
   Heart,
@@ -28,17 +24,12 @@ import { isSupabaseConfigured } from '@/lib/supabase'
 import { fetchDiscoverCandidates, saveSwipe } from '@/lib/studymatchRealtime'
 
 export default function DiscoverPage() {
-<<<<<<< HEAD
   const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
   const [candidates, setCandidates] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [swipeError, setSwipeError] = useState('')
-=======
-  const { user } = useAuth()
-  const [candidates, setCandidates] = useState([])
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showMatch, setShowMatch] = useState(false)
   const [matchPartner, setMatchPartner] = useState(null)
@@ -52,7 +43,6 @@ export default function DiscoverPage() {
   const matchRef = useRef(null)
 
   useEffect(() => {
-<<<<<<< HEAD
     let mounted = true
 
     async function loadCandidates() {
@@ -102,16 +92,6 @@ export default function DiscoverPage() {
     return () => {
       mounted = false
     }
-=======
-    // Calculate compatibility for all mock users
-    const withScores = mockUsers.map(u => {
-      const compat = calculateCompatibility(user || mockCurrentUser, u)
-      return { ...u, compatibility: compat }
-    })
-    // Sort by compatibility
-    withScores.sort((a, b) => b.compatibility.total - a.compatibility.total)
-    setCandidates(withScores)
->>>>>>> 236c93b5e605204f03a7e668d9e79d667d56d0da
   }, [user])
 
   useEffect(() => {
