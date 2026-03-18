@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { useNavigate } from 'react-router-dom'
 import {
   Heart,
   X,
@@ -15,13 +16,15 @@ import {
   Sparkles,
   ChevronDown,
   Star,
-  CheckCircle2
+  CheckCircle2,
+  MessageCircle
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser, calculateCompatibility } from '@/data/mockData'
 import gsap from 'gsap'
 
 export default function DiscoverPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [candidates, setCandidates] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showMatch, setShowMatch] = useState(false)
@@ -330,9 +333,9 @@ export default function DiscoverPage() {
               </div>
 
               <div className="space-y-3">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => { setShowMatch(false); window.location.href = '/sessions/new' }}>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Buat Study Session
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => { setShowMatch(false); navigate(`/chat/${matchPartner.id}`) }}>
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Chatting Sekarang
                 </Button>
                 <Button variant="outline" className="w-full rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50" onClick={() => setShowMatch(false)}>
                   Lanjut Swiping

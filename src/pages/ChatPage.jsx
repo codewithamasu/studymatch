@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import gsap from 'gsap'
 import {
@@ -48,6 +49,7 @@ const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
 
 export default function ChatPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const partner = mockUsers.find(u => u.full_name === 'Alex Johnson') || mockUsers[0]
 
   const [messages, setMessages] = useState(INITIAL_MESSAGES)
@@ -208,7 +210,9 @@ export default function ChatPage() {
           <div className="sidebar-card bg-white rounded-[20px] px-5 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
             <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-3 px-1">Quick Actions</p>
             <div className="space-y-2">
-              <button className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] bg-[#1a56db] text-white shadow-md shadow-blue-200/60 hover:bg-blue-700 text-left">
+              <button 
+                onClick={() => navigate(`/sessions/new?partnerId=${partner.id}`)}
+                className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] bg-[#1a56db] text-white shadow-md shadow-blue-200/60 hover:bg-blue-700 text-left">
                 <div className="w-9 h-9 rounded-[9px] bg-white/20 flex items-center justify-center shrink-0">
                   <Calendar className="w-4 h-4" />
                 </div>
@@ -490,7 +494,9 @@ export default function ChatPage() {
 
             {/* Upcoming Session Card */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
-              <div className="card-hover rounded-[16px] border border-dashed border-[#cbd5e1] px-4 py-7 text-center cursor-pointer bg-[#fafafa] hover:border-[#93c5fd] hover:bg-[#f0f9ff] transition-colors">
+              <div 
+                onClick={() => navigate(`/sessions/new?partnerId=${partner.id}`)}
+                className="card-hover rounded-[16px] border border-dashed border-[#cbd5e1] px-4 py-7 text-center cursor-pointer bg-[#fafafa] hover:border-[#93c5fd] hover:bg-[#f0f9ff] transition-colors">
                 <div className="w-12 h-12 mx-auto rounded-[14px] bg-white border border-[#e2e8f0] flex items-center justify-center text-[#94a3b8] mb-4 shadow-sm">
                   <Calendar className="w-6 h-6" />
                 </div>
