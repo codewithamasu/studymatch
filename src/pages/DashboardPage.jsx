@@ -21,10 +21,10 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { mockStats, mockSessions, mockMatches } from '@/data/mockData'
-import { useAuth } from '@/context/AuthContext'
+import { useAuthStore } from '@/store/useAuthStore'
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const user = useAuthStore((state) => state.user)
   const stats = mockStats
   const upcomingSessions = mockSessions.filter(s => s.status === 'upcoming')
 
@@ -52,11 +52,11 @@ export default function DashboardPage() {
       suffix: ' days',
     },
     {
-      label: 'Matches',
+      label: 'Study Partners',
       value: mockMatches.length,
       icon: Users,
       color: 'from-success to-[#69F0AE]',
-      change: 'Study partners',
+      change: 'Ready to chat',
     },
   ]
 

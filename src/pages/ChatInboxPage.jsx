@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
-import { mockUsers, mockCurrentUser } from '@/data/mockData'
+import { mockUsers } from '@/data/mockData'
 import { Search, MessageCircle, CheckCheck, Clock, Sparkles, Users } from 'lucide-react'
 import gsap from 'gsap'
+import { useChatStore } from '@/store/useChatStore'
 
 // Mock conversations — in real app this'd come from Supabase
 const MOCK_CONVERSATIONS = [
@@ -45,11 +45,10 @@ const getAvatar = (name) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`
 
 export default function ChatInboxPage() {
-  const { user } = useAuth()
+  const conversations = useChatStore((state) => state.conversations)
+  const setConversations = useChatStore((state) => state.setConversations)
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [conversations, setConversations] = useState([])
-  const containerRef = useRef(null)
   const headerRef = useRef(null)
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export default function ChatInboxPage() {
       user: mockUsers.find(u => u.id === c.userId),
     })).filter(c => c.user)
     setConversations(enriched)
-  }, [])
+  }, [setConversations])
 
   // GSAP entrance
   useEffect(() => {
@@ -203,9 +202,9 @@ export default function ChatInboxPage() {
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="text-[13px] font-extrabold text-white mb-0.5">Find more study partners</p>
+            <p className="text-[13px] font-extrabold text-white mb-0.5">Keep discovering study partners</p>
             <p className="text-[12px] text-blue-200 leading-relaxed">
-              Go to <strong className="text-white">Discover</strong> to swipe and match with new partners — then start chatting here!
+              Go to <strong className="text-white">Discover</strong> to swipe on new partners, then continue the conversation here.
             </p>
           </div>
         </div>

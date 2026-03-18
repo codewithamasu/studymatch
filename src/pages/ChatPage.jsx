@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '@/context/AuthContext'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { useParams } from 'react-router-dom'
 import gsap from 'gsap'
 import {
   Calendar,
@@ -25,6 +25,8 @@ import {
   ThumbsUp,
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser } from '@/data/mockData'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useChatStore } from '@/store/useChatStore'
 
 const QUICK_REPLIES = [
   { icon: '📅', label: 'Suggest 4 PM tomorrow' },
@@ -47,15 +49,33 @@ const GOALS = [
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
 
 export default function ChatPage() {
-  const { user } = useAuth()
-  const partner = mockUsers.find(u => u.full_name === 'Alex Johnson') || mockUsers[0]
+  const { userId = '1' } = useParams()
+  const user = useAuthStore((state) => state.user)
+  const conversations = useChatStore((state) => state.conversations)
+  const messagesByConversation = useChatStore((state) => state.messagesByConversation)
+  const isTypingByConversation = useChatStore((state) => state.isTypingByConversation)
+  const reactionPickerId = useChatStore((state) => state.reactionPickerId)
+  const drafts = useChatStore((state) => state.drafts)
+  const setConversations = useChatStore((state) => state.setConversations)
+  const hydrateConversation = useChatStore((state) => state.hydrateConversation)
+  const setTyping = useChatStore((state) => state.setTyping)
+  const setReactionPickerId = useChatStore((state) => state.setReactionPickerId)
+  const setDraft = useChatStore((state) => state.setDraft)
+  const sendMessage = useChatStore((state) => state.sendMessage)
+  const receiveMessage = useChatStore((state) => state.receiveMessage)
+  const addReactionToConversation = useChatStore((state) => state.addReaction)
+  const partner =
+    mockUsers.find((candidate) => candidate.id === userId) ||
+    mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson') ||
+    mockUsers[0]
+  const messages = useMemo(
+    () => messagesByConversation[userId] || [],
+    [messagesByConversation, userId]
+  )
+  const draft = drafts[userId] || ''
+  const isTyping = Boolean(isTypingByConversation[userId])
 
-  const [messages, setMessages] = useState(INITIAL_MESSAGES)
-  const [draft, setDraft] = useState('')
   const [goals, setGoals] = useState(GOALS)
-  const [isTyping, setIsTyping] = useState(false)
-  const [reactionPickerId, setReactionPickerId] = useState(null)
-  const [highlightedMsg, setHighlightedMsg] = useState(null)
   const [inputFocused, setInputFocused] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const messagesEnd = useRef(null)
@@ -68,6 +88,31 @@ export default function ChatPage() {
   const avatar = (name) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`
   const myAvatar = avatar((user || mockCurrentUser)?.full_name || 'User')
   const partnerAvatar = avatar(partner.full_name)
+
+  useEffect(() => {
+    if (conversations.length > 0) return
+
+    const seededConversations = mockUsers.slice(0, 4).map((candidate, index) => ({
+      userId: candidate.id,
+      lastMessage: [
+        "I just finished it! I'd be happy to show you how I approached it.",
+        "Sure! Let's do Saturday evening at 7 PM. I'll share my notes.",
+        'Hey, have you started on the database ER diagram yet?',
+        'Physics problem set is harder than I thought 😅',
+      ][index],
+      lastTime: ['2:55 PM', 'Yesterday', 'Mon', 'Sun'][index],
+      unread: [2, 0, 0, 1][index],
+      online: [true, true, false, false][index],
+      subject: ['Data Structures', 'Calculus', 'Database Systems', 'Physics'][index],
+      user: candidate,
+    }))
+
+    setConversations(seededConversations)
+  }, [conversations.length, setConversations])
+
+  useEffect(() => {
+    hydrateConversation(userId, INITIAL_MESSAGES)
+  }, [hydrateConversation, userId])
 
   // GSAP mount animation
   useEffect(() => {
@@ -110,23 +155,17 @@ export default function ChatPage() {
     e?.preventDefault()
     const txt = override ?? draft
     if (!txt.trim()) return
-    setMessages(p => [...p, { id: Date.now(), from: 'me', text: txt, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), read: false, fresh: true, reactions: [] }])
-    setDraft('')
+    sendMessage(userId, txt)
     inputRef.current?.focus()
-    setTimeout(() => setIsTyping(true), 900)
+    setTimeout(() => setTyping(userId, true), 900)
     setTimeout(() => {
-      setIsTyping(false)
-      setMessages(p => [...p, { id: Date.now() + 1, from: 'partner', text: "Great idea! Let's do it. I'll DM you the details 📖", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), read: false, fresh: true, reactions: [] }])
+      setTyping(userId, false)
+      receiveMessage(userId, "Great idea! Let's do it. I'll DM you the details 📖")
     }, 2800)
   }
 
   const addReaction = (msgId, emoji) => {
-    setMessages(p => p.map(m => {
-      if (m.id !== msgId) return m
-      const hasIt = m.reactions.includes(emoji)
-      return { ...m, reactions: hasIt ? m.reactions.filter(r => r !== emoji) : [...m.reactions, emoji] }
-    }))
-    setReactionPickerId(null)
+    addReactionToConversation(userId, msgId, emoji)
   }
 
   const completedGoals = goals.filter(g => g.done).length
@@ -370,8 +409,7 @@ export default function ChatPage() {
                     <button
                       className="reaction-trigger absolute top-0 z-10 opacity-0 transition-opacity duration-150"
                       style={{ [isMe ? 'left' : 'right']: '-28px' }}
-                      onClick={() => setReactionPickerId(showReactor ? null : msg.id)}
-                      onMouseEnter={() => setHighlightedMsg(msg.id)}>
+                      onClick={() => setReactionPickerId(showReactor ? null : msg.id)}>
                       <span className="text-[16px]">😊</span>
                     </button>
 
@@ -449,7 +487,7 @@ export default function ChatPage() {
               <input
                 ref={inputRef}
                 value={draft}
-                onChange={e => setDraft(e.target.value)}
+                onChange={e => setDraft(userId, e.target.value)}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
                 placeholder="Type a message..."

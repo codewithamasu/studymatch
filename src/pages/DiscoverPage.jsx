@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '@/context/AuthContext'
+import { useState, useRef, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import {
   Heart,
@@ -19,10 +19,11 @@ import {
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser, calculateCompatibility } from '@/data/mockData'
 import gsap from 'gsap'
+import { useAuthStore } from '@/store/useAuthStore'
 
 export default function DiscoverPage() {
-  const { user } = useAuth()
-  const [candidates, setCandidates] = useState([])
+  const user = useAuthStore((state) => state.user)
+  const navigate = useNavigate()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showMatch, setShowMatch] = useState(false)
   const [matchPartner, setMatchPartner] = useState(null)
@@ -35,15 +36,13 @@ export default function DiscoverPage() {
   const cardRef = useRef(null)
   const matchRef = useRef(null)
 
-  useEffect(() => {
-    // Calculate compatibility for all mock users
-    const withScores = mockUsers.map(u => {
-      const compat = calculateCompatibility(user || mockCurrentUser, u)
-      return { ...u, compatibility: compat }
+  const candidates = useMemo(() => {
+    const withScores = mockUsers.map((candidate) => {
+      const compatibility = calculateCompatibility(user || mockCurrentUser, candidate)
+      return { ...candidate, compatibility }
     })
-    // Sort by compatibility
-    withScores.sort((a, b) => b.compatibility.total - a.compatibility.total)
-    setCandidates(withScores)
+
+    return withScores.sort((a, b) => b.compatibility.total - a.compatibility.total)
   }, [user])
 
   const currentCard = candidates[currentIndex]
@@ -213,7 +212,7 @@ export default function DiscoverPage() {
               {[
                 { label: 'Available Now', value: '148', icon: '🟢' },
                 { label: 'New Today', value: '24', icon: '✨' },
-                { label: 'Your Matches', value: swiped.filter(s => s.action === 'right' || s.action === 'up').length.toString(), icon: '💙' },
+                { label: 'Connections', value: swiped.filter(s => s.action === 'right' || s.action === 'up').length.toString(), icon: '💙' },
                 { label: 'Remaining', value: Math.max(0, candidates.length - currentIndex).toString(), icon: '📋' },
               ].map(s => (
                 <div key={s.label} className="bg-[#f8fafc] rounded-[14px] p-3 text-center">
@@ -330,9 +329,9 @@ export default function DiscoverPage() {
               </div>
 
               <div className="space-y-3">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => { setShowMatch(false); window.location.href = '/sessions/new' }}>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Buat Study Session
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => { setShowMatch(false); navigate(`/chat/${matchPartner.id}`) }}>
+                  <Heart className="w-4 h-4 mr-2 fill-white" />
+                  Kirim Pesan
                 </Button>
                 <Button variant="outline" className="w-full rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50" onClick={() => setShowMatch(false)}>
                   Lanjut Swiping
