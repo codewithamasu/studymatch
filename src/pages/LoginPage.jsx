@@ -3,11 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import navbarLogo from '../assets/navbar-logo.svg';
 import gsap from 'gsap'
-import { useAuth } from '@/context/AuthContext'
+import { useAuthStore } from '@/store/useAuthStore'
 import { formatAuthError } from '@/lib/auth'
 
 export default function LoginPage() {
-  const { signIn, signInAnonymously, signInWithGoogle } = useAuth()
+  const signIn = useAuthStore(state => state.signIn)
+  const signInAnonymously = useAuthStore(state => state.signInAnonymously)
+  const signInWithGoogle = useAuthStore(state => state.signInWithGoogle)
   const navigate = useNavigate()
   
   const pageRef = useRef(null)
@@ -104,7 +106,7 @@ export default function LoginPage() {
               Pick up right where you left off.
             </h1>
             <p className="text-lg leading-relaxed text-slate-600 font-medium">
-              Log back in to check your upcoming sessions, review match requests, and continue crushing your academic goals.
+              Log back in to check your upcoming sessions, catch up on conversations, and continue crushing your academic goals.
             </p>
           </div>
 

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { useEffect } from 'react'
+import { useAuthStore } from '@/store/useAuthStore'
 import Layout from '@/components/layout/Layout'
 import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
@@ -7,7 +8,6 @@ import RegisterPage from '@/pages/RegisterPage'
 import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import OnboardingPage from '@/pages/OnboardingPage'
 import DiscoverPage from '@/pages/DiscoverPage'
-import MatchesPage from '@/pages/MatchesPage'
 import SessionsPage from '@/pages/SessionsPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ChatPage from '@/pages/ChatPage'
@@ -15,8 +15,11 @@ import ChatInboxPage from '@/pages/ChatInboxPage'
 import JitsiMeetPage from '@/pages/JitsiMeetPage'
 
 function ProtectedRoute({ children }) {
-  const { user, loading, hasProfile } = useAuth()
+  const user = useAuthStore(state => state.user)
+  const loading = useAuthStore(state => state.loading)
+  const hasProfile = useAuthStore(state => state.hasProfile)
   const location = useLocation()
+  
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
   if (!hasProfile() && location.pathname !== '/onboarding') {
@@ -26,7 +29,10 @@ function ProtectedRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { user, loading, hasProfile } = useAuth()
+  const user = useAuthStore(state => state.user)
+  const loading = useAuthStore(state => state.loading)
+  const hasProfile = useAuthStore(state => state.hasProfile)
+  
   if (loading) return null
   if (user) return <Navigate to={hasProfile() ? '/dashboard' : '/onboarding'} replace />
   return children
@@ -35,19 +41,15 @@ function PublicRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Routes with standalone layout */}
       <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
-
-      {/* Protected Routes without global Layout */}
       <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
 
       <Route element={<Layout />}>
-        {/* Protected */}
         <Route path="/discover" element={<ProtectedRoute><DiscoverPage /></ProtectedRoute>} />
-        <Route path="/matches" element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
+        <Route path="/matches" element={<Navigate to="/chat" replace />} />
         <Route path="/sessions" element={<ProtectedRoute><SessionsPage /></ProtectedRoute>} />
         <Route path="/sessions/new" element={<ProtectedRoute><SessionsPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -63,11 +65,15 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const init = useAuthStore(state => state.init)
+
+  useEffect(() => {
+    init()
+  }, [init])
+
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <AppRoutes />
     </BrowserRouter>
   )
 }
