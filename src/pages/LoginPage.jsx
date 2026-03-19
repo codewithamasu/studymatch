@@ -6,16 +6,19 @@ import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
 import { formatAuthError } from '@/lib/auth'
 
+const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+const transitionTiming = 'duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]'
+
 export default function LoginPage() {
   const signIn = useAuthStore(state => state.signIn)
   const signInAnonymously = useAuthStore(state => state.signInAnonymously)
   const signInWithGoogle = useAuthStore(state => state.signInWithGoogle)
   const navigate = useNavigate()
-  
+
   const pageRef = useRef(null)
   const leftContentRef = useRef(null)
   const rightContentRef = useRef(null)
-  
+
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [anonLoading, setAnonLoading] = useState(false)
@@ -23,15 +26,20 @@ export default function LoginPage() {
   const [message, setMessage] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
 
-  // GSAP Polish: Smooth, non-bouncy layout entrance
   useEffect(() => {
-    const tl = gsap.timeline()
-    
-    tl.fromTo(
-      [leftContentRef.current, rightContentRef.current],
-      { y: 20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: 'power3.out' }
-    )
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined
+    }
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        [leftContentRef.current, rightContentRef.current],
+        { y: 18, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.82, stagger: 0.14, ease: 'power3.out' }
+      )
+    }, pageRef)
+
+    return () => ctx.revert()
   }, [])
 
   const handleChange = (field, value) => {
@@ -60,7 +68,7 @@ export default function LoginPage() {
     setMessage('')
 
     const { error } = await signInAnonymously()
-    
+
     if (error) {
        setAnonLoading(false)
        setMessage(formatAuthError(error))
@@ -83,81 +91,110 @@ export default function LoginPage() {
   }
 
   return (
-    // Distilled background: Solid Alice Blue, no messy gradients
-    <div ref={pageRef} className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center px-4 py-20 sm:px-6 sm:py-12 lg:px-8">
-      
-      {/* Mobile Top Navigation (only visible block on small screens) */}
+    <div
+      ref={pageRef}
+      className="min-h-screen bg-[#F7F6F3] px-4 py-20 sm:px-6 sm:py-14 lg:px-8"
+    >
+
       <div className="absolute top-6 left-6 lg:hidden">
         <Link to="/" className="flex items-center group outline-none rounded">
           <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
         </Link>
       </div>
 
-      <div className="mx-auto w-full max-w-6xl grid lg:grid-cols-2 gap-16 xl:gap-24 items-center">
-        
-        {/* Left Column: Distilled Copy & Proof */}
-        <section ref={leftContentRef} className="hidden lg:flex flex-col opacity-0">
-          <Link to="/" className="flex items-center group outline-none rounded inline-flex w-fit mb-16">
+      <div className="mx-auto flex min-h-[calc(100vh-10rem)] w-full max-w-6xl items-center">
+        <div className="grid w-full items-center gap-14 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,440px)] lg:gap-16 xl:gap-24">
+
+        <section ref={leftContentRef} className="hidden lg:flex flex-col justify-center opacity-0">
+          <Link to="/" className="mb-14 inline-flex w-fit items-center rounded outline-none group">
             <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
           </Link>
-          
-          <div className="max-w-md space-y-6">
-            <h1 className="text-4xl xl:text-5xl font-extrabold leading-[1.1] text-slate-900 tracking-tight">
-              Pick up right where you left off.
+
+          <div className="max-w-[32rem] space-y-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6B7B8D]">
+              Return to your study rhythm
+            </p>
+            <h1
+              className="text-[clamp(3rem,5vw,4.8rem)] font-semibold leading-[0.96] tracking-[-0.045em] text-[#171717]"
+              style={{ fontFamily: displayFont }}
+            >
+              Step back into the work that matters.
             </h1>
-            <p className="text-lg leading-relaxed text-slate-600 font-medium">
-              Log back in to check your upcoming sessions, catch up on conversations, and continue crushing your academic goals.
+            <p className="max-w-[29rem] text-[1.02rem] leading-8 text-[#667085]">
+              Review your next session, catch up on conversations, and keep momentum with the partners who match your pace.
             </p>
           </div>
 
-          <div className="mt-12 pt-12 border-t border-slate-200/80 max-w-sm space-y-8">
+          <div className="mt-14 grid max-w-[33rem] gap-8 border-t border-[#E7E1D6] pt-12">
             <div className="flex gap-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#136DEC]/10 text-[#136DEC]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#EDF2F7] text-[#68809A] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
                 <span className="material-symbols-outlined text-[20px]">person_check</span>
               </div>
               <div>
-                <p className="text-base font-bold text-slate-900">Dedicated Partners</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-500 font-medium">Matched strictly based on your major and availability.</p>
+                <p
+                  className="text-[1.35rem] font-medium leading-none tracking-[-0.03em] text-[#171717]"
+                  style={{ fontFamily: displayFont }}
+                >
+                  Focused study partners
+                </p>
+                <p className="mt-2 text-[0.96rem] leading-7 text-[#6C7280]">
+                  Reopen conversations with people matched to your subject, schedule, and learning style.
+                </p>
               </div>
             </div>
             <div className="flex gap-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#10B981]/10 text-[#10B981]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#EEF5F1] text-[#6A8A7A] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
                 <span className="material-symbols-outlined text-[20px]">bolt</span>
               </div>
               <div>
-                <p className="text-base font-bold text-slate-900">Seamless Workflow</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-500 font-medium">Quick, secure sign-in native to your workflow.</p>
+                <p
+                  className="text-[1.35rem] font-medium leading-none tracking-[-0.03em] text-[#171717]"
+                  style={{ fontFamily: displayFont }}
+                >
+                  A calmer way back in
+                </p>
+                <p className="mt-2 text-[0.96rem] leading-7 text-[#6C7280]">
+                  Sign in quickly, pick up your schedule, and move straight into the next session without friction.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Right Column: Distilled Form (No Wrapper Card) */}
-        <section ref={rightContentRef} className="w-full max-w-[420px] mx-auto lg:mx-0 opacity-0 mt-8 lg:mt-0">
-          
-          <div className="mb-10 text-center lg:text-left space-y-3">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <section
+          ref={rightContentRef}
+          className="mx-auto mt-8 w-full max-w-[440px] opacity-0 lg:mt-0"
+        >
+          <div className="rounded-[30px] bg-[#FBFAF7]/96 px-6 py-7 shadow-[0_24px_80px_rgba(18,26,38,0.04)] ring-1 ring-[#ECE6DB] sm:px-8 sm:py-9">
+
+          <div className="mb-10 space-y-3 text-center lg:text-left">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7A8594]">
+              Sign in
+            </p>
+            <h2
+              className="text-[2.55rem] font-semibold leading-[0.95] tracking-[-0.045em] text-[#171717] sm:text-[2.85rem]"
+              style={{ fontFamily: displayFont }}
+            >
               Welcome back
             </h2>
-            <p className="text-base font-medium text-slate-500">
-              Sign in to manage your study sessions.
+            <p className="text-[0.98rem] leading-7 text-[#6C7280]">
+              Sign in to review your sessions, messages, and study flow.
             </p>
           </div>
 
           {message && (
-            <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 flex items-start gap-3" role="alert">
+            <div className="mb-6 flex items-start gap-3 rounded-[20px] border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm font-medium text-rose-700" role="alert">
               <span className="material-symbols-outlined text-[18px] shrink-0 translate-y-[1px]">error</span>
               <p>{message}</p>
             </div>
           )}
 
           <div className="space-y-6">
-            {/* Native Clean Google Button */}
             <button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || submitting || anonLoading}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`flex h-12 w-full items-center justify-center gap-3 rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-sm font-semibold text-[#4D5968] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition-all ${transitionTiming} hover:-translate-y-px hover:border-[#D9D1C2] hover:bg-[#FEFDFC] hover:shadow-[0_12px_24px_rgba(15,23,42,0.04)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer`}
             >
               {googleLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
@@ -174,15 +211,15 @@ export default function LoginPage() {
               )}
             </button>
 
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-slate-200"></div>
-              <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">or use email</span>
-              <div className="h-px flex-1 bg-slate-200"></div>
+            <div className="flex items-center gap-4 py-1">
+              <div className="h-px flex-1 bg-[#E8E1D6]"></div>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9AA1AA]">or use email</span>
+              <div className="h-px flex-1 bg-[#E8E1D6]"></div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="login-email" className="block text-sm font-bold text-slate-700">
+                <label htmlFor="login-email" className="block text-sm font-semibold text-[#4C5663]">
                   Email Address
                 </label>
                 <input
@@ -193,17 +230,20 @@ export default function LoginPage() {
                   value={form.email}
                   onChange={event => handleChange('email', event.target.value)}
                   required
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 placeholder:text-slate-400 transition-all duration-300 focus:border-[#136DEC] focus:outline-none focus:ring-4 focus:ring-[#136DEC]/15"
+                  className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${transitionTiming} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
                 />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="login-password" className="block text-sm font-bold text-slate-700">
+                  <label htmlFor="login-password" className="block text-sm font-semibold text-[#4C5663]">
                     Password
                   </label>
-                  <a href="#" className="text-xs font-bold text-[#136DEC] hover:text-[#0f60d0] transition-colors">
-                    Forgot passing?
+                  <a
+                    href="#"
+                    className={`text-xs font-medium text-[#8A919A] transition-colors ${transitionTiming} hover:text-[#5E8FE8]`}
+                  >
+                    Forgot password?
                   </a>
                 </div>
                 <div className="relative">
@@ -215,12 +255,12 @@ export default function LoginPage() {
                     value={form.password}
                     onChange={event => handleChange('password', event.target.value)}
                     required
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pr-12 text-slate-900 placeholder:text-slate-400 transition-all duration-300 focus:border-[#136DEC] focus:outline-none focus:ring-4 focus:ring-[#136DEC]/15"
+                    className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 pr-12 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${transitionTiming} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(prev => !prev)}
-                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-slate-400 transition-colors hover:text-slate-600 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC]"
+                    className={`absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-[18px] text-[#9AA1AA] outline-none transition-colors ${transitionTiming} hover:text-[#647182] focus-visible:ring-2 focus-visible:ring-[#5E8FE8] hover:cursor-pointer`}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -231,16 +271,16 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={submitting || anonLoading || googleLoading}
-                className="group relative flex h-12 w-full mt-2 items-center justify-center overflow-hidden rounded-xl bg-[#136DEC] px-4 text-base font-bold text-white shadow-lg shadow-[#136DEC]/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#136DEC]/35 active:translate-y-0 active:shadow-md disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+                className={`group relative mt-2 flex h-12 w-full items-center justify-center overflow-hidden rounded-[20px] bg-[#145FCB] px-4 text-base font-semibold text-white shadow-[0_18px_34px_rgba(20,95,203,0.18)] transition-all ${transitionTiming} hover:-translate-y-px hover:shadow-[0_22px_44px_rgba(20,95,203,0.22)] active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 hover:cursor-pointer`}
               >
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Log In'}
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
               </button>
             </form>
 
-            <p className="mt-8 text-center text-sm font-medium text-slate-500">
+            <p className="mt-8 text-center text-sm text-[#8A919A]">
               Don't have an account?{' '}
-              <Link to="/register" className="font-bold text-[#136DEC] transition-colors hover:text-[#0f60d0]">
+              <Link to="/register" className={`font-medium text-[#677588] transition-colors ${transitionTiming} hover:text-[#145FCB]`}>
                 Sign up for free
               </Link>
             </p>
@@ -249,12 +289,14 @@ export default function LoginPage() {
               type="button"
               onClick={handleAnonSignIn}
               disabled={submitting || anonLoading || googleLoading}
-              className="mt-6 flex h-10 w-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-transparent px-4 text-xs font-semibold text-slate-500 transition-all hover:border-slate-400 hover:text-slate-600 active:bg-slate-50 disabled:opacity-50"
+              className={`mt-6 flex h-10 w-full items-center justify-center rounded-[18px] border border-dashed border-[#D8D0C4] bg-transparent px-4 text-xs font-medium text-[#8A919A] transition-all ${transitionTiming} hover:-translate-y-px hover:border-[#C9BFAF] hover:text-[#677588] active:scale-[0.98] disabled:opacity-50`}
             >
               {anonLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🚀 Lanjut sebagai Tamu (Dev Mode)'}
             </button>
           </div>
+          </div>
         </section>
+        </div>
       </div>
     </div>
   )
