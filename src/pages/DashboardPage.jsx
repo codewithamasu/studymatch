@@ -23,6 +23,8 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recha
 import { mockStats, mockSessions, mockMatches } from '@/data/mockData'
 import { useAuthStore } from '@/store/useAuthStore'
 
+const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
   const stats = mockStats
@@ -65,7 +67,10 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto">
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="font-heading text-2xl sm:text-3xl font-bold mb-1">
+          <h1
+            className="mb-1 text-2xl font-semibold tracking-[-0.05em] text-[#1A1A1A] sm:text-3xl"
+            style={{ fontFamily: displayFont }}
+          >
             Welcome back, <span className="gradient-text">{user?.full_name || 'Student'}</span> 👋
           </h1>
           <p className="text-text-muted">Siap untuk sesi belajar hari ini?</p>
@@ -203,7 +208,10 @@ export default function DashboardPage() {
         {upcomingSessions.length > 0 && (
           <div className="mt-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+              <h2
+                className="flex items-center gap-2 text-lg font-semibold tracking-[-0.04em] text-[#1A1A1A]"
+                style={{ fontFamily: displayFont }}
+              >
                 <Calendar className="w-5 h-5 text-primary-light" />
                 Upcoming Sessions
               </h2>

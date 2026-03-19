@@ -1,8 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import gsap from 'gsap'
 import {
   Calendar,
@@ -23,9 +20,6 @@ import {
   BookOpen,
   Zap,
   Plus,
-  Heart,
-  Laugh,
-  ThumbsUp,
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser } from '@/data/mockData'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -52,13 +46,55 @@ const GOALS = [
 ]
 
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
+const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+const EMPTY_MESSAGES = []
+
+function formatMessageTime(value) {
+  if (!value) return 'Now'
+
+  return new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
+
+function normalizeConversationMessages(messages = [], currentUserId) {
+  return messages.map((message, index) => ({
+    id: message.id ?? `msg-${index}`,
+    from:
+      message.from ||
+      (message.sender_profile_id && message.sender_profile_id === currentUserId ? 'me' : 'partner'),
+    text: message.text ?? message.body ?? '',
+    time: message.time ?? formatMessageTime(message.sent_at),
+    read: message.read ?? true,
+    fresh: false,
+    reactions: Array.isArray(message.reactions)
+      ? message.reactions
+      : Array.isArray(message.metadata?.reactions)
+        ? message.metadata.reactions
+        : [],
+  }))
+}
 
 export default function ChatPage() {
-  const { user } = useAuth()
+  const { userId = '' } = useParams()
+  const user = useAuthStore((state) => state.user)
+  const hydrateConversation = useChatStore((state) => state.hydrateConversation)
+  const setTyping = useChatStore((state) => state.setTyping)
+  const setReactionPickerId = useChatStore((state) => state.setReactionPickerId)
+  const setDraft = useChatStore((state) => state.setDraft)
+  const sendMessage = useChatStore((state) => state.sendMessage)
+  const addReactionToConversation = useChatStore((state) => state.addReaction)
+  const reactionPickerId = useChatStore((state) => state.reactionPickerId)
+  const messagesByConversation = useChatStore((state) => state.messagesByConversation)
+  const drafts = useChatStore((state) => state.drafts)
+  const isTypingByConversation = useChatStore((state) => state.isTypingByConversation)
   const navigate = useNavigate()
-  const partner = mockUsers.find(u => u.full_name === 'Alex Johnson') || mockUsers[0]
-
+  const [thread, setThread] = useState(null)
   const [goals, setGoals] = useState(GOALS)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [sendError, setSendError] = useState('')
   const [inputFocused, setInputFocused] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const messagesEnd = useRef(null)
@@ -67,10 +103,20 @@ export default function ChatPage() {
   const rightSidebarRef = useRef(null)
   const chatHeaderRef = useRef(null)
   const chatBodyRef = useRef(null)
+  const threadId = thread?.conversation?.id || userId
+  const messages = threadId ? messagesByConversation[threadId] || EMPTY_MESSAGES : EMPTY_MESSAGES
+  const draft = threadId ? drafts[threadId] || '' : ''
+  const isTyping = threadId ? Boolean(isTypingByConversation[threadId]) : false
+  const partner =
+    thread?.peerProfile ||
+    mockUsers.find((candidate) => candidate.id === userId) ||
+    mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson') ||
+    mockUsers[0]
+  const partnerName = partner?.full_name?.split(' ')[0] || 'Partner'
 
   const avatar = (name) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`
   const myAvatar = avatar((user || mockCurrentUser)?.full_name || 'User')
-  const partnerAvatar = avatar(partner.full_name)
+  const partnerAvatar = avatar(partner?.full_name || 'Study Partner')
 
   useEffect(() => {
     let mounted = true
@@ -96,12 +142,12 @@ export default function ChatPage() {
               bio: demoPartner.bio,
               study_profile: demoPartner.study_profile,
             },
-            messages: INITIAL_MESSAGES,
+            messages: normalizeConversationMessages(INITIAL_MESSAGES, user?.id),
           }
 
           if (!mounted) return
           setThread(demoThread)
-          hydrateConversation(userId, INITIAL_MESSAGES)
+          hydrateConversation(userId, demoThread.messages)
           return
         }
 
@@ -113,10 +159,14 @@ export default function ChatPage() {
 
         const data = await fetchConversationThread(user.id, userId)
         if (!mounted) return
-        setThread(data)
+        const normalizedMessages = normalizeConversationMessages(data.messages, user.id)
+        setThread({
+          ...data,
+          messages: normalizedMessages,
+        })
 
         if (data.conversation?.id) {
-          hydrateConversation(data.conversation.id, data.messages)
+          hydrateConversation(data.conversation.id, normalizedMessages)
         }
       } catch (error) {
         if (!mounted) return
@@ -179,15 +229,18 @@ export default function ChatPage() {
     e?.preventDefault()
     const txt = override ?? draft
     if (!txt.trim()) return
-    if (!thread?.conversation?.id || !user?.id) return
+    if (!threadId) return
+    if (isSupabaseConfigured && !user?.id) return
 
     setSendError('')
-    sendMessage(thread.conversation.id, txt)
+    sendMessage(threadId, txt)
     inputRef.current?.focus()
-    setTyping(thread.conversation.id, false)
+    setTyping(threadId, false)
 
     try {
-      await sendConversationMessage(thread.conversation.id, user.id, txt)
+      if (isSupabaseConfigured && thread?.conversation?.id) {
+        await sendConversationMessage(thread.conversation.id, user.id, txt)
+      }
     } catch (error) {
       setSendError(error?.message || 'Gagal mengirim pesan.')
     }
@@ -204,7 +257,12 @@ export default function ChatPage() {
     return (
       <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
         <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-[0px_12px_40px_rgba(0,0,0,0.08)]">
-          <h1 className="text-2xl font-bold text-[#0f172a]">Gagal memuat chat</h1>
+          <h1
+            className="text-2xl font-semibold tracking-[-0.04em] text-[#0f172a]"
+            style={{ fontFamily: displayFont }}
+          >
+            Gagal memuat chat
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-[#64748b]">{loadError}</p>
         </div>
       </div>
@@ -218,7 +276,12 @@ export default function ChatPage() {
           <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-[#eff6ff] flex items-center justify-center text-[#1a56db]">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold text-[#0f172a]">Belum ada conversation</h1>
+          <h1
+            className="text-2xl font-semibold tracking-[-0.04em] text-[#0f172a]"
+            style={{ fontFamily: displayFont }}
+          >
+            Belum ada conversation
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-[#64748b]">
             Kamu belum punya match aktif dengan partner ini. Coba swipe di Discover dulu, lalu balik ke chat.
           </p>
@@ -294,7 +357,12 @@ export default function ChatPage() {
               </div>
               <span className="online-dot absolute bottom-1.5 right-1.5 w-4 h-4 bg-[#22c55e] rounded-full border-2 border-white block" />
             </div>
-            <h2 className="text-[16px] font-extrabold text-[#0f172a] tracking-tight mb-0.5">{partner.full_name}</h2>
+            <h2
+              className="mb-0.5 text-[1.05rem] font-semibold tracking-[-0.04em] text-[#0f172a]"
+              style={{ fontFamily: displayFont }}
+            >
+              {partner.full_name}
+            </h2>
             <p className="text-[12px] text-[#64748b] font-medium mb-4">Computer Science · Year 3</p>
             <div className="flex justify-center gap-2 flex-wrap">
               {['Python', 'AI Ethics'].map(t => (
@@ -316,7 +384,7 @@ export default function ChatPage() {
           <div className="sidebar-card bg-white rounded-[20px] px-5 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
             <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-3 px-1">Quick Actions</p>
             <div className="space-y-2">
-              <button 
+              <button
                 onClick={() => navigate(`/sessions/new?partnerId=${partner.id}`)}
                 className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] bg-[#1a56db] text-white shadow-md shadow-blue-200/60 hover:bg-blue-700 text-left">
                 <div className="w-9 h-9 rounded-[9px] bg-white/20 flex items-center justify-center shrink-0">
@@ -398,8 +466,11 @@ export default function ChatPage() {
                 <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#22c55e] rounded-full border-2 border-white" />
               </div>
               <div>
-                <h1 className="text-[16px] font-extrabold text-[#0f172a] tracking-tight leading-tight">
-                  {partner.full_name.split(' ')[0]}
+                <h1
+                  className="text-[1.05rem] font-semibold tracking-[-0.04em] text-[#0f172a] leading-tight"
+                  style={{ fontFamily: displayFont }}
+                >
+                  {partnerName}
                 </h1>
                 <p className="text-[12px] text-[#22c55e] font-semibold">Online now</p>
               </div>
@@ -441,9 +512,14 @@ export default function ChatPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-[22px] font-black text-[#1a56db] tracking-tight mb-3 mt-4">It's a Study Match! 🎉</p>
+                  <p
+                    className="mb-3 mt-4 text-[1.7rem] font-semibold tracking-[-0.05em] text-[#1a56db]"
+                    style={{ fontFamily: displayFont }}
+                  >
+                    It's a Study Match! 🎉
+                  </p>
                   <p className="text-[13px] text-[#475569] leading-relaxed mb-5">
-                    You and <strong className="text-[#0f172a]">{partner.full_name.split(' ')[0]}</strong> both want to study Computer Science this week. Start the conversation to ace your exams together!
+                    You and <strong className="text-[#0f172a]">{partnerName}</strong> both want to study Computer Science this week. Start the conversation to ace your exams together!
                   </p>
                   <div className="inline-flex items-center gap-2 bg-[#f0f9ff] text-[#0284c7] text-[11px] font-bold px-4 py-2 rounded-full border border-[#bae6fd]">
                     <Clock className="w-3.5 h-3.5" />
@@ -560,7 +636,9 @@ export default function ChatPage() {
                 value={draft}
                 onChange={e => {
                   setSendError('')
-                  setDraft(threadId, e.target.value)
+                  if (threadId) {
+                    setDraft(threadId, e.target.value)
+                  }
                 }}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
@@ -602,7 +680,7 @@ export default function ChatPage() {
 
             {/* Upcoming Session Card */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
-              <div 
+              <div
                 onClick={() => navigate(`/sessions/new?partnerId=${partner.id}`)}
                 className="card-hover rounded-[16px] border border-dashed border-[#cbd5e1] px-4 py-7 text-center cursor-pointer bg-[#fafafa] hover:border-[#93c5fd] hover:bg-[#f0f9ff] transition-colors">
                 <div className="w-12 h-12 mx-auto rounded-[14px] bg-white border border-[#e2e8f0] flex items-center justify-center text-[#94a3b8] mb-4 shadow-sm">

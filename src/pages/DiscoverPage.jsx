@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
-import { useNavigate } from 'react-router-dom'
 import {
   Heart,
   X,
@@ -25,6 +24,8 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { fetchDiscoverCandidates, saveSwipe } from '@/lib/studymatchRealtime'
 
+const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
 export default function DiscoverPage() {
   const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
@@ -36,11 +37,11 @@ export default function DiscoverPage() {
   const [showMatch, setShowMatch] = useState(false)
   const [matchPartner, setMatchPartner] = useState(null)
   const [swiped, setSwiped] = useState([])
-  
+
   // Filter states
   const [skillLevel, setSkillLevel] = useState('Beginner')
   const [studyMode, setStudyMode] = useState('Online')
-  
+
   const cardRef = useRef(null)
   const matchRef = useRef(null)
 
@@ -190,7 +191,12 @@ export default function DiscoverPage() {
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#dbeafe] border-t-[#1a56db]" />
-          <h2 className="text-xl font-bold text-gray-900">Loading candidates</h2>
+          <h2
+            className="text-xl font-semibold tracking-[-0.04em] text-gray-900"
+            style={{ fontFamily: displayFont }}
+          >
+            Loading candidates
+          </h2>
           <p className="mt-2 text-sm text-gray-500">Mengambil partner studi dari Supabase.</p>
         </div>
       </div>
@@ -201,7 +207,12 @@ export default function DiscoverPage() {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
         <div className="text-center max-w-sm">
-          <h2 className="text-xl font-bold text-gray-900">Gagal memuat Discover</h2>
+          <h2
+            className="text-xl font-semibold tracking-[-0.04em] text-gray-900"
+            style={{ fontFamily: displayFont }}
+          >
+            Gagal memuat Discover
+          </h2>
           <p className="mt-2 text-sm text-gray-500">{loadError}</p>
         </div>
       </div>
@@ -215,7 +226,12 @@ export default function DiscoverPage() {
           <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mx-auto mb-6">
             <Users className="w-10 h-10 text-gray-400" />
           </div>
-          <h2 className="font-heading text-2xl font-bold mb-2 text-gray-900">Semua Profil Dilihat!</h2>
+          <h2
+            className="mb-2 text-2xl font-semibold tracking-[-0.045em] text-gray-900"
+            style={{ fontFamily: displayFont }}
+          >
+            Semua Profil Dilihat!
+          </h2>
           <p className="text-gray-500 mb-6">Kamu sudah melihat semua kandidat partner belajar.</p>
           <Button onClick={() => { setCurrentIndex(0); setSwiped([]) }}>
             <RotateCcw className="w-4 h-4 mr-2" />
@@ -258,7 +274,7 @@ export default function DiscoverPage() {
       </div>
 
       <div className="flex-1 w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-6 xl:gap-10 px-4 pb-12 relative z-10 pt-4">
-        
+
         {/* ── LEFT: Filters Sidebar ── */}
         <div className="w-full lg:w-[280px] xl:w-[300px] shrink-0">
           <div className="bg-white rounded-[24px] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] sticky top-[100px] border border-gray-100">
@@ -354,7 +370,10 @@ export default function DiscoverPage() {
 
                   <div className="p-6 relative bg-white pb-14">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-2xl font-bold text-gray-900">
+                      <h2
+                        className="text-2xl font-semibold tracking-[-0.045em] text-gray-900"
+                        style={{ fontFamily: displayFont }}
+                      >
                         {currentCard.full_name.split(' ')[0]}, 21
                       </h2>
                       <div className="flex items-center text-blue-600 text-sm font-medium">
@@ -412,7 +431,10 @@ export default function DiscoverPage() {
           <div ref={matchRef} className="w-full max-w-sm text-center bg-white rounded-3xl overflow-hidden shadow-2xl relative">
             <div className="p-8">
               <div className="text-6xl mb-4 animate-bounce shrink-0">🎉</div>
-              <h2 className="text-3xl font-bold mb-2 text-gray-900">
+              <h2
+                className="mb-2 text-3xl font-semibold tracking-[-0.05em] text-gray-900"
+                style={{ fontFamily: displayFont }}
+              >
                  It's a Study Match!
               </h2>
               <p className="text-gray-500 mb-6">
@@ -420,18 +442,18 @@ export default function DiscoverPage() {
               </p>
 
               <div className="flex items-center justify-center gap-4 mb-8">
-                <img 
-                   src={getAvatarUrl((user || mockCurrentUser).full_name)} 
-                   className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-blue-50" 
-                   alt="You" 
+                <img
+                   src={getAvatarUrl((user || mockCurrentUser).full_name)}
+                   className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-blue-50"
+                   alt="You"
                 />
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center -mx-4 z-10 shrink-0">
                   <Heart className="w-5 h-5 text-blue-600 fill-blue-600" />
                 </div>
-                <img 
-                   src={getAvatarUrl(matchPartner.full_name)} 
-                   className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-indigo-50" 
-                   alt={matchPartner.full_name} 
+                <img
+                   src={getAvatarUrl(matchPartner.full_name)}
+                   className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-indigo-50"
+                   alt={matchPartner.full_name}
                 />
               </div>
 
