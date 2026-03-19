@@ -1,22 +1,23 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { JitsiMeeting } from '@jitsi/react-sdk'
-import { useAuth } from '@/context/AuthContext'
+import { useAuthStore } from '@/store/useAuthStore'
 import { ArrowLeft } from 'lucide-react'
 
 export default function JitsiMeetPage() {
   const { roomId } = useParams()
-  const { user } = useAuth()
+  const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
 
-  const handleApiReady = (externalApi) => {
+  const handleApiReady = () => {
     // We can attach event listeners here if needed
     // e.g. externalApi.addListener('videoConferenceLeft', () => navigate('/dashboard'))
   }
 
   const generatedRoomName = `studymatch-${roomId}`
+  const jitsiDomain = import.meta.env.VITE_JITSI_DOMAIN || 'meet.jit.si'
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#0F172A]">
       {/* Header bar */}
       <div className="h-16 shrink-0 bg-[#1e293b]/90 backdrop-blur-md flex items-center px-4 md:px-6 justify-between border-b border-slate-700 shadow-sm">
         <div className="flex items-center gap-4">
@@ -34,16 +35,17 @@ export default function JitsiMeetPage() {
       </div>
 
       {/* Jitsi SDK wrapper */}
-      <div className="flex-1 w-full bg-[#0F172A] relative overflow-hidden">
+      <div className="relative flex-1 w-full overflow-hidden bg-[#0F172A]">
         <JitsiMeeting
-          domain="meet.ffmuc.net"
+          domain={jitsiDomain}
           roomName={generatedRoomName}
           configOverwrite={{
             startWithAudioMuted: false,
             disableModeratorIndicator: true,
             startScreenSharing: true,
             enableEmailInStats: false,
-            prejoinPageEnabled: false, 
+            prejoinPageEnabled: false,
+            disableDeepLinking: true,
           }}
           interfaceConfigOverwrite={{
             DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
@@ -54,10 +56,20 @@ export default function JitsiMeetPage() {
             email: user?.email || '',
           }}
           onApiReady={handleApiReady}
+          spinner={() => (
+            <div className="flex h-full w-full items-center justify-center bg-[#0F172A] text-slate-200">
+              <div className="text-center">
+                <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-600 border-t-white" />
+                <p className="text-sm font-medium">Loading meeting room...</p>
+              </div>
+            </div>
+          )}
           getIFrameRef={(iframeRef) => {
             iframeRef.style.height = '100%';
             iframeRef.style.width = '100%';
             iframeRef.style.border = 'none';
+            iframeRef.style.position = 'absolute';
+            iframeRef.style.inset = '0';
           }}
         />
       </div>

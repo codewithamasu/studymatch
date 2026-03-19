@@ -1,42 +1,73 @@
-import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import gsap from 'gsap'
 import {
-  LayoutDashboard,
-  PlusCircle,
   Calendar,
-  MessageSquare,
+  CheckCircle,
   ChevronDown,
   Clock,
-  Video,
-  MapPin,
-  Info,
   Link as LinkIcon,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
-  MoreVertical
+  MapPin,
+  PlusCircle,
+  Sparkles,
+  Video,
 } from 'lucide-react'
-import { mockSessions, mockUsers, mockMatches } from '@/data/mockData'
+import { mockMatches, mockSessions, mockUsers } from '@/data/mockData'
 
 let localSessions = [...mockSessions]
 
-// --- Mock Data & Constants ---
 const SUBJECTS = [
-  'Calculus', 'Linear Algebra', 'Data Structures', 'Algorithms',
-  'Statistics', 'Physics', 'Web Development', 'Machine Learning',
+  'Calculus',
+  'Linear Algebra',
+  'Data Structures',
+  'Algorithms',
+  'Statistics',
+  'Physics',
+  'Web Development',
+  'Machine Learning',
 ]
 
 const DURATIONS = [
-  { label: '45 min', value: 45 },
-  { label: '90 min', value: 90 },
-  { label: '2 hours', value: 120 },
-  { label: '3 hours', value: 180 },
+  { label: '45 min', value: 45, note: 'Quick check-in' },
+  { label: '90 min', value: 90, note: 'Deep focus' },
+  { label: '2 hours', value: 120, note: 'Problem solving' },
+  { label: '3 hours', value: 180, note: 'Long review' },
 ]
+
+const LOCATION_PRESETS = ['Campus Library', 'Quiet Study Hall', 'Student Cafe']
+
+const transitionTiming = 'duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]'
+const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
+function createRoomId() {
+  return `study-session-${Math.random().toString(36).slice(2, 9)}`
+}
+
+function formatScheduleDate(dateString) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function formatScheduleTime(dateString) {
+  return new Date(dateString).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(' ')
+}
 
 export default function SessionsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  
+  const pageRef = useRef(null)
+  const conditionalBlockRef = useRef(null)
+
   const searchParams = new URLSearchParams(location.search)
   const initialPartnerId = searchParams.get('partnerId') || ''
   const isNewSession = location.pathname === '/sessions/new'
@@ -50,299 +81,680 @@ export default function SessionsPage() {
     mode: 'online',
     location: '',
   })
-
   const [generatedLink, setGeneratedLink] = useState('')
-
+  const [copyFeedback, setCopyFeedback] = useState('')
   const [sessions, setSessions] = useState(localSessions)
+  const appOrigin = typeof window === 'undefined' ? '' : window.location.origin
 
-  const handleGenerateLink = (e) => {
-    e.preventDefault()
-    const roomId = 'study-session-' + Math.random().toString(36).substring(7)
-    setGeneratedLink(`/meet/${roomId}`)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!pageRef.current) return
+
+    const elements = pageRef.current.querySelectorAll('[data-session-reveal]')
+    gsap.fromTo(
+      elements,
+      { y: 18, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.72,
+        stagger: 0.08,
+        ease: 'power3.out',
+      }
+    )
+  }, [isNewSession])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!conditionalBlockRef.current) return
+
+    gsap.fromTo(
+      conditionalBlockRef.current,
+      { y: 12, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.42, ease: 'power3.out' }
+    )
+  }, [sessionForm.mode, generatedLink])
+
+  const updateFormField = (field, value) => {
+    setSessionForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === 'mode' && value === 'online' ? { location: '' } : {}),
+    }))
+
+    if (field !== 'mode') return
+
+    setCopyFeedback('')
+    if (value === 'offline') {
+      setGeneratedLink('')
+    }
   }
 
-  const handleCreateSession = (e) => {
-    e.preventDefault()
-    
-    // Create new session mock
-    const selectedPartner = mockMatches.find(m => m.partner.id === sessionForm.partnerId)?.partner || mockUsers[0]
-    
+  const handleGenerateLink = () => {
+    const roomId = createRoomId()
+    setGeneratedLink(`/meet/${roomId}`)
+    setCopyFeedback('')
+  }
+
+  const handleCopyLink = async () => {
+    if (!generatedLink) return
+
+    const fullLink = `${appOrigin}${generatedLink}`
+    try {
+      await navigator.clipboard.writeText(fullLink)
+      setCopyFeedback('Meeting link copied')
+    } catch {
+      setCopyFeedback('Unable to copy link')
+    }
+  }
+
+  const handleCreateSession = (event) => {
+    event.preventDefault()
+
+    const selectedPartner =
+      mockMatches.find((match) => match.partner.id === sessionForm.partnerId)?.partner || mockUsers[0]
+
+    const resolvedRoomId =
+      sessionForm.mode === 'online'
+        ? (generatedLink.replace('/meet/', '') || createRoomId())
+        : null
+
     const newSession = {
-      id: 's_' + Date.now(),
+      id: `s_${Date.now()}`,
       partner: selectedPartner,
       subject: sessionForm.subject || 'Study Session',
       scheduled_at: `${sessionForm.date || new Date().toISOString().split('T')[0]}T${sessionForm.time || '12:00'}:00Z`,
       duration_minutes: sessionForm.duration,
       mode: sessionForm.mode,
-      meeting_room_id: generatedLink ? generatedLink.replace('/meet/', '') : null,
-      location: sessionForm.location,
-      status: 'upcoming'
+      meeting_room_id: resolvedRoomId,
+      location: sessionForm.mode === 'offline' ? sessionForm.location : '',
+      status: 'upcoming',
     }
-    
+
     localSessions = [newSession, ...localSessions]
     setSessions(localSessions)
     navigate('/sessions')
   }
 
   const handleMarkAsDone = (id) => {
-    // Stage 1: Mark as pending confirmation from partner
-    const updated = localSessions.map(s => s.id === id ? { ...s, status: 'pending_confirmation' } : s)
+    const updated = localSessions.map((session) =>
+      session.id === id ? { ...session, status: 'pending_confirmation' } : session
+    )
     localSessions = updated
     setSessions(updated)
 
-    // Stage 2: Simulate partner accepting after 3 seconds
     setTimeout(() => {
-      const confirmed = localSessions.map(s => s.id === id ? { ...s, status: 'completed' } : s)
+      const confirmed = localSessions.map((session) =>
+        session.id === id ? { ...session, status: 'completed' } : session
+      )
       localSessions = confirmed
       setSessions(confirmed)
     }, 3000)
   }
 
-  // Derived arrays for "My Schedule" view
-  const upcomingSessions = sessions.filter(s => s.status === 'upcoming' || s.status === 'pending_confirmation')
-  const completedSessions = sessions.filter(s => s.status === 'completed')
+  const upcomingSessions = sessions.filter(
+    (session) => session.status === 'upcoming' || session.status === 'pending_confirmation'
+  )
+  const completedSessions = sessions.filter((session) => session.status === 'completed')
+
+  const selectedPartner = mockMatches.find((match) => match.partner.id === sessionForm.partnerId)?.partner
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex pt-8 pb-12 px-4 md:px-8 xl:px-12 font-sans text-slate-900 border-t border-slate-200/50">
-      <div className="max-w-[1240px] mx-auto w-full flex flex-col lg:flex-row gap-8 xl:gap-14">
-        
-        {/* ── LEFT SIDEBAR ── */}
-        <aside className="hidden lg:flex flex-col w-[220px] shrink-0 pt-4">
-          <nav className="space-y-2">
-            <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-medium">
-              <LayoutDashboard className="w-5 h-5" />
-              <span>Dashboard</span>
+    <div className="min-h-screen border-t border-[#ECEDE8] bg-[#F9F9F8] text-[#1A1A1A]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] overflow-hidden">
+        <div className="absolute left-[8%] top-16 h-56 w-56 rounded-full bg-[#DDEBFF] blur-[86px] opacity-70" />
+        <div className="absolute right-[12%] top-20 h-48 w-48 rounded-full bg-[#F5E8D8] blur-[90px] opacity-80" />
+      </div>
+
+      <div
+        ref={pageRef}
+        className="relative mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-4 pb-16 pt-8 sm:px-6 lg:flex-row lg:gap-12 lg:px-8"
+      >
+        <nav data-session-reveal className="lg:hidden">
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            <Link
+              to="/sessions/new"
+              className={cn(
+                'inline-flex min-h-12 items-center gap-2 rounded-[20px] px-5 py-3 text-sm font-semibold tracking-tight shadow-[0_16px_32px_rgba(19,109,236,0.16)]',
+                `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming}`,
+                isNewSession
+                  ? 'bg-[#136DEC] text-white hover:-translate-y-[1px] hover:bg-[#0F60D0]'
+                  : 'bg-[#EEF4FF] text-[#136DEC] hover:-translate-y-[1px] hover:bg-[#E4EEFF]'
+              )}
+            >
+              <PlusCircle className="h-4 w-4" />
+              New Session
             </Link>
-            <Link to="/sessions/new" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${isNewSession ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
-              <PlusCircle className="w-5 h-5" />
-              <span>New Session</span>
+            <Link
+              to="/sessions"
+              className={cn(
+                'inline-flex min-h-12 items-center gap-2 rounded-[20px] px-5 py-3 text-sm font-semibold tracking-tight',
+                `motion-safe:transition-[transform,background-color,color,box-shadow] ${transitionTiming}`,
+                !isNewSession
+                  ? 'bg-white text-[#1A1A1A] shadow-[0_14px_28px_rgba(33,43,54,0.05)] hover:-translate-y-[1px]'
+                  : 'bg-[rgba(255,255,255,0.8)] text-[#626B76] hover:-translate-y-[1px] hover:bg-white'
+              )}
+            >
+              <Calendar className="h-4 w-4" />
+              My Schedule
             </Link>
-            <Link to="/sessions" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${!isNewSession ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
-              <Calendar className="w-5 h-5" />
-              <span>My Schedule</span>
-            </Link>
-            <Link to="/chat" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-medium">
-              <MessageSquare className="w-5 h-5" />
-              <span>Messages</span>
-            </Link>
-          </nav>
+          </div>
+        </nav>
+
+        <aside data-session-reveal className="hidden w-[220px] shrink-0 lg:block">
+          <div className="sticky top-28">
+            <div className="mb-8 space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8A93A0]">
+                Session Flow
+              </p>
+              <h2
+                className="text-[1.55rem] font-semibold tracking-[-0.04em] text-[#1A1A1A]"
+                style={{ fontFamily: displayFont }}
+              >
+                Keep it focused.
+              </h2>
+              <p className="max-w-[16rem] text-sm leading-6 text-[#626B76]">
+                Two clear routes only: start a new study block or review what is already on your calendar.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Link
+                to="/sessions/new"
+                className={cn(
+                  'flex min-h-[58px] items-center gap-3 rounded-[24px] px-5 py-4 text-sm font-semibold tracking-tight',
+                  `motion-safe:transition-[transform,background-color,box-shadow,color] ${transitionTiming}`,
+                  isNewSession
+                    ? 'bg-[#136DEC] text-white shadow-[0_18px_34px_rgba(19,109,236,0.22)] hover:-translate-y-[1px] hover:bg-[#0F60D0]'
+                    : 'bg-white text-[#1A1A1A] shadow-[0_16px_30px_rgba(33,43,54,0.04)] hover:-translate-y-[1px]'
+                )}
+              >
+                <PlusCircle className="h-4 w-4" />
+                New Session
+              </Link>
+
+              <Link
+                to="/sessions"
+                className={cn(
+                  'flex min-h-[56px] items-center gap-3 rounded-[24px] px-5 py-4 text-sm font-semibold tracking-tight',
+                  `motion-safe:transition-[transform,background-color,box-shadow,color] ${transitionTiming}`,
+                  !isNewSession
+                    ? 'bg-white text-[#1A1A1A] shadow-[0_16px_30px_rgba(33,43,54,0.04)] hover:-translate-y-[1px]'
+                    : 'text-[#626B76] hover:-translate-y-[1px] hover:bg-white/72'
+                )}
+              >
+                <Calendar className="h-4 w-4" />
+                My Schedule
+              </Link>
+            </div>
+          </div>
         </aside>
 
-        {/* ── MAIN CONTENT ── */}
-        <div className="flex-1 max-w-[580px]">
-          
+        <main className="min-w-0 flex-1">
           {isNewSession ? (
-            /* ── NEW SESSION FORM ── */
-            <div className="bg-white rounded-[28px] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-slate-100">
-              <div className="mb-8">
-                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Schedule Session</h1>
-                <p className="text-sm text-slate-500 font-medium">Find your study squad and stay focused.</p>
-              </div>
+            <div className="mx-auto w-full max-w-[840px]">
+              <header data-session-reveal className="max-w-[42rem]">
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8A93A0]">
+                  Focused Planning
+                </p>
+                <h1
+                  className="max-w-[12ch] text-[clamp(2.35rem,5vw,4.35rem)] font-semibold leading-[0.94] tracking-[-0.055em] text-[#1A1A1A]"
+                  style={{ fontFamily: displayFont }}
+                >
+                  Schedule a session that actually feels intentional.
+                </h1>
+                <p className="mt-5 max-w-[34rem] text-[15px] leading-7 text-[#626B76] sm:text-base">
+                  Strip it down to the essentials. Choose the topic, lock the timing, then decide whether this
+                  should happen in a room or through a call.
+                </p>
+              </header>
 
-              <form className="space-y-7" onSubmit={handleCreateSession}>
-                {/* Partner Selection */}
-                <div className="space-y-2.5">
-                  <label className="text-[13px] font-bold text-slate-700">Study Partner</label>
-                  <div className="relative">
-                    <select
-                      className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer"
-                      value={sessionForm.partnerId}
-                      onChange={(e) => setSessionForm({ ...sessionForm, partnerId: e.target.value })}
-                      required
-                    >
-                      <option value="" disabled>Select a partner...</option>
-                      {mockMatches.map((match) => (
-                        <option key={match.partner.id} value={match.partner.id}>{match.partner.full_name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-
-                {/* Subject */}
-                <div className="space-y-2.5">
-                  <label className="text-[13px] font-bold text-slate-700">Subject</label>
-                  <div className="relative">
-                    <select
-                      className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer"
-                      value={sessionForm.subject}
-                      onChange={(e) => setSessionForm({ ...sessionForm, subject: e.target.value })}
-                    >
-                      <option value="" disabled>Select a subject...</option>
-                      {SUBJECTS.map((sub) => (
-                        <option key={sub} value={sub}>{sub}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-
-                {/* Date & Time */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2.5">
-                    <label className="text-[13px] font-bold text-slate-700">Date</label>
-                    <div className="relative">
-                      <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-10 py-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} />
-                      <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none bg-slate-50" />
-                    </div>
-                  </div>
-                  <div className="space-y-2.5">
-                    <label className="text-[13px] font-bold text-slate-700">Start Time</label>
-                    <div className="relative">
-                      <input type="time" className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-10 py-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none" value={sessionForm.time} onChange={(e) => setSessionForm({ ...sessionForm, time: e.target.value })} />
-                      <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none bg-slate-50" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Session Duration */}
-                <div className="space-y-2.5">
-                  <label className="text-[13px] font-bold text-slate-700">Session Duration</label>
-                  <div className="flex flex-wrap gap-2">
-                    {DURATIONS.map((dur) => (
-                      <button key={dur.value} type="button" onClick={() => setSessionForm({ ...sessionForm, duration: dur.value })} className={`px-5 py-2.5 rounded-full text-[13px] font-bold transition-all ${sessionForm.duration === dur.value ? 'bg-blue-50 text-blue-600 border border-blue-600 ring-2 ring-blue-600/10' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50' }`}>
-                        {dur.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Study Mode */}
-                <div className="space-y-2.5">
-                  <label className="text-[13px] font-bold text-slate-700">Study Mode</label>
-                  <div className="flex p-1 bg-slate-50 rounded-2xl border border-slate-100">
-                    <button type="button" onClick={() => setSessionForm({ ...sessionForm, mode: 'online' })} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${sessionForm.mode === 'online' ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.04)]' : 'text-slate-500 hover:text-slate-700' }`}>
-                      <Video className="w-4 h-4" /> Online
-                    </button>
-                    <button type="button" onClick={() => setSessionForm({ ...sessionForm, mode: 'offline' })} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${sessionForm.mode === 'offline' ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.04)]' : 'text-slate-500 hover:text-slate-700' }`}>
-                      <MapPin className="w-4 h-4" /> Offline
-                    </button>
-                  </div>
-                </div>
-
-                {/* Conditional fields */}
-                {sessionForm.mode === 'online' && (
-                  <div className="bg-[#F8FAFC] rounded-2xl p-5 border border-blue-100/50">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-100/50 flex items-center justify-center shrink-0">
-                        <Video className="w-5 h-5 text-blue-600" />
-                      </div>
+              <form
+                data-session-reveal
+                className="mt-10 rounded-[34px] bg-[rgba(255,255,255,0.82)] px-6 py-7 shadow-[0_30px_80px_rgba(28,38,52,0.04)] ring-1 ring-white/70 backdrop-blur-sm sm:px-8 sm:py-9 lg:px-10 lg:py-10"
+                onSubmit={handleCreateSession}
+              >
+                <section className="pb-10">
+                  <div className="flex flex-col gap-8">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900">Meeting Link</h4>
-                        <p className="text-[13px] text-slate-500 mt-0.5 leading-relaxed">Generate a unique link for your study group.</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">
+                          Session Context
+                        </p>
+                        <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#1A1A1A]">
+                          Who are you setting this up with?
+                        </h2>
                       </div>
+                      {selectedPartner && (
+                        <div className="inline-flex min-h-11 items-center rounded-full bg-[#EEF4FF] px-4 py-2 text-sm font-medium text-[#136DEC]">
+                          With {selectedPartner.full_name}
+                        </div>
+                      )}
                     </div>
-                    {generatedLink ? (
-                      <div className="bg-white border-2 border-dashed border-blue-200 rounded-xl px-4 py-3 flex items-center justify-between text-sm break-all font-mono font-medium text-slate-600">
-                        jitsi.meet{generatedLink}
-                        <button type="button" onClick={() => { navigator.clipboard.writeText(generatedLink); }} className="text-blue-600 font-bold shrink-0 ml-4 hover:underline">Copy</button>
+
+                    <label className="block">
+                      <span className="mb-3 block text-sm font-semibold tracking-tight text-[#374151]">
+                        Study Partner
+                      </span>
+                      <div className="relative">
+                        <select
+                          value={sessionForm.partnerId}
+                          onChange={(event) => updateFormField('partnerId', event.target.value)}
+                          required
+                          className="h-[52px] w-full appearance-none rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
+                        >
+                          <option value="" disabled>
+                            Select a study partner
+                          </option>
+                          {mockMatches.map((match) => (
+                            <option key={match.partner.id} value={match.partner.id}>
+                              {match.partner.full_name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A93A0]" />
                       </div>
-                    ) : (
-                      <button onClick={handleGenerateLink} type="button" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-bold py-3.5 rounded-xl text-sm shadow-sm">
-                        <LinkIcon className="w-4 h-4" /> Generate Meeting Link
-                      </button>
-                    )}
+                    </label>
                   </div>
-                )}
-                {sessionForm.mode === 'offline' && (
-                  <div className="space-y-2.5">
-                    <label className="text-[13px] font-bold text-slate-700">Preferred Location</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {['Campus Library', 'Student Cafe'].map(loc => (
-                        <button key={loc} type="button" onClick={() => setSessionForm({ ...sessionForm, location: loc })} className={`flex items-center gap-2 px-4 py-3.5 rounded-xl border text-sm font-bold transition-all ${sessionForm.location === loc ? 'bg-blue-50 border-blue-600 text-blue-700 ring-2 ring-blue-600/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300' }`}>
-                          {loc.includes('Cafe') ? <Clock className="w-4 h-4 shrink-0" /> : <MapPin className="w-4 h-4 shrink-0" />} {loc}
+                </section>
+
+                <div className="h-px bg-[#ECEEEA]" />
+
+                <section className="py-10">
+                  <div className="space-y-9">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">
+                        Step 1
+                      </p>
+                      <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#1A1A1A]">Start with the topic.</h2>
+                    </div>
+
+                    <label className="block">
+                      <span className="mb-3 block text-sm font-semibold tracking-tight text-[#374151]">Subject</span>
+                      <div className="relative">
+                        <select
+                          value={sessionForm.subject}
+                          onChange={(event) => updateFormField('subject', event.target.value)}
+                          className="h-[52px] w-full appearance-none rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
+                        >
+                          <option value="" disabled>
+                            Choose the subject you want to focus on
+                          </option>
+                          {SUBJECTS.map((subject) => (
+                            <option key={subject} value={subject}>
+                              {subject}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A93A0]" />
+                      </div>
+                    </label>
+                  </div>
+                </section>
+
+                <div className="h-px bg-[#ECEEEA]" />
+
+                <section className="py-10">
+                  <div className="space-y-9">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">
+                        Step 2
+                      </p>
+                      <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#1A1A1A]">Pair the date with a clean start time.</h2>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-3 block text-sm font-semibold tracking-tight text-[#374151]">Date</span>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            value={sessionForm.date}
+                            onChange={(event) => updateFormField('date', event.target.value)}
+                            className="h-[52px] w-full rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
+                          />
+                          <Calendar className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A93A0]" />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-3 block text-sm font-semibold tracking-tight text-[#374151]">Start Time</span>
+                        <div className="relative">
+                          <input
+                            type="time"
+                            value={sessionForm.time}
+                            onChange={(event) => updateFormField('time', event.target.value)}
+                            className="h-[52px] w-full rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
+                          />
+                          <Clock className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A93A0]" />
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="h-px bg-[#ECEEEA]" />
+
+                <section className="py-10">
+                  <div className="space-y-9">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">
+                        Step 3
+                      </p>
+                      <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#1A1A1A]">Pick the study tempo.</h2>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      {DURATIONS.map((duration) => (
+                        <button
+                          key={duration.value}
+                          type="button"
+                          onClick={() => updateFormField('duration', duration.value)}
+                          className={cn(
+                            'min-h-[58px] min-w-[132px] rounded-[22px] px-4 py-3 text-left shadow-[0_10px_24px_rgba(29,42,58,0.03)]',
+                            `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${transitionTiming} active:scale-[0.98]`,
+                            sessionForm.duration === duration.value
+                              ? 'bg-[#136DEC] text-white hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_18px_30px_rgba(19,109,236,0.2)]'
+                              : 'bg-[#FCFCFB] text-[#374151] ring-1 ring-[#E9ECEF] hover:-translate-y-[1px] hover:bg-white hover:shadow-[0_16px_30px_rgba(29,42,58,0.05)]'
+                          )}
+                        >
+                          <span className="block text-sm font-semibold tracking-tight">{duration.label}</span>
+                          <span
+                            className={cn(
+                              'mt-1 block text-[12px]',
+                              sessionForm.duration === duration.value ? 'text-white/78' : 'text-[#8A93A0]'
+                            )}
+                          >
+                            {duration.note}
+                          </span>
                         </button>
                       ))}
                     </div>
-                    <input type="text" placeholder="Or type a custom location..." className="w-full mt-2 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" value={sessionForm.location} onChange={(e) => setSessionForm({...sessionForm, location: e.target.value})} />
                   </div>
-                )}
+                </section>
 
-                {/* Actions */}
-                <div className="flex items-center gap-3 pt-4">
-                  <button type="submit" className="flex-[2] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-md shadow-blue-600/20 active:scale-[0.98]">
+                <div className="h-px bg-[#ECEEEA]" />
+
+                <section className="py-10">
+                  <div className="space-y-9">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">
+                        Step 4
+                      </p>
+                      <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#1A1A1A]">Choose where this energy should happen.</h2>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => updateFormField('mode', 'online')}
+                        className={cn(
+                          'rounded-[26px] px-5 py-5 text-left shadow-[0_14px_28px_rgba(29,42,58,0.03)]',
+                          `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${transitionTiming} active:scale-[0.98]`,
+                          sessionForm.mode === 'online'
+                            ? 'bg-[#EEF4FF] text-[#1A1A1A] ring-1 ring-[#136DEC]/14 hover:-translate-y-[1px]'
+                            : 'bg-[#FCFCFB] text-[#626B76] ring-1 ring-[#E9ECEF] hover:-translate-y-[1px] hover:bg-white'
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold tracking-tight">Online session</p>
+                            <p className="mt-2 max-w-[22ch] text-sm leading-6 text-[#626B76]">
+                              Generate a room and move straight into a video study block.
+                            </p>
+                          </div>
+                          <span
+                            className={cn(
+                              'flex h-11 w-11 items-center justify-center rounded-[18px]',
+                              sessionForm.mode === 'online' ? 'bg-white text-[#136DEC]' : 'bg-[#F4F6F8] text-[#8A93A0]'
+                            )}
+                          >
+                            <Video className="h-4 w-4" />
+                          </span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => updateFormField('mode', 'offline')}
+                        className={cn(
+                          'rounded-[26px] px-5 py-5 text-left shadow-[0_14px_28px_rgba(29,42,58,0.03)]',
+                          `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${transitionTiming} active:scale-[0.98]`,
+                          sessionForm.mode === 'offline'
+                            ? 'bg-[#F4F1EA] text-[#1A1A1A] ring-1 ring-[#D8C6AD] hover:-translate-y-[1px]'
+                            : 'bg-[#FCFCFB] text-[#626B76] ring-1 ring-[#E9ECEF] hover:-translate-y-[1px] hover:bg-white'
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold tracking-tight">Offline session</p>
+                            <p className="mt-2 max-w-[22ch] text-sm leading-6 text-[#626B76]">
+                              Pick a calm location and keep the meetup grounded in the real world.
+                            </p>
+                          </div>
+                          <span
+                            className={cn(
+                              'flex h-11 w-11 items-center justify-center rounded-[18px]',
+                              sessionForm.mode === 'offline' ? 'bg-white text-[#7A5C3A]' : 'bg-[#F4F6F8] text-[#8A93A0]'
+                            )}
+                          >
+                            <MapPin className="h-4 w-4" />
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="h-px bg-[#ECEEEA]" />
+
+                <section className="pb-2 pt-10">
+                  <div className="space-y-9">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">
+                        Step 5
+                      </p>
+                      <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#1A1A1A]">Add the final detail that makes it real.</h2>
+                    </div>
+
+                    {sessionForm.mode === 'online' ? (
+                      <div
+                        ref={conditionalBlockRef}
+                        className="rounded-[28px] bg-[#F4F8FF] px-5 py-5 shadow-[0_16px_34px_rgba(19,109,236,0.05)] ring-1 ring-[#E1EBFB] sm:px-6 sm:py-6"
+                      >
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="max-w-[30rem]">
+                            <div className="flex items-center gap-3 text-[#136DEC]">
+                              <span className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-white">
+                                <LinkIcon className="h-4 w-4" />
+                              </span>
+                              <div>
+                                <p className="text-sm font-semibold tracking-tight text-[#1A1A1A]">Meeting room</p>
+                                <p className="mt-1 text-sm leading-6 text-[#5F6470]">
+                                  Create one clean link for this session. It keeps the room memorable and easy to re-open later.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {!generatedLink ? (
+                            <button
+                              type="button"
+                              onClick={handleGenerateLink}
+                              className={cn(
+                                'inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[21px] bg-[#136DEC] px-5 py-3 text-sm font-semibold tracking-tight text-white shadow-[0_16px_32px_rgba(19,109,236,0.18)]',
+                                `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_22px_36px_rgba(19,109,236,0.22)] active:scale-[0.98]`
+                              )}
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              Generate link
+                            </button>
+                          ) : (
+                            <div className="w-full max-w-[23rem] rounded-[22px] bg-white/88 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                              <p className="truncate text-sm font-semibold tracking-tight text-[#1A1A1A]">
+                                {appOrigin}
+                                {generatedLink}
+                              </p>
+                              <div className="mt-4 flex flex-wrap gap-3">
+                                <button
+                                  type="button"
+                                  onClick={handleCopyLink}
+                                  className={cn(
+                                    'inline-flex min-h-11 items-center justify-center rounded-[18px] bg-[#136DEC] px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-[0_12px_24px_rgba(19,109,236,0.14)]',
+                                    `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#0F60D0] active:scale-[0.98]`
+                                  )}
+                                >
+                                  Copy link
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleGenerateLink}
+                                  className={cn(
+                                    'inline-flex min-h-11 items-center justify-center rounded-[18px] bg-[#EEF4FF] px-4 py-2 text-sm font-semibold tracking-tight text-[#136DEC]',
+                                    `motion-safe:transition-[transform,background-color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#E4EEFF] active:scale-[0.98]`
+                                  )}
+                                >
+                                  Refresh room
+                                </button>
+                              </div>
+                              {copyFeedback && <p className="mt-3 text-xs font-medium text-[#5F6470]">{copyFeedback}</p>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        ref={conditionalBlockRef}
+                        className="space-y-5 rounded-[28px] bg-[#F6F3EE] px-5 py-5 shadow-[0_16px_34px_rgba(120,95,58,0.04)] ring-1 ring-[#EEE3D5] sm:px-6 sm:py-6"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold tracking-tight text-[#1A1A1A]">Preferred location</p>
+                          <p className="mt-1 text-sm leading-6 text-[#6C655C]">
+                            Start with a preset, then customize it if the group already has a better spot in mind.
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          {LOCATION_PRESETS.map((locationName) => (
+                            <button
+                              key={locationName}
+                              type="button"
+                              onClick={() => updateFormField('location', locationName)}
+                              className={cn(
+                                'min-h-11 rounded-[18px] px-4 py-2 text-sm font-semibold tracking-tight',
+                                `motion-safe:transition-[transform,background-color,color,box-shadow] ${transitionTiming} active:scale-[0.98]`,
+                                sessionForm.location === locationName
+                                  ? 'bg-[#7A5C3A] text-white shadow-[0_14px_24px_rgba(122,92,58,0.18)] hover:-translate-y-[1px]'
+                                  : 'bg-white/86 text-[#5C554C] hover:-translate-y-[1px] hover:bg-white'
+                              )}
+                            >
+                              {locationName}
+                            </button>
+                          ))}
+                        </div>
+
+                        <label className="block">
+                          <span className="mb-3 block text-sm font-semibold tracking-tight text-[#4E473F]">Custom location</span>
+                          <input
+                            type="text"
+                            value={sessionForm.location}
+                            onChange={(event) => updateFormField('location', event.target.value)}
+                            placeholder="Add a room, cafe corner, or library floor"
+                            className="h-[52px] w-full rounded-[22px] border border-[#E4D9CB] bg-[rgba(255,255,255,0.8)] px-5 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none placeholder:text-[#9A938A] focus:border-[#7A5C3A]/28 focus:ring-4 focus:ring-[#7A5C3A]/10"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <div className="mt-12 flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="submit"
+                    className={cn(
+                      'inline-flex min-h-[54px] flex-1 items-center justify-center rounded-[23px] bg-[#136DEC] px-6 py-3 text-sm font-semibold tracking-tight text-white shadow-[0_18px_34px_rgba(19,109,236,0.18)]',
+                      `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_22px_40px_rgba(19,109,236,0.22)] active:scale-[0.98]`
+                    )}
+                  >
                     Create Session
                   </button>
-                  <button type="button" onClick={() => navigate('/sessions')} className="flex-1 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold py-4 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/sessions')}
+                    className={cn(
+                      'inline-flex min-h-[54px] items-center justify-center rounded-[23px] bg-white/80 px-6 py-3 text-sm font-semibold tracking-tight text-[#4D5561] shadow-[0_14px_28px_rgba(29,42,58,0.04)] ring-1 ring-[#ECEEEA]',
+                      `motion-safe:transition-[transform,background-color,color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-white hover:text-[#1A1A1A] active:scale-[0.98]`
+                    )}
+                  >
                     Cancel
                   </button>
                 </div>
               </form>
             </div>
           ) : (
-            /* ── SESSIONS LIST (MY SCHEDULE) ── */
-            <div className="space-y-8">
-              <div className="mb-4">
-                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">My Schedule</h1>
-                <p className="text-sm text-slate-500 font-medium tracking-wide">Stay on top of your upcoming group sessions.</p>
-              </div>
+            <div className="mx-auto w-full max-w-[880px] space-y-10">
+              <header data-session-reveal className="max-w-[38rem]">
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8A93A0]">
+                  My Schedule
+                </p>
+                <h1
+                  className="text-[clamp(2.1rem,4vw,3.35rem)] font-semibold leading-[0.95] tracking-[-0.05em] text-[#1A1A1A]"
+                  style={{ fontFamily: displayFont }}
+                >
+                  Your next focused sessions, all in one calm place.
+                </h1>
+                <p className="mt-4 max-w-[35rem] text-[15px] leading-7 text-[#626B76] sm:text-base">
+                  Keep upcoming sessions visible, mark them done when the work is finished, and jump back into a
+                  room when it is time to start.
+                </p>
+              </header>
 
-              {/* UPCOMING SESSIONS */}
-              <div>
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                   Upcoming <span className="bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-[10px]">{upcomingSessions.length}</span>
-                </h2>
-                <div className="space-y-4">
-                  {upcomingSessions.map((session, i) => (
-                    <ScheduleCard key={session.id} session={session} isUpcoming={true} onMarkAsDone={handleMarkAsDone} />
-                  ))}
+              <section data-session-reveal className="space-y-10">
+                <div>
+                  <div className="mb-5 flex items-center gap-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">Upcoming</h2>
+                    <span className="inline-flex min-h-7 items-center rounded-full bg-[#EEF4FF] px-3 text-[11px] font-semibold text-[#136DEC]">
+                      {upcomingSessions.length}
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {upcomingSessions.map((session) => (
+                      <ScheduleCard key={session.id} session={session} isUpcoming onMarkAsDone={handleMarkAsDone} />
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* COMPLETED SESSIONS */}
-              <div className="pt-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                   Completed <span className="bg-slate-200 text-slate-600 py-0.5 px-2 rounded-full text-[10px]">{completedSessions.length}</span>
-                </h2>
-                <div className="space-y-4">
-                  {completedSessions.map((session, i) => (
-                    <ScheduleCard key={session.id} session={session} isUpcoming={false} />
-                  ))}
+                <div>
+                  <div className="mb-5 flex items-center gap-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">Completed</h2>
+                    <span className="inline-flex min-h-7 items-center rounded-full bg-[#EFEFEA] px-3 text-[11px] font-semibold text-[#626B76]">
+                      {completedSessions.length}
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {completedSessions.map((session) => (
+                      <ScheduleCard key={session.id} session={session} isUpcoming={false} />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </section>
             </div>
           )}
-        </div>
-
-        {/* ── RIGHT CALENDAR & TIP (ONLY ON NEW SESSION FOR NOW, OR BOTH) ── */}
-        <aside className="hidden lg:flex flex-col w-[300px] xl:w-[320px] shrink-0 gap-6">
-          <div className="bg-white rounded-[24px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-extrabold text-sm text-slate-900">October 2023</h3>
-              <div className="flex gap-2 text-slate-400">
-                <button className="hover:text-slate-700 transition-colors p-1"><ChevronLeft className="w-4 h-4" /></button>
-                <button className="hover:text-slate-700 transition-colors p-1"><ChevronRight className="w-4 h-4" /></button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-y-4 text-center">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i} className="text-[10px] font-bold text-slate-400">{d}</div>)}
-              {Array.from({ length: 5 }).map((_, i) => <div key={`p-${i}`} className="text-xs font-semibold text-slate-300 py-1">{26 + i}</div>)}
-              {Array.from({ length: 14 }).map((_, i) => {
-                const day = i + 1;
-                const isSelected = day === 5;
-                return (
-                  <button key={day} className={`text-xs font-bold w-7 h-7 mx-auto rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 ring-4 ring-blue-50' : 'text-slate-700 hover:bg-slate-100'}`}>
-                    {day}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          <div className="bg-[#F0F5FF] rounded-[24px] p-6 border border-[#E0EAFF]">
-            <div className="flex items-center gap-2 text-blue-600 mb-3">
-              <Info className="w-5 h-5" />
-              <h4 className="font-bold text-sm">Pro Tip</h4>
-            </div>
-            <p className="text-[13px] leading-relaxed text-slate-600 font-medium">Sessions scheduled between 4:00 PM and 7:00 PM tend to get 40% more attendees on StudyMatch!</p>
-          </div>
-        </aside>
-        
+        </main>
       </div>
 
       <style>{`
         input[type="date"]::-webkit-calendar-picker-indicator,
         input[type="time"]::-webkit-calendar-picker-indicator {
-          opacity: 0; cursor: pointer; position: absolute; right: 0; top: 0; width: 100%; height: 100%;
+          opacity: 0;
+          cursor: pointer;
+          position: absolute;
+          right: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
         }
       `}</style>
     </div>
@@ -352,72 +764,103 @@ export default function SessionsPage() {
 function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
   const navigate = useNavigate()
   const dateObj = new Date(session.scheduled_at)
-  
+
   return (
-    <div className={`p-5 rounded-[24px] bg-white border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all ${!isUpcoming && 'opacity-60 grayscale-[0.2]'}`}>
-      <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-        
-        {/* Date block */}
-        <div className="w-14 h-14 rounded-[18px] bg-blue-50 flex flex-col items-center justify-center shrink-0 border border-blue-100/50">
-          <span className="text-[10px] uppercase font-bold text-blue-600">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</span>
-          <span className="text-lg font-black text-blue-700 leading-tight">{dateObj.getDate()}</span>
+    <article
+      className={cn(
+        'rounded-[28px] bg-[rgba(255,255,255,0.84)] px-5 py-5 shadow-[0_20px_40px_rgba(29,42,58,0.04)] ring-1 ring-white/80 backdrop-blur-sm sm:px-6',
+        !isUpcoming && 'opacity-70'
+      )}
+    >
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+        <div className="flex h-[68px] w-[68px] shrink-0 flex-col items-center justify-center rounded-[22px] bg-[#EEF4FF] text-[#136DEC]">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+            {dateObj.toLocaleDateString('en-US', { month: 'short' })}
+          </span>
+          <span className="text-[1.45rem] font-bold leading-none">{dateObj.getDate()}</span>
         </div>
 
-        {/* Info */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-bold text-slate-900 text-[15px]">{session.subject}</h3>
-            {session.mode === 'online' ? (
-              <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1"><Video className="w-3 h-3" /> Online</span>
-            ) : (
-              <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1"><MapPin className="w-3 h-3" /> Offline</span>
-            )}
-          </div>
-          <div className="flex items-center gap-4 text-[13px] font-medium text-slate-500">
-            <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400" /> {dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} ({session.duration_minutes}m)</span>
-            <span className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
-              With <span className="font-bold text-slate-700">{session.partner.full_name}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="truncate text-[1.05rem] font-semibold tracking-[-0.02em] text-[#1A1A1A]">{session.subject}</h3>
+            <span
+              className={cn(
+                'inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold',
+                session.mode === 'online' ? 'bg-[#EEF4FF] text-[#136DEC]' : 'bg-[#F4F1EA] text-[#7A5C3A]'
+              )}
+            >
+              {session.mode === 'online' ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
+              {session.mode === 'online' ? 'Online' : 'Offline'}
             </span>
           </div>
+
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-[#626B76]">
+            <span className="inline-flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-[#8A93A0]" />
+              {formatScheduleDate(session.scheduled_at)}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Clock className="h-4 w-4 text-[#8A93A0]" />
+              {formatScheduleTime(session.scheduled_at)} · {session.duration_minutes}m
+            </span>
+            <span className="truncate">With {session.partner.full_name}</span>
+          </div>
         </div>
 
-        {/* Action button */}
-        <div className="shrink-0 w-full sm:w-auto mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[188px]">
           {session.status === 'pending_confirmation' && (
-            <div className="px-4 py-2 bg-amber-50 border border-amber-200 text-amber-600 text-[12px] font-bold rounded-xl flex items-center justify-center gap-2 animate-pulse w-full sm:w-auto">
-              <Clock className="w-4 h-4" /> Menunggu Partner
+            <div className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#FFF5E8] px-4 py-2 text-sm font-semibold text-[#B26B21]">
+              <Clock className="h-4 w-4" />
+              Waiting for partner
             </div>
           )}
+
           {session.status === 'upcoming' && (
             <>
               {session.mode === 'online' ? (
-                <button 
-                  onClick={() => navigate(`/meet/${session.meeting_room_id || 'study-session-' + session.id}`)}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-[#1e293b] hover:bg-slate-900 active:scale-95 transition-all text-white text-[13px] font-bold rounded-xl flex items-center justify-center gap-2 shadow-md shadow-slate-900/20"
+                <button
+                  onClick={() => navigate(`/meet/${session.meeting_room_id || `study-session-${session.id}`}`)}
+                  className={cn(
+                    'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#1F2A37] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(31,42,55,0.16)]',
+                    `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#111827] active:scale-[0.98]`
+                  )}
                 >
-                  <Video className="w-4 h-4" /> Join Meet
+                  <Video className="h-4 w-4" />
+                  Join Meet
                 </button>
               ) : (
-                <button className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 transition-colors text-slate-700 text-[13px] font-bold rounded-xl flex items-center justify-center gap-2">
-                  <MapPin className="w-4 h-4" /> View Map
+                <button
+                  className={cn(
+                    'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#F4F1EA] px-4 py-2 text-sm font-semibold text-[#7A5C3A]',
+                    `motion-safe:transition-[transform,background-color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#EFE7DB] active:scale-[0.98]`
+                  )}
+                >
+                  <MapPin className="h-4 w-4" />
+                  View Spot
                 </button>
               )}
-              <button 
+
+              <button
                 onClick={() => onMarkAsDone(session.id)}
-                className="w-full sm:w-auto px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 active:scale-95 transition-all text-emerald-700 text-[13px] font-bold rounded-xl flex items-center justify-center gap-2"
+                className={cn(
+                  'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#EDF8F1] px-4 py-2 text-sm font-semibold text-[#2F7D4C]',
+                  `motion-safe:transition-[transform,background-color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#E5F3EA] active:scale-[0.98]`
+                )}
               >
-                <CheckCircle className="w-4 h-4" /> Selesai
+                <CheckCircle className="h-4 w-4" />
+                Mark Done
               </button>
             </>
           )}
+
           {session.status === 'completed' && (
-             <div className="px-4 py-2 bg-slate-50 border border-slate-100 text-slate-400 text-[12px] font-bold rounded-xl flex items-center justify-center gap-1.5">
-                <CheckCircle className="w-4 h-4" /> Done
-             </div>
+            <div className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#F3F4F5] px-4 py-2 text-sm font-semibold text-[#7A828D]">
+              <CheckCircle className="h-4 w-4" />
+              Completed
+            </div>
           )}
         </div>
-
       </div>
-    </div>
+    </article>
   )
 }
