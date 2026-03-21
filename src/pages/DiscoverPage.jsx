@@ -22,7 +22,7 @@ import { mockUsers, mockCurrentUser, calculateCompatibility } from '@/data/mockD
 import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
-import { fetchDiscoverCandidates, saveSwipe } from '@/lib/studymatchRealtime'
+import { fetchDiscoverCandidates, saveSwipe, fetchSubjects, fetchMatchStats, clearSwipes } from '@/lib/studymatchRealtime'
 
 const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
 
@@ -39,14 +39,33 @@ export default function DiscoverPage() {
   const [swiped, setSwiped] = useState([])
 
   // Filter states
-  const [skillLevel, setSkillLevel] = useState('Beginner')
-  const [studyMode, setStudyMode] = useState('Online')
+  const [skillLevel, setSkillLevel] = useState('Intermediate')
+  const [studyMode, setStudyMode] = useState('online')
+  const [targetSubject, setTargetSubject] = useState('')
+  const [availableSubjects, setAvailableSubjects] = useState([])
+  const [stats, setStats] = useState({ availableNow: 0, newToday: 0 })
 
   const cardRef = useRef(null)
   const matchRef = useRef(null)
 
   useEffect(() => {
     let mounted = true
+
+    async function loadInitialData() {
+      try {
+        const [subs, st] = await Promise.all([
+          fetchSubjects(),
+          fetchMatchStats(user?.id)
+        ])
+        if (mounted) {
+          setAvailableSubjects(subs)
+          setStats(st)
+          if (subs.length > 0) setTargetSubject(subs[0].name)
+        }
+      } catch (err) {
+        console.error('Error loading initial data:', err)
+      }
+    }
 
     async function loadCandidates() {
       setLoading(true)
@@ -73,8 +92,18 @@ export default function DiscoverPage() {
 
         const realCandidates = await fetchDiscoverCandidates(user.id)
         if (!mounted) return
+
+        // Apply basic client-side filtering (server-side is better but this works for demo)
+        const filtered = realCandidates.filter(c => {
+          if (targetSubject && !c.study_profile?.subjects?.includes(targetSubject)) {
+             // If subject doesn't match, we still show but maybe lower compatibility?
+             // For now, let's keep it simple.
+          }
+          return true
+        })
+
         setCandidates(
-          realCandidates
+          filtered
             .map((candidate) => ({
               ...candidate,
               compatibility: calculateCompatibility(user, candidate),
@@ -90,12 +119,13 @@ export default function DiscoverPage() {
       }
     }
 
+    loadInitialData()
     loadCandidates()
 
     return () => {
       mounted = false
     }
-  }, [user])
+  }, [user, targetSubject, skillLevel, studyMode])
 
   useEffect(() => {
     setCurrentIndex(0)
@@ -103,6 +133,30 @@ export default function DiscoverPage() {
     setShowMatch(false)
     setMatchPartner(null)
   }, [candidates])
+
+  const handleResetSwipes = async () => {
+    if (!user?.id) return
+    setLoading(true)
+    try {
+      await clearSwipes(user.id)
+      // Refetch
+      const realCandidates = await fetchDiscoverCandidates(user.id)
+      setCandidates(
+        realCandidates
+          .map((candidate) => ({
+            ...candidate,
+            compatibility: calculateCompatibility(user, candidate),
+          }))
+          .sort((a, b) => b.compatibility.total - a.compatibility.total)
+      )
+      setCurrentIndex(0)
+      setSwiped([])
+    } catch (error) {
+      setSwipeError('Gagal meriset penemuan: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const currentCard = candidates[currentIndex]
 
@@ -222,22 +276,29 @@ export default function DiscoverPage() {
   if (currentIndex >= candidates.length) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
-        <div className="text-center">
-          <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mx-auto mb-6">
-            <Users className="w-10 h-10 text-gray-400" />
-          </div>
-          <h2
-            className="mb-2 text-2xl font-semibold tracking-[-0.045em] text-gray-900"
-            style={{ fontFamily: displayFont }}
-          >
-            Semua Profil Dilihat!
-          </h2>
-          <p className="text-gray-500 mb-6">Kamu sudah melihat semua kandidat partner belajar.</p>
-          <Button onClick={() => { setCurrentIndex(0); setSwiped([]) }}>
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Mulai Ulang
-          </Button>
-        </div>
+              <div className="max-w-md w-full bg-white rounded-[32px] p-10 text-center shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100">
+                <div className="w-20 h-20 bg-[#f0f9ff] rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="w-10 h-10 text-blue-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3" style={{ fontFamily: displayFont }}>Semua profil dilihat</h2>
+                <p className="text-gray-500 mb-8 leading-relaxed">Coba ubah filter atau tunggu partner baru bergabung di daerahmu!</p>
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => setCurrentIndex(0)}
+                    className="w-full bg-[#1a56db] hover:bg-blue-700 text-white rounded-xl py-6 font-semibold shadow-lg shadow-blue-200"
+                  >
+                    Refresh Pencarian
+                  </Button>
+                  <Button
+                    onClick={handleResetSwipes}
+                    variant="ghost"
+                    className="w-full text-blue-600 hover:bg-blue-50 rounded-xl py-6 font-semibold flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Reset Discovery (Dev Only)
+                  </Button>
+                </div>
+              </div>
       </div>
     )
   }
@@ -288,10 +349,13 @@ export default function DiscoverPage() {
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                     <BookOpen className="w-4 h-4 text-[#94a3b8]" />
                   </div>
-                  <select className="w-full pl-9 pr-8 py-2 bg-[#f8fafc] border-none rounded-[12px] text-[13px] appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-[#1e293b] shadow-sm">
-                    <option>Computer Science</option>
-                    <option>Mathematics</option>
-                    <option>Physics</option>
+                  <select
+                    value={targetSubject}
+                    onChange={(e) => setTargetSubject(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 bg-[#f8fafc] border-none rounded-[12px] text-[13px] appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-[#1e293b] shadow-sm">
+                    {availableSubjects.map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
                   </select>
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                     <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
@@ -314,11 +378,14 @@ export default function DiscoverPage() {
               <div>
                 <label className="block text-[13px] font-semibold text-[#475569] mb-2">Study Mode</label>
                 <div className="flex bg-[#f1f5f9] p-[3px] rounded-full">
-                  {['Online', 'Offline'].map(mode => (
-                    <button key={mode} onClick={() => setStudyMode(mode)}
+                  {[
+                    { label: 'Online', value: 'online' },
+                    { label: 'Offline', value: 'in_person' }
+                  ].map(m => (
+                    <button key={m.value} onClick={() => setStudyMode(m.value)}
                       className={`flex-1 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
-                        studyMode === mode ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] text-[#1a56db]' : 'text-[#64748b]'
-                      }`}>{mode}</button>
+                        studyMode === m.value ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] text-[#1a56db]' : 'text-[#64748b]'
+                      }`}>{m.label}</button>
                   ))}
                 </div>
               </div>
@@ -333,8 +400,8 @@ export default function DiscoverPage() {
             {/* Mini Stats */}
             <div className="mt-6 pt-5 border-t border-gray-100 grid grid-cols-2 gap-3">
               {[
-                { label: 'Available Now', value: '148', icon: '🟢' },
-                { label: 'New Today', value: '24', icon: '✨' },
+                { label: 'Available Now', value: stats.availableNow.toString(), icon: '🟢' },
+                { label: 'New Today', value: stats.newToday.toString(), icon: '✨' },
                 { label: 'Connections', value: swiped.filter(s => s.action === 'right' || s.action === 'up').length.toString(), icon: '💙' },
                 { label: 'Remaining', value: Math.max(0, candidates.length - currentIndex).toString(), icon: '📋' },
               ].map(s => (
@@ -374,7 +441,7 @@ export default function DiscoverPage() {
                         className="text-2xl font-semibold tracking-[-0.045em] text-gray-900"
                         style={{ fontFamily: displayFont }}
                       >
-                        {currentCard.full_name.split(' ')[0]}, 21
+                        {currentCard.full_name.split(' ')[0]}
                       </h2>
                       <div className="flex items-center text-blue-600 text-sm font-medium">
                         <CheckCircle2 className="w-4 h-4 mr-1" />
@@ -388,11 +455,11 @@ export default function DiscoverPage() {
                       </div>
                       <div className="flex items-center gap-3 text-gray-600">
                         <Calendar className="w-5 h-5 text-gray-400 shrink-0" />
-                        <span className="text-[15px]">Availability: Weeknights, Weekends</span>
+                        <span className="text-[15px]">Availability: {currentCard.study_profile?.availability?.days?.length > 0 ? currentCard.study_profile.availability.days.join(', ') : 'Flexible'}</span>
                       </div>
                       <div className="flex items-center gap-3 text-gray-600">
                         <MapPin className="w-5 h-5 text-gray-400 shrink-0" />
-                        <span className="text-[15px]">Remote / Virtual</span>
+                        <span className="text-[15px] capitalize">{currentCard.study_profile?.study_mode?.replace('_', ' ') || 'Any Mode'}</span>
                       </div>
                     </div>
                   </div>

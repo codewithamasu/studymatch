@@ -14,4 +14,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    host: true, // Allow external access (ngrok needs this)
+    port: 5173,
+    strictPort: false,
+    allowedHosts: true,
+  },
 })

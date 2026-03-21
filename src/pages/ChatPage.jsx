@@ -25,7 +25,7 @@ import { mockUsers, mockCurrentUser } from '@/data/mockData'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
-import { fetchConversationThread, sendConversationMessage, markConversationRead } from '@/lib/studymatchRealtime'
+import { fetchConversationThread, sendConversationMessage, markConversationRead, fetchProfileGoals, subscribeToMessages } from '@/lib/studymatchRealtime'
 
 const QUICK_REPLIES = [
   { icon: '📅', label: 'Suggest 4 PM tomorrow' },
@@ -39,10 +39,9 @@ const INITIAL_MESSAGES = [
   { id: 3, from: 'partner', text: "I just finished it! I'd be happy to show you how I approached it. Are you free to meet up at the library tomorrow afternoon?", time: '2:55 PM', read: true, reactions: [] },
 ]
 
-const GOALS = [
-  { id: 1, text: 'Review AVL Trees', done: false },
-  { id: 2, text: 'Draft Lab Report 4', done: false },
-  { id: 3, text: 'Complete Problem Set', done: false },
+const INITIAL_GOALS = [
+  { id: 'g1', text: 'Set up study session', done: false },
+  { id: 'g2', text: 'Discuss course materials', done: false },
 ]
 
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
@@ -80,6 +79,7 @@ export default function ChatPage() {
   const { userId = '' } = useParams()
   const user = useAuthStore((state) => state.user)
   const hydrateConversation = useChatStore((state) => state.hydrateConversation)
+  const addRealtimeMessage = useChatStore((state) => state.addRealtimeMessage)
   const setTyping = useChatStore((state) => state.setTyping)
   const setReactionPickerId = useChatStore((state) => state.setReactionPickerId)
   const setDraft = useChatStore((state) => state.setDraft)
@@ -91,7 +91,7 @@ export default function ChatPage() {
   const isTypingByConversation = useChatStore((state) => state.isTypingByConversation)
   const navigate = useNavigate()
   const [thread, setThread] = useState(null)
-  const [goals, setGoals] = useState(GOALS)
+  const [goals, setGoals] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [sendError, setSendError] = useState('')
@@ -107,11 +107,7 @@ export default function ChatPage() {
   const messages = threadId ? messagesByConversation[threadId] || EMPTY_MESSAGES : EMPTY_MESSAGES
   const draft = threadId ? drafts[threadId] || '' : ''
   const isTyping = threadId ? Boolean(isTypingByConversation[threadId]) : false
-  const partner =
-    thread?.peerProfile ||
-    mockUsers.find((candidate) => candidate.id === userId) ||
-    mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson') ||
-    mockUsers[0]
+  const partner = thread?.peerProfile || null
   const partnerName = partner?.full_name?.split(' ')[0] || 'Partner'
 
   const avatar = (name) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`
@@ -127,47 +123,41 @@ export default function ChatPage() {
 
       try {
         if (!isSupabaseConfigured) {
-          const demoPartner =
-            mockUsers.find((candidate) => candidate.id === userId) ||
-            mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson') ||
-            mockUsers[0]
-
-          const demoThread = {
+          const demoPartner = mockUsers.find(c => c.id === userId) || mockUsers[0]
+          setThread({
             conversation: { id: userId, conversation_type: 'direct' },
-            peerProfile: {
-              id: demoPartner.id,
-              full_name: demoPartner.full_name,
-              university: demoPartner.university,
-              avatar_url: demoPartner.avatar_url,
-              bio: demoPartner.bio,
-              study_profile: demoPartner.study_profile,
-            },
-            messages: normalizeConversationMessages(INITIAL_MESSAGES, user?.id),
-          }
-
-          if (!mounted) return
-          setThread(demoThread)
-          hydrateConversation(userId, demoThread.messages)
+            peerProfile: demoPartner,
+            messages: normalizeConversationMessages(INITIAL_MESSAGES, user?.id)
+          })
+          setGoals(INITIAL_GOALS)
           return
         }
 
-        if (!user?.id) {
-          if (!mounted) return
-          setThread(null)
-          return
-        }
+        if (!user?.id) return
 
-        const data = await fetchConversationThread(user.id, userId)
+        const [threadData, partnerGoals] = await Promise.all([
+          fetchConversationThread(user.id, userId),
+          fetchProfileGoals(userId)
+        ])
+
         if (!mounted) return
-        const normalizedMessages = normalizeConversationMessages(data.messages, user.id)
+
+        const normalizedMessages = normalizeConversationMessages(threadData.messages, user.id)
         setThread({
-          ...data,
-          messages: normalizedMessages,
+          ...threadData,
+          messages: normalizedMessages
         })
 
-        if (data.conversation?.id) {
-          hydrateConversation(data.conversation.id, normalizedMessages)
+        if (threadData.conversation?.id) {
+          hydrateConversation(threadData.conversation.id, normalizedMessages)
         }
+
+        if (partnerGoals.length > 0) {
+          setGoals(partnerGoals.map((g, idx) => ({ id: `pg-${idx}`, text: g.label, done: false })))
+        } else {
+          setGoals(INITIAL_GOALS)
+        }
+
       } catch (error) {
         if (!mounted) return
         setLoadError(error?.message || 'Gagal memuat percakapan.')
@@ -182,6 +172,19 @@ export default function ChatPage() {
       mounted = false
     }
   }, [hydrateConversation, user?.id, userId])
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!isSupabaseConfigured || !thread?.conversation?.id) return
+
+    const sub = subscribeToMessages(thread.conversation.id, (newMessage) => {
+      addRealtimeMessage(thread.conversation.id, newMessage, user?.id)
+    })
+
+    return () => {
+      sub.unsubscribe()
+    }
+  }, [thread?.conversation?.id, addRealtimeMessage, user?.id])
 
   // GSAP mount animation
   useEffect(() => {
@@ -253,7 +256,18 @@ export default function ChatPage() {
   const completedGoals = goals.filter(g => g.done).length
   const progressPct = Math.round((completedGoals / goals.length) * 100)
 
-  if (loadError && !loading) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#dbeafe] border-t-[#1a56db]" />
+          <p className="text-sm font-medium text-[#64748b]">Syncing conversation...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
     return (
       <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
         <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-[0px_12px_40px_rgba(0,0,0,0.08)]">
@@ -269,29 +283,17 @@ export default function ChatPage() {
     )
   }
 
-  if (!loading && isSupabaseConfigured && !thread?.conversation) {
+  if (isSupabaseConfigured && !thread?.peerProfile) {
     return (
       <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
         <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-[0px_12px_40px_rgba(0,0,0,0.08)]">
-          <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-[#eff6ff] flex items-center justify-center text-[#1a56db]">
-            <Sparkles className="h-6 w-6" />
-          </div>
           <h1
             className="text-2xl font-semibold tracking-[-0.04em] text-[#0f172a]"
             style={{ fontFamily: displayFont }}
           >
-            Belum ada conversation
+            Profil tidak ditemukan
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-[#64748b]">
-            Kamu belum punya match aktif dengan partner ini. Coba swipe di Discover dulu, lalu balik ke chat.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/discover')}
-            className="mt-6 inline-flex items-center justify-center rounded-xl bg-[#1a56db] px-4 py-3 text-sm font-semibold text-white"
-          >
-            Go to Discover
-          </button>
+          <p className="mt-2 text-sm leading-relaxed text-[#64748b]">Partner yang kamu cari tidak tersedia.</p>
         </div>
       </div>
     )
@@ -361,11 +363,11 @@ export default function ChatPage() {
               className="mb-0.5 text-[1.05rem] font-semibold tracking-[-0.04em] text-[#0f172a]"
               style={{ fontFamily: displayFont }}
             >
-              {partner.full_name}
+              {partner?.full_name}
             </h2>
-            <p className="text-[12px] text-[#64748b] font-medium mb-4">Computer Science · Year 3</p>
+            <p className="text-[12px] text-[#64748b] font-medium mb-4">{partner?.university || 'Mahasiswa'}</p>
             <div className="flex justify-center gap-2 flex-wrap">
-              {['Python', 'AI Ethics'].map(t => (
+              {(partner?.study_profile?.subjects || []).slice(0, 3).map(t => (
                 <span key={t} className="px-3 py-1 bg-[#eff6ff] text-[#1a56db] text-[11px] font-bold rounded-full border border-[#bfdbfe]/60">{t}</span>
               ))}
             </div>
@@ -420,15 +422,13 @@ export default function ChatPage() {
           <div className="sidebar-card bg-white rounded-[20px] px-5 py-7 flex-1" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
             <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-3 px-1">Mutual Courses</p>
             <div className="space-y-2">
-              {[{ icon: '🗂️', label: 'Data Structures', badge: 'Active' }, { icon: 'Σ', label: 'Discrete Math', badge: '' }].map(c => (
-                <button key={c.label}
+              {(partner?.study_profile?.subjects || []).map((subj, idx) => (
+                <button key={subj}
                   className="action-btn w-full flex items-center gap-3 px-3 py-3.5 rounded-[14px] hover:bg-[#f8fafc] group text-left border border-[#f1f5f9]">
                   <div className="w-9 h-9 rounded-[9px] bg-[#eff6ff] flex items-center justify-center text-[#1a56db] text-sm font-bold shrink-0 group-hover:bg-[#dbeafe] transition-colors">
-                    {c.icon}
+                    {idx === 0 ? '🗂️' : 'Σ'}
                   </div>
-                  <span className="text-[13px] font-semibold text-[#334155] flex-1">{c.label}</span>
-                  {c.badge && <span className="text-[10px] font-bold text-[#22c55e] bg-[#dcfce7] px-2 py-0.5 rounded-full">{c.badge}</span>}
-                  <ChevronRight className="w-3.5 h-3.5 text-[#cbd5e1] group-hover:text-[#94a3b8] transition-colors" />
+                  <span className="text-[13px] font-semibold text-[#334155] flex-1">{subj}</span>
                 </button>
               ))}
             </div>
