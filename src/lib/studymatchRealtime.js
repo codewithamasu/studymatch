@@ -35,6 +35,250 @@ function getUnreadCount(messages = [], lastReadAt, currentUserId) {
   }).length
 }
 
+function toDayLabel(dateString) {
+  return new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(new Date(dateString))
+}
+
+function toDateKey(dateString) {
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function buildWeeklyData(sessions = []) {
+  const today = new Date()
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today)
+    date.setDate(today.getDate() - (6 - index))
+    const key = toDateKey(date.toISOString())
+    return {
+      key,
+      day: toDayLabel(date.toISOString()),
+      hours: 0,
+    }
+  })
+
+  const hourMap = new Map(days.map((entry) => [entry.key, entry]))
+
+  sessions.forEach((session) => {
+    if (session.status === 'cancelled') return
+    if (!session.scheduled_start) return
+    const key = toDateKey(session.scheduled_start)
+    const entry = hourMap.get(key)
+    if (!entry) return
+    entry.hours += Number(session.duration_minutes || 0) / 60
+  })
+
+  return days.map((entry) => ({
+    day: entry.day,
+    hours: Number(entry.hours.toFixed(1)),
+  }))
+}
+
+function computeStudyStreak(sessions = []) {
+  const activeDays = new Set(
+    sessions
+      .filter((session) => session.status !== 'cancelled')
+      .filter((session) => new Date(session.scheduled_start) <= new Date())
+      .map((session) => toDateKey(session.scheduled_start))
+  )
+
+  let streak = 0
+  const cursor = new Date()
+
+  while (activeDays.has(toDateKey(cursor.toISOString()))) {
+    streak += 1
+    cursor.setDate(cursor.getDate() - 1)
+  }
+
+  return streak
+}
+
+function getFavoriteSubject(sessions = [], fallbackSubject) {
+  const subjectCounts = sessions.reduce((acc, session) => {
+    const subjectName = session.subject_name
+    if (!subjectName) return acc
+    acc.set(subjectName, (acc.get(subjectName) || 0) + 1)
+    return acc
+  }, new Map())
+
+  const sortedSubjects = [...subjectCounts.entries()].sort((a, b) => b[1] - a[1])
+  return sortedSubjects[0]?.[0] || fallbackSubject || 'Belum ada'
+}
+
+function formatDashboardSession(session, partnerName) {
+  return {
+    id: session.id,
+    subject: session.subject_name || session.title || 'Study Session',
+    scheduled_at: session.scheduled_start,
+    duration_minutes: session.duration_minutes,
+    mode: session.study_mode === 'in_person' ? 'offline' : 'online',
+    partner: {
+      full_name: partnerName || 'Study Partner',
+    },
+  }
+}
+
+export async function fetchSubjects() {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('id, slug, name, category')
+    .eq('is_active', true)
+    .order('name')
+  if (error) throw error
+  return data || []
+}
+
+export async function fetchMatchStats(currentUserId) {
+  if (!isSupabaseConfigured || !currentUserId) {
+    return { availableNow: 0, newToday: 0 }
+  }
+
+  // Demo logic for now, could be replaced with real analytics
+  const { count: availableCount } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .not('onboarding_completed_at', 'is', null)
+
+  const { count: newCount } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+
+  return {
+    availableNow: Math.max(0, (availableCount || 0) - 1), // Exclude self
+    newToday: newCount || 0,
+  }
+}
+
+export async function fetchProfileGoals(profileId) {
+  if (!isSupabaseConfigured || !profileId) return []
+  const { data, error } = await supabase
+    .from('profile_goals')
+    .select(`
+      study_goals (
+        code,
+        label,
+        description
+      )
+    `)
+    .eq('profile_id', profileId)
+
+  if (error) throw error
+  return (data || []).map(row => row.study_goals).filter(Boolean)
+}
+
+export async function fetchMatchAlerts(currentUserId) {
+  if (!isSupabaseConfigured || !currentUserId) return []
+
+  const { data: matchRows, error } = await supabase
+    .from('matches')
+    .select(`
+      id,
+      matched_at,
+      profile_a_id,
+      profile_b_id
+    `)
+    .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`)
+    .eq('status', 'active')
+    .order('matched_at', { ascending: false })
+    .limit(8)
+
+  if (error) throw error
+
+  const partnerIds = (matchRows || []).map((row) =>
+    row.profile_a_id === currentUserId ? row.profile_b_id : row.profile_a_id
+  )
+
+  const profiles = await Promise.all(
+    partnerIds.map(async (id) => {
+      const record = await fetchProfileRecord(id)
+      return record ? normalizeProfileRecord(record) : null
+    })
+  )
+
+  return (matchRows || []).map((row, i) => ({
+    matchId: row.id,
+    matchedAt: row.matched_at,
+    partner: profiles[i],
+  })).filter((item) => item.partner !== null)
+}
+
+export async function fetchSocialPulse(currentUserId, limit = 6) {
+  if (!isSupabaseConfigured || !currentUserId) return []
+
+  // Fetch recent messages sent by match partners (not the current user)
+  const { data: matchRows, error: matchErr } = await supabase
+    .from('matches')
+    .select('id, profile_a_id, profile_b_id')
+    .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`)
+    .eq('status', 'active')
+
+  if (matchErr || !matchRows?.length) return []
+
+  const conversationIds = []
+  for (const match of matchRows) {
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('match_id', match.id)
+      .single()
+    if (conv?.id) conversationIds.push(conv.id)
+  }
+
+  if (!conversationIds.length) return []
+
+  const { data: messages, error: msgErr } = await supabase
+    .from('messages')
+    .select('id, body, sent_at, sender_profile_id, conversation_id')
+    .in('conversation_id', conversationIds)
+    .neq('sender_profile_id', currentUserId)
+    .is('deleted_at', null)
+    .order('sent_at', { ascending: false })
+    .limit(limit)
+
+  if (msgErr || !messages?.length) return []
+
+  const senderIds = [...new Set(messages.map((m) => m.sender_profile_id))]
+  const senderProfiles = await Promise.all(
+    senderIds.map(async (id) => {
+      const rec = await fetchProfileRecord(id)
+      return rec ? normalizeProfileRecord(rec) : null
+    })
+  )
+  const profileMap = new Map(
+    senderProfiles.filter(Boolean).map((p) => [p.id, p])
+  )
+
+  return messages.map((msg) => {
+    const sender = profileMap.get(msg.sender_profile_id)
+    const bodyPreview = (msg.body || '').slice(0, 50)
+    const ago = formatRelativeTime(msg.sent_at)
+    return {
+      id: msg.id,
+      senderId: msg.sender_profile_id,
+      senderName: sender?.full_name || 'Partner',
+      avatarSeed: sender?.full_name || 'user',
+      action: `mengirim pesan: "${bodyPreview}${msg.body?.length > 50 ? '…' : ''}"`,
+      time: ago,
+      badge: '💬',
+    }
+  })
+}
+
+function formatRelativeTime(isoString) {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Baru saja'
+  if (mins < 60) return `${mins} mnt lalu`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} jam lalu`
+  return `${Math.floor(hours / 24)} hari lalu`
+}
+
 export async function fetchDiscoverCandidates(currentUserId) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
@@ -103,6 +347,17 @@ export async function fetchDiscoverCandidates(currentUserId) {
     .filter((candidate) => candidate?.study_profile)
     .filter((candidate) => !swipedIds.has(candidate.id))
     .filter((candidate) => !matchedIds.has(candidate.id))
+}
+
+export async function clearSwipes(actorProfileId) {
+  if (!isSupabaseConfigured || !actorProfileId) return null
+  const { error } = await supabase
+    .from('swipes')
+    .delete()
+    .eq('actor_profile_id', actorProfileId)
+
+  if (error) throw error
+  return true
 }
 
 export async function saveSwipe(actorProfileId, targetProfileId, action) {
@@ -340,6 +595,32 @@ export async function sendConversationMessage(conversationId, senderProfileId, b
   return data
 }
 
+export function subscribeToMessages(conversationId, onMessage) {
+  if (!isSupabaseConfigured || !conversationId) return { unsubscribe: () => {} }
+
+  const channel = supabase
+    .channel(`chat:${conversationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload) => {
+        if (onMessage) onMessage(payload.new)
+      }
+    )
+    .subscribe()
+
+  return {
+    unsubscribe: () => {
+      supabase.removeChannel(channel)
+    },
+  }
+}
+
 export async function markConversationRead(conversationId, profileId) {
   if (!isSupabaseConfigured || !conversationId || !profileId) return null
 
@@ -351,4 +632,127 @@ export async function markConversationRead(conversationId, profileId) {
 
   if (error) throw error
   return true
+}
+
+export async function fetchDashboardSnapshot(currentUserId) {
+  const emptySnapshot = {
+    stats: {
+      total_sessions: 0,
+      completed_sessions: 0,
+      total_study_hours: 0,
+      study_streak: 0,
+      favorite_subject: 'Belum ada',
+      weekly_data: buildWeeklyData([]),
+    },
+    studyPartnerCount: 0,
+    upcomingSessions: [],
+  }
+
+  if (!isSupabaseConfigured || !currentUserId) return emptySnapshot
+
+  const [
+    { data: matchRows, error: matchError },
+    { data: participantRows, error: participantError },
+    profileRecord,
+  ] = await Promise.all([
+    supabase
+      .from('matches')
+      .select('id')
+      .eq('status', 'active')
+      .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`),
+    supabase
+      .from('session_participants')
+      .select(`
+        session_id,
+        attendance_status,
+        sessions!inner(
+          id,
+          status,
+          study_mode,
+          scheduled_start,
+          duration_minutes,
+          title,
+          match_id,
+          subject_id,
+          subjects(name)
+        )
+      `)
+      .eq('profile_id', currentUserId)
+      .neq('attendance_status', 'declined'),
+    fetchProfileRecord(currentUserId),
+  ])
+
+  if (matchError) throw matchError
+  if (participantError) throw participantError
+
+  const sessions = (participantRows || [])
+    .map((row) => ({
+      ...row.sessions,
+      subject_name: row.sessions?.subjects?.name || null,
+    }))
+    .filter(Boolean)
+
+  const sessionIds = sessions.map((session) => session.id)
+
+  let participantDetails = []
+  if (sessionIds.length) {
+    const { data, error } = await supabase
+      .from('session_participants')
+      .select('session_id, profile_id, participant_role')
+      .in('session_id', sessionIds)
+
+    if (error) throw error
+    participantDetails = data || []
+  }
+
+  const partnerIds = [...new Set(
+    participantDetails
+      .filter((row) => row.profile_id !== currentUserId)
+      .map((row) => row.profile_id)
+  )]
+
+  const partnerProfiles = await Promise.all(
+    partnerIds.map(async (profileId) => {
+      const record = await fetchProfileRecord(profileId)
+      return normalizeProfileRecord(record)
+    })
+  )
+
+  const partnerNameById = new Map(
+    partnerProfiles.filter(Boolean).map((profile) => [profile.id, profile.full_name])
+  )
+
+  const partnerNameBySessionId = new Map()
+  participantDetails.forEach((row) => {
+    if (row.profile_id === currentUserId) return
+    if (partnerNameBySessionId.has(row.session_id)) return
+    partnerNameBySessionId.set(row.session_id, partnerNameById.get(row.profile_id) || 'Study Partner')
+  })
+
+  const upcomingSessions = sessions
+    .filter((session) => session.status === 'scheduled')
+    .filter((session) => new Date(session.scheduled_start) >= new Date())
+    .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start))
+    .slice(0, 2)
+    .map((session) => formatDashboardSession(session, partnerNameBySessionId.get(session.id)))
+
+  const completedSessions = sessions.filter((session) => session.status === 'completed')
+  const totalStudyHours = completedSessions.reduce(
+    (sum, session) => sum + Number(session.duration_minutes || 0) / 60,
+    0
+  )
+  const fallbackSubject = profileRecord?.profile_subjects?.[0]?.subjects?.name || null
+
+  return {
+    stats: {
+      total_sessions: sessions.length,
+      completed_sessions: completedSessions.length,
+      total_study_hours: Number(totalStudyHours.toFixed(1)),
+      study_streak: computeStudyStreak(sessions),
+      favorite_subject: getFavoriteSubject(sessions, fallbackSubject),
+      weekly_data: buildWeeklyData(sessions),
+    },
+    studyPartnerCount: matchRows?.length || 0,
+    upcomingSessions,
+  }
 }

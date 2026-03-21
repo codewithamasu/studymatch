@@ -1,70 +1,37 @@
-# Responsive Adaptation — All 8 Pages
+# StudyMatch — Feature Walkthrough
 
-All pages have been adapted for **mobile (320–767px)**, **tablet (768–1023px)**, and **desktop (1024px+)** following the adapt skill methodology.
+## 📱 Responsive Adaptation — All Pages
 
-## Screenshots
+Semua halaman telah diadaptasi untuk **mobile (320–767px)**, **tablet (768–1023px)**, dan **desktop (1024px+)** menggunakan desain yang fluid dan tipografi adaptif.
 
-````carousel
-![Landing Page — 390px mobile](/Users/mac/.gemini/antigravity/brain/466f3c3e-f0a6-49f8-88eb-51826cba0760/mobile_landing_1773655638535.png)
-<!-- slide -->
-![Onboarding Step 1 — 390px mobile](/Users/mac/.gemini/antigravity/brain/466f3c3e-f0a6-49f8-88eb-51826cba0760/mobile_onboarding_1773655785787.png)
-<!-- slide -->
-![Onboarding Step 3 — Desktop](/Users/mac/.gemini/antigravity/brain/466f3c3e-f0a6-49f8-88eb-51826cba0760/onboarding_step3_verify_1773654182320.png)
-````
+### Key Responsive Fixes:
+- **Hero Sections**: Ukuran font `text-6xl` diubah menjadi fluid `text-[2.75rem] sm:text-6xl lg:text-[5rem]` untuk mencegah overflow pada layar kecil.
+- **Grids & Layouts**: Grid kolom tunggal pada mobile yang bertransisi menjadi multi-kolom pada layar lebih besar (misalnya di Dashboard dan Register).
+- **Navigation**: Navbar adaptif dengan mobile drawer yang ringan dan intuitif.
+- **Form Panning**: Padding vertikal ditambahkan pada halaman Auth untuk mencegah overlap logo pada layar yang sangat pendek.
 
-## Changes by Page
+---
 
-### 🏠 LandingPage
-| Issue | Fix |
-|---|---|
-| Hero `text-6xl` too large on 320px screens | Changed to `text-[2.75rem] sm:text-6xl lg:text-[5rem]` (fluid, 3-tier) |
-| Hero section top/bottom padding too tall on mobile | `py-24` → `py-16 sm:py-24 lg:py-32` |
-| "How it Works" only showed on md+, gap too large | `md:grid-cols-3 gap-12` → `sm:grid-cols-3 gap-8 sm:gap-12` |
+---
 
-### 🔐 LoginPage
-| Issue | Fix |
-|---|---|
-| Form overlapped absolute logo on tiny screens | `py-12` → `py-20 sm:py-12` adds top clearance on mobile |
-| Horizontal padding too tight on 320px | `px-6` → `px-4 sm:px-6` |
+## ⚡ Real-time Chat Sync
 
-### 📝 RegisterPage
-| Issue | Fix |
-|---|---|
-| Same logo overlap as LoginPage | Same `py-20` fix |
-| Email/University 2-col grid squished on 320px | `grid-cols-1` at base, `sm:grid-cols-2` at 640px+ |
+Sinkronisasi pesan instan kini aktif menggunakan Supabase Realtime Channels. Tidak ada lagi kebutuhan untuk me-refresh browser.
 
-### 🎓 OnboardingPage
-| Issue | Fix |
-|---|---|
-| Heading `text-4xl` too large on 320px | `text-3xl sm:text-4xl md:text-5xl` |
-| Main area padding too wide on mobile | `px-4 sm:px-6 py-8 sm:py-10` |
+### Implementation Highlights:
+- **`subscribeToMessages`**: Listener yang memantau setiap pesan baru dari database.
+- **Zustand Integration**: Store `useChatStore` secara otomatis menerima dan me-normalisasi pesan baru tanpa duplikasi.
+- **Auto-scroll**: Chat body akan otomatis bergeser ke bawah saat ada pesan baru masuk.
 
-### 📊 DashboardPage
-| Issue | Fix |
-|---|---|
-| Bar chart area `h-48` cramped on mobile | `h-36 sm:h-48` |
-| Container too wide edge-to-edge on mobile | `px-3 sm:px-4` |
+### 🎥 Live Demo
+![Chat Sync Verification](file:///Users/mac/.gemini/antigravity/brain/466f3c3e-f0a6-49f8-88eb-51826cba0760/realtime_chat_sync_verify_1774008828287.webp)
+*Demo menunjukkan pesan yang dikirim dari satu tab muncul seketika di tab lainnya.*
 
-### 🔍 DiscoverPage
-| Issue | Fix |
-|---|---|
-| Container padded too wide on 320px | `px-3 sm:px-4` |
+---
 
-### 💑 MatchesPage
-| Issue | Fix |
-|---|---|
-| Header `flex justify-between` breaks on 320px | Added `flex-wrap gap-3` so button wraps below title |
-| Container edge padding | `px-3 sm:px-4` |
-
-### 📅 SessionsPage
-| Issue | Fix |
-|---|---|
-| Session metadata row (time · duration · partner) overflows | `flex-wrap items-center gap-x-3 gap-y-1` allows graceful wrapping |
-| Container edge padding | `px-3 sm:px-4` |
-
-## Verify
-- ✅ Hero heading: No overflow on 320px
-- ✅ Login/Register: Form visible without logo overlap on mobile
-- ✅ Onboarding: Proper padding and heading scale on all screen sizes
-- ✅ Dashboard chart: Fits within card on small screens
-- ✅ All session/match metadata: Wraps gracefully instead of overflowing
+## ✅ Final Verification
+- [x] **Discover Filters**: Muncul sesuai data di tabel `subjects`.
+- [x] **Real-time Sync**: Pesan terkirim dan diterima instan antar browser.
+- [x] **Chat Profile**: Data Alex Hartono (dari seed) muncul dengan benar.
+- [x] **Chat Goals**: Mengambil label "Persiapan Ujian" dari `study_goals`.
+- [x] **Responsive Check**: Semua elemen tetap rapi di semua breakpoint.

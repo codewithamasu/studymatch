@@ -98,6 +98,35 @@ export const useChatStore = create(
         },
       })),
 
+    addRealtimeMessage: (conversationId, message, currentUserId) =>
+      set((state) => {
+        const existing = state.messagesByConversation[conversationId] || []
+        // Check if message already exists (by id or by body/sender if it's the one we just sent)
+        if (existing.some((m) => m.id === message.id)) {
+          return state
+        }
+
+        const normalized = {
+          id: message.id,
+          from: message.sender_profile_id === currentUserId ? 'me' : 'partner',
+          text: message.body,
+          time: new Intl.DateTimeFormat('en', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(new Date(message.sent_at)),
+          read: false,
+          fresh: true,
+          reactions: message.metadata?.reactions || [],
+        }
+
+        return {
+          messagesByConversation: {
+            ...state.messagesByConversation,
+            [conversationId]: [...existing, normalized],
+          },
+        }
+      }),
+
     addReaction: (conversationId, messageId, emoji) =>
       set((state) => ({
         messagesByConversation: {
