@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '@/context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -21,11 +21,17 @@ import {
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser, calculateCompatibility } from '@/data/mockData'
 import gsap from 'gsap'
+import { useAuthStore } from '@/store/useAuthStore'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { fetchDiscoverCandidates, saveSwipe } from '@/lib/studymatchRealtime'
 
 export default function DiscoverPage() {
-  const { user } = useAuth()
+  const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
   const [candidates, setCandidates] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [swipeError, setSwipeError] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showMatch, setShowMatch] = useState(false)
   const [matchPartner, setMatchPartner] = useState(null)
@@ -39,20 +45,71 @@ export default function DiscoverPage() {
   const matchRef = useRef(null)
 
   useEffect(() => {
-    // Calculate compatibility for all mock users
-    const withScores = mockUsers.map(u => {
-      const compat = calculateCompatibility(user || mockCurrentUser, u)
-      return { ...u, compatibility: compat }
-    })
-    // Sort by compatibility
-    withScores.sort((a, b) => b.compatibility.total - a.compatibility.total)
-    setCandidates(withScores)
+    let mounted = true
+
+    async function loadCandidates() {
+      setLoading(true)
+      setLoadError('')
+
+      try {
+        if (!user?.id) {
+          if (mounted) setCandidates([])
+          return
+        }
+
+        if (!isSupabaseConfigured) {
+          const demoCandidates = mockUsers
+            .filter((candidate) => candidate.id !== 'current')
+            .map((candidate) => ({
+              ...candidate,
+              compatibility: calculateCompatibility(mockCurrentUser, candidate),
+            }))
+            .sort((a, b) => b.compatibility.total - a.compatibility.total)
+
+          if (mounted) setCandidates(demoCandidates)
+          return
+        }
+
+        const realCandidates = await fetchDiscoverCandidates(user.id)
+        if (!mounted) return
+        setCandidates(
+          realCandidates
+            .map((candidate) => ({
+              ...candidate,
+              compatibility: calculateCompatibility(user, candidate),
+            }))
+            .sort((a, b) => b.compatibility.total - a.compatibility.total)
+        )
+      } catch (error) {
+        if (!mounted) return
+        setLoadError(error?.message || 'Gagal memuat kandidat.')
+        setCandidates([])
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    loadCandidates()
+
+    return () => {
+      mounted = false
+    }
   }, [user])
+
+  useEffect(() => {
+    setCurrentIndex(0)
+    setSwiped([])
+    setShowMatch(false)
+    setMatchPartner(null)
+  }, [candidates])
 
   const currentCard = candidates[currentIndex]
 
   const animateSwipe = (direction) => {
     if (!cardRef.current) return
+    const targetCard = currentCard
+    if (!targetCard) return
+    setSwipeError('')
 
     const xTarget = direction === 'right' ? 500 : direction === 'left' ? -500 : 0
     const yTarget = direction === 'up' ? -500 : 0
@@ -65,10 +122,11 @@ export default function DiscoverPage() {
       opacity: 0,
       duration: 0.4,
       ease: 'power2.in',
-      onComplete: () => {
-        handleSwipeComplete(direction)
+      onComplete: async () => {
+        const didSave = await handleSwipeComplete(direction, targetCard)
         // Reset card position
         gsap.set(cardRef.current, { x: 0, y: 0, rotation: 0, opacity: 1 })
+        if (!didSave) return
         // Animate in new card
         gsap.from(cardRef.current, {
           scale: 0.9,
@@ -80,20 +138,36 @@ export default function DiscoverPage() {
     })
   }
 
-  const handleSwipeComplete = (direction) => {
-    setSwiped(prev => [...prev, { userId: currentCard.id, action: direction }])
+  const handleSwipeComplete = async (direction, targetCard) => {
+    if (user?.id && isSupabaseConfigured) {
+      try {
+        const action = direction === 'left' ? 'pass' : direction === 'up' ? 'super_like' : 'like'
+        const result = await saveSwipe(user.id, targetCard.id, action)
 
-    // Simulate match on "right" or "up" swipe (50% chance for demo)
-    if ((direction === 'right' || direction === 'up') && Math.random() > 0.4) {
-      setMatchPartner(currentCard)
+        setSwiped((prev) => [...prev, { userId: targetCard.id, action: direction }])
+
+        if (result?.match) {
+          setMatchPartner(targetCard)
+          setTimeout(() => {
+            setShowMatch(true)
+          }, 300)
+        }
+      } catch (error) {
+        setSwipeError(error?.message || 'Gagal menyimpan swipe.')
+        return false
+      }
+    } else if (direction === 'right' || direction === 'up') {
+      setSwiped((prev) => [...prev, { userId: targetCard.id, action: direction }])
+      setMatchPartner(targetCard)
       setTimeout(() => {
         setShowMatch(true)
-      }, 500)
+      }, 300)
+    } else {
+      setSwiped((prev) => [...prev, { userId: targetCard.id, action: direction }])
     }
 
-    if (currentIndex < candidates.length) {
-      setCurrentIndex(prev => prev + 1)
-    }
+    setCurrentIndex((prev) => prev + 1)
+    return true
   }
 
   const handleLike = () => animateSwipe('right')
@@ -110,6 +184,29 @@ export default function DiscoverPage() {
       })
     }
   }, [showMatch])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#dbeafe] border-t-[#1a56db]" />
+          <h2 className="text-xl font-bold text-gray-900">Loading candidates</h2>
+          <p className="mt-2 text-sm text-gray-500">Mengambil partner studi dari Supabase.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
+        <div className="text-center max-w-sm">
+          <h2 className="text-xl font-bold text-gray-900">Gagal memuat Discover</h2>
+          <p className="mt-2 text-sm text-gray-500">{loadError}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (currentIndex >= candidates.length) {
     return (
@@ -131,7 +228,7 @@ export default function DiscoverPage() {
 
   // Temporary function to generate deterministic avatar
   const getAvatarUrl = (name) => {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}&backgroundColor=2a4365&clothing=shirtCrewNeck`
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=2a4365&clothing=shirtCrewNeck`
   }
 
 
@@ -146,6 +243,12 @@ export default function DiscoverPage() {
         .float-badge-slow { animation: floatUpSlow 4s ease-in-out infinite; }
         .live-dot { animation: pulseGreen 2s ease-in-out infinite; }
       `}</style>
+
+      {swipeError && (
+        <div className="fixed top-[92px] left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 shadow-lg">
+          {swipeError}
+        </div>
+      )}
 
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -216,7 +319,7 @@ export default function DiscoverPage() {
               {[
                 { label: 'Available Now', value: '148', icon: '🟢' },
                 { label: 'New Today', value: '24', icon: '✨' },
-                { label: 'Your Matches', value: swiped.filter(s => s.action === 'right' || s.action === 'up').length.toString(), icon: '💙' },
+                { label: 'Connections', value: swiped.filter(s => s.action === 'right' || s.action === 'up').length.toString(), icon: '💙' },
                 { label: 'Remaining', value: Math.max(0, candidates.length - currentIndex).toString(), icon: '📋' },
               ].map(s => (
                 <div key={s.label} className="bg-[#f8fafc] rounded-[14px] p-3 text-center">
@@ -262,7 +365,7 @@ export default function DiscoverPage() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 text-gray-600">
                         <BookOpen className="w-5 h-5 text-gray-400 shrink-0" />
-                        <span className="text-[15px]">{currentCard.study_profile.subjects[0]} • Exam Prep</span>
+                        <span className="text-[15px]">{currentCard.study_profile?.subjects?.[0] || 'Study Partner'} • Exam Prep</span>
                       </div>
                       <div className="flex items-center gap-3 text-gray-600">
                         <Calendar className="w-5 h-5 text-gray-400 shrink-0" />
@@ -334,8 +437,8 @@ export default function DiscoverPage() {
 
               <div className="space-y-3">
                 <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => { setShowMatch(false); navigate(`/chat/${matchPartner.id}`) }}>
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Chatting Sekarang
+                  <Heart className="w-4 h-4 mr-2 fill-white" />
+                  Kirim Pesan
                 </Button>
                 <Button variant="outline" className="w-full rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50" onClick={() => setShowMatch(false)}>
                   Lanjut Swiping

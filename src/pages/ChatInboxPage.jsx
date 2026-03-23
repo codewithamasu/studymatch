@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
-import { mockUsers, mockCurrentUser } from '@/data/mockData'
-import { Search, MessageCircle, CheckCheck, Clock, Sparkles, Users } from 'lucide-react'
+import { Search, MessageCircle, CheckCheck, Sparkles, Users } from 'lucide-react'
 import gsap from 'gsap'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useChatStore } from '@/store/useChatStore'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { fetchConversationSummaries } from '@/lib/studymatchRealtime'
+import { mockUsers } from '@/data/mockData'
 
 // Mock conversations — in real app this'd come from Supabase
 const MOCK_CONVERSATIONS = [
@@ -45,21 +48,57 @@ const getAvatar = (name) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`
 
 export default function ChatInboxPage() {
-  const { user } = useAuth()
+  const user = useAuthStore((state) => state.user)
+  const conversations = useChatStore((state) => state.conversations)
+  const setConversations = useChatStore((state) => state.setConversations)
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [conversations, setConversations] = useState([])
-  const containerRef = useRef(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const headerRef = useRef(null)
 
   useEffect(() => {
-    // Attach user info to conversations
-    const enriched = MOCK_CONVERSATIONS.map(c => ({
-      ...c,
-      user: mockUsers.find(u => u.id === c.userId),
-    })).filter(c => c.user)
-    setConversations(enriched)
-  }, [])
+    let mounted = true
+
+    async function loadConversations() {
+      setLoading(true)
+      setLoadError('')
+
+      try {
+        if (!isSupabaseConfigured) {
+          const demoConversations = MOCK_CONVERSATIONS.map((conversation) => ({
+            ...conversation,
+            user: mockUsers.find((candidate) => candidate.id === conversation.userId),
+            conversationId: conversation.userId,
+          })).filter((conversation) => conversation.user)
+
+          if (mounted) setConversations(demoConversations)
+          return
+        }
+
+        if (!user?.id) {
+          if (mounted) setConversations([])
+          return
+        }
+
+        const realConversations = await fetchConversationSummaries(user.id)
+        if (!mounted) return
+        setConversations(realConversations)
+      } catch (error) {
+        if (!mounted) return
+        setLoadError(error?.message || 'Gagal memuat percakapan.')
+        setConversations([])
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    loadConversations()
+
+    return () => {
+      mounted = false
+    }
+  }, [setConversations, user?.id])
 
   // GSAP entrance
   useEffect(() => {
@@ -79,6 +118,28 @@ export default function ChatInboxPage() {
   )
 
   const totalUnread = conversations.reduce((s, c) => s + c.unread, 0)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f6f8] flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#dbeafe] border-t-[#1a56db]" />
+          <h2 className="text-xl font-bold text-[#0f172a]">Loading chats</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#f5f6f8] flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <h2 className="text-xl font-bold text-[#0f172a]">Gagal memuat chat</h2>
+          <p className="mt-2 text-sm text-[#64748b]">{loadError}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f6f8]">
@@ -203,9 +264,9 @@ export default function ChatInboxPage() {
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="text-[13px] font-extrabold text-white mb-0.5">Find more study partners</p>
+            <p className="text-[13px] font-extrabold text-white mb-0.5">Keep discovering study partners</p>
             <p className="text-[12px] text-blue-200 leading-relaxed">
-              Go to <strong className="text-white">Discover</strong> to swipe and match with new partners — then start chatting here!
+              Go to <strong className="text-white">Discover</strong> to swipe on new partners, then continue the conversation here.
             </p>
           </div>
         </div>

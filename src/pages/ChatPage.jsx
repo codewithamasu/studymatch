@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import {
   Calendar,
@@ -34,6 +36,10 @@ import {
   Trophy,
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser } from '@/data/mockData'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useChatStore } from '@/store/useChatStore'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { fetchConversationThread, sendConversationMessage, markConversationRead } from '@/lib/studymatchRealtime'
 
 const QUICK_REPLIES = [
   { icon: '📅', label: 'Suggest 4 PM tomorrow' },
@@ -73,12 +79,7 @@ export default function ChatPage() {
   const navigate = useNavigate()
   const partner = mockUsers.find(u => u.full_name === 'Alex Johnson') || mockUsers[0]
 
-  const [messages, setMessages] = useState(INITIAL_MESSAGES)
-  const [draft, setDraft] = useState('')
   const [goals, setGoals] = useState(GOALS)
-  const [isTyping, setIsTyping] = useState(false)
-  const [reactionPickerId, setReactionPickerId] = useState(null)
-  const [highlightedMsg, setHighlightedMsg] = useState(null)
   const [inputFocused, setInputFocused] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [resourceHubOpen, setResourceHubOpen] = useState(false)
@@ -100,6 +101,67 @@ export default function ChatPage() {
   const avatar = (name) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`
   const myAvatar = avatar((user || mockCurrentUser)?.full_name || 'User')
   const partnerAvatar = avatar(partner.full_name)
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadThread() {
+      setLoading(true)
+      setLoadError('')
+
+      try {
+        if (!isSupabaseConfigured) {
+          const demoPartner =
+            mockUsers.find((candidate) => candidate.id === userId) ||
+            mockUsers.find((candidate) => candidate.full_name === 'Alex Johnson') ||
+            mockUsers[0]
+
+          const demoThread = {
+            conversation: { id: userId, conversation_type: 'direct' },
+            peerProfile: {
+              id: demoPartner.id,
+              full_name: demoPartner.full_name,
+              university: demoPartner.university,
+              avatar_url: demoPartner.avatar_url,
+              bio: demoPartner.bio,
+              study_profile: demoPartner.study_profile,
+            },
+            messages: INITIAL_MESSAGES,
+          }
+
+          if (!mounted) return
+          setThread(demoThread)
+          hydrateConversation(userId, INITIAL_MESSAGES)
+          return
+        }
+
+        if (!user?.id) {
+          if (!mounted) return
+          setThread(null)
+          return
+        }
+
+        const data = await fetchConversationThread(user.id, userId)
+        if (!mounted) return
+        setThread(data)
+
+        if (data.conversation?.id) {
+          hydrateConversation(data.conversation.id, data.messages)
+        }
+      } catch (error) {
+        if (!mounted) return
+        setLoadError(error?.message || 'Gagal memuat percakapan.')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    loadThread()
+
+    return () => {
+      mounted = false
+    }
+  }, [hydrateConversation, user?.id, userId])
 
   // GSAP mount animation
   useEffect(() => {
@@ -138,27 +200,31 @@ export default function ChatPage() {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  const sendMsg = (e, override) => {
+  useEffect(() => {
+    if (!thread?.conversation?.id || !user?.id || !isSupabaseConfigured) return
+    markConversationRead(thread.conversation.id, user.id).catch(() => {})
+  }, [thread?.conversation?.id, user?.id])
+
+  const sendMsg = async (e, override) => {
     e?.preventDefault()
     const txt = override ?? draft
     if (!txt.trim()) return
-    setMessages(p => [...p, { id: Date.now(), from: 'me', text: txt, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), read: false, fresh: true, reactions: [] }])
-    setDraft('')
+    if (!thread?.conversation?.id || !user?.id) return
+
+    setSendError('')
+    sendMessage(thread.conversation.id, txt)
     inputRef.current?.focus()
-    setTimeout(() => setIsTyping(true), 900)
-    setTimeout(() => {
-      setIsTyping(false)
-      setMessages(p => [...p, { id: Date.now() + 1, from: 'partner', text: "Great idea! Let's do it. I'll DM you the details 📖", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), read: false, fresh: true, reactions: [] }])
-    }, 2800)
+    setTyping(thread.conversation.id, false)
+
+    try {
+      await sendConversationMessage(thread.conversation.id, user.id, txt)
+    } catch (error) {
+      setSendError(error?.message || 'Gagal mengirim pesan.')
+    }
   }
 
   const addReaction = (msgId, emoji) => {
-    setMessages(p => p.map(m => {
-      if (m.id !== msgId) return m
-      const hasIt = m.reactions.includes(emoji)
-      return { ...m, reactions: hasIt ? m.reactions.filter(r => r !== emoji) : [...m.reactions, emoji] }
-    }))
-    setReactionPickerId(null)
+    addReactionToConversation(threadId, msgId, emoji)
   }
 
   const openResourceHub = () => {
@@ -223,6 +289,40 @@ export default function ChatPage() {
   const completedGoals = goals.filter(g => g.done).length
   const progressPct = Math.round((completedGoals / goals.length) * 100)
 
+  if (loadError && !loading) {
+    return (
+      <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
+        <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-[0px_12px_40px_rgba(0,0,0,0.08)]">
+          <h1 className="text-2xl font-bold text-[#0f172a]">Gagal memuat chat</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#64748b]">{loadError}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!loading && isSupabaseConfigured && !thread?.conversation) {
+    return (
+      <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
+        <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-[0px_12px_40px_rgba(0,0,0,0.08)]">
+          <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-[#eff6ff] flex items-center justify-center text-[#1a56db]">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <h1 className="text-2xl font-bold text-[#0f172a]">Belum ada conversation</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#64748b]">
+            Kamu belum punya match aktif dengan partner ini. Coba swipe di Discover dulu, lalu balik ke chat.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/discover')}
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-[#1a56db] px-4 py-3 text-sm font-semibold text-white"
+          >
+            Go to Discover
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <style>{`
@@ -249,6 +349,12 @@ export default function ChatPage() {
         .card-hover { transition: box-shadow .2s, transform .2s; }
         .card-hover:hover { box-shadow:0 4px 20px rgba(0,0,0,.06); transform:translateY(-1px); }
       `}</style>
+
+      {sendError && (
+        <div className="fixed top-[76px] left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 shadow-lg">
+          {sendError}
+        </div>
+      )}
 
       {/* Outer container locked to viewport */}
       <div className="-mt-16 flex bg-[#f0f4f8] overflow-hidden" style={{ height: '100vh' }}>
@@ -463,8 +569,7 @@ export default function ChatPage() {
                     <button
                       className="reaction-trigger absolute top-0 z-10 opacity-0 transition-opacity duration-150"
                       style={{ [isMe ? 'left' : 'right']: '-28px' }}
-                      onClick={() => setReactionPickerId(showReactor ? null : msg.id)}
-                      onMouseEnter={() => setHighlightedMsg(msg.id)}>
+                      onClick={() => setReactionPickerId(showReactor ? null : msg.id)}>
                       <span className="text-[16px]">😊</span>
                     </button>
 
@@ -559,7 +664,10 @@ export default function ChatPage() {
               <input
                 ref={inputRef}
                 value={draft}
-                onChange={e => setDraft(e.target.value)}
+                onChange={e => {
+                  setSendError('')
+                  setDraft(threadId, e.target.value)
+                }}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
                 placeholder="Type a message..."

@@ -3,11 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import navbarLogo from '../assets/navbar-logo.svg';
 import gsap from 'gsap'
-import { useAuth } from '@/context/AuthContext'
+import { useAuthStore } from '@/store/useAuthStore'
 import { formatAuthError } from '@/lib/auth'
 
 export default function RegisterPage() {
-  const { signUp, signInAnonymously, signInWithGoogle } = useAuth()
+  const signUp = useAuthStore(state => state.signUp)
+  const signInAnonymously = useAuthStore(state => state.signInAnonymously)
+  const signInWithGoogle = useAuthStore(state => state.signInWithGoogle)
   const navigate = useNavigate()
   
   const pageRef = useRef(null)

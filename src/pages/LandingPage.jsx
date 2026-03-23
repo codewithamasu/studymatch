@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import alex from '../assets/profile-landing-page.png';
-import navbarLogo from '../assets/navbar-logo.svg';
+import Navbar from '@/components/layout/Navbar';
 gsap.registerPlugin(ScrollTrigger);
 export default function LandingPage() {
   const heroRef = useRef(null);
@@ -100,39 +100,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white text-[#64748B] font-sans selection:bg-[#136DEC]/10 selection:text-[#136DEC]">
-      
-      {/* ─── HEADER ─── */}
-      <header className="fixed top-0 z-50 w-full border-b border-[#F8FAFC] bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-6">
-          <nav className="flex h-20 items-center justify-between" aria-label="Main Navigation">
-            {/* Logo */}
-            <Link to="/" className="flex items-center group outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded" aria-label="StudyMatch Home">
-              <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
-            </Link>
+      <Navbar mode="marketing" />
 
-            {/* Desktop Nav Links */}
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#how-it-works" className="text-sm font-medium text-[#64748B] hover:text-[#136DEC] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded">How it Works</a>
-              <a href="#features" className="text-sm font-medium text-[#64748B] hover:text-[#136DEC] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded">Features</a>
-            </div>
-
-            {/* Auth Buttons */}
-            <div className="flex items-center gap-4">
-              <Link to="/login" className="hidden sm:block text-sm font-medium text-[#64748B] hover:text-[#136DEC] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#136DEC] rounded">
-                Log in
-              </Link>
-              <Link
-                to="/register"
-                className="rounded bg-[#136DEC] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#136DEC]/90 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC]"
-              >
-                Join Now
-              </Link>
-            </div>
-          </nav>
-        </div>
-      </header>
-
-      <main className="pt-20">
+      <main className="pt-[4.5rem]">
         
         {/* ─── HERO SECTION ─── */}
         <section ref={heroRef} className="py-16 sm:py-24 lg:py-32 bg-[#F8FAFC]" aria-labelledby="hero-heading">
