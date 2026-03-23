@@ -595,6 +595,84 @@ export async function sendConversationMessage(conversationId, senderProfileId, b
   return data
 }
 
+/** Fetch real stats for THIS user's completed sessions with a specific partner */
+export async function fetchPartnerStats(currentUserId, partnerProfileId) {
+  if (!isSupabaseConfigured || !currentUserId || !partnerProfileId) {
+    return { sessions: 0, studiedHours: 0 }
+  }
+
+  const { data: myParticipations } = await supabase
+    .from('session_participants')
+    .select('session_id')
+    .eq('profile_id', currentUserId)
+
+  const mySessionIds = (myParticipations || []).map((r) => r.session_id)
+  if (!mySessionIds.length) return { sessions: 0, studiedHours: 0 }
+
+  const { data: partnerParticipations } = await supabase
+    .from('session_participants')
+    .select('session_id')
+    .eq('profile_id', partnerProfileId)
+    .in('session_id', mySessionIds)
+
+  const sharedSessionIds = (partnerParticipations || []).map((r) => r.session_id)
+  if (!sharedSessionIds.length) return { sessions: 0, studiedHours: 0 }
+
+  const { data: sessions } = await supabase
+    .from('sessions')
+    .select('id, status, duration_minutes, scheduled_start')
+    .in('id', sharedSessionIds)
+    .neq('status', 'cancelled')
+
+  const completed = (sessions || []).filter((s) => s.status === 'completed')
+  const studiedMinutes = completed.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
+
+  return {
+    sessions: completed.length,
+    studiedHours: Math.round((studiedMinutes / 60) * 10) / 10,
+  }
+}
+
+/** Fetch match info (matched_at) between currentUser and partner */
+export async function fetchMatchInfo(currentUserId, partnerProfileId) {
+  if (!isSupabaseConfigured || !currentUserId || !partnerProfileId) return null
+
+  const { data } = await supabase
+    .from('matches')
+    .select('id, matched_at, status')
+    .or(
+      `and(profile_a_id.eq.${currentUserId},profile_b_id.eq.${partnerProfileId}),` +
+      `and(profile_a_id.eq.${partnerProfileId},profile_b_id.eq.${currentUserId})`
+    )
+    .eq('status', 'active')
+    .maybeSingle()
+
+  return data || null
+}
+
+/** Subscribe to new messages across all user conversations for live inbox updates */
+export function subscribeToConversations(userId, conversationIds, onNewMessage) {
+  if (!isSupabaseConfigured || !userId || !conversationIds.length) {
+    return { unsubscribe: () => {} }
+  }
+
+  const channel = supabase
+    .channel(`inbox:${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages' },
+      (payload) => {
+        const msg = payload.new
+        if (msg && conversationIds.includes(msg.conversation_id)) {
+          onNewMessage(msg)
+        }
+      }
+    )
+    .subscribe()
+
+  return { unsubscribe: () => supabase.removeChannel(channel) }
+}
+
 export function subscribeToMessages(conversationId, onMessage) {
   if (!isSupabaseConfigured || !conversationId) return { unsubscribe: () => {} }
 
