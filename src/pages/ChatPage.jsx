@@ -24,6 +24,14 @@ import {
   Heart,
   Laugh,
   ThumbsUp,
+  Link as LinkIcon,
+  ExternalLink,
+  X,
+  Globe,
+  FileText,
+  Image as ImageIcon,
+  MessageCircle,
+  Trophy,
 } from 'lucide-react'
 import { mockUsers, mockCurrentUser } from '@/data/mockData'
 
@@ -37,6 +45,19 @@ const INITIAL_MESSAGES = [
   { id: 1, from: 'partner', text: "Hey! Thanks for the match. I saw you're also working on the Data Structures assignment. How's it going so far?", time: '2:50 PM', read: true, reactions: [] },
   { id: 2, from: 'me', text: "Hey Alex! It's going okay, but I'm definitely struggling with the AVL tree rotations. Did you finish that part yet?", time: '2:52 PM', read: true, reactions: ['👍'] },
   { id: 3, from: 'partner', text: "I just finished it! I'd be happy to show you how I approached it. Are you free to meet up at the library tomorrow afternoon?", time: '2:55 PM', read: true, reactions: [] },
+]
+
+const MOCK_JOURNEY = [
+  { id: 1, type: 'match', title: 'It\'s a Match!', date: 'Mar 10', time: '14:20', desc: 'You and Alex decided to conquer Data Structures together! ✨', icon: 'zap', color: 'bg-[#f59e0b]', border: 'border-[#fcd34d]', text: 'text-[#f59e0b]' },
+  { id: 2, type: 'chat', title: 'First Conversation', date: 'Mar 10', time: '14:50', desc: 'Started planning for the upcoming Data Structures midterm.', icon: 'message', color: 'bg-[#3b82f6]', border: 'border-[#93c5fd]', text: 'text-[#3b82f6]' },
+  { id: 3, type: 'session', title: 'Library Session', date: 'Mar 11', time: '2 hours', desc: 'Completed 2 hours of intense studying. Finished Lab Report 4.', icon: 'calendar', color: 'bg-[#8b5cf6]', border: 'border-[#c4b5fd]', text: 'text-[#8b5cf6]' },
+  { id: 4, type: 'milestone', title: 'First Goal Achieved', date: 'Mar 12', time: '10:00', desc: 'Mastered AVL Trees successfully! 1 of 3 goals checked off. 🏆', icon: 'trophy', color: 'bg-[#10b981]', border: 'border-[#6ee7b7]', text: 'text-[#10b981]' },
+]
+
+const INITIAL_RESOURCES = [
+  { id: 1, title: 'Data Structures Midterm Study Guide', url: 'https://notion.so/study-guide', provider: 'Notion', type: 'doc', date: 'Today' },
+  { id: 2, title: 'AVL Trees Visualizer', url: 'https://cs.usfca.edu/', provider: 'Web', type: 'link', date: 'Yesterday' },
+  { id: 3, title: 'Group Project Slides', url: 'https://canva.com/', provider: 'Canva', type: 'presentation', date: 'Mar 15' },
 ]
 
 const GOALS = [
@@ -60,12 +81,21 @@ export default function ChatPage() {
   const [highlightedMsg, setHighlightedMsg] = useState(null)
   const [inputFocused, setInputFocused] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [resourceHubOpen, setResourceHubOpen] = useState(false)
+  const [newLink, setNewLink] = useState('')
+  const [resources, setResources] = useState(INITIAL_RESOURCES)
+  const [studyLogOpen, setStudyLogOpen] = useState(false)
+  
   const messagesEnd = useRef(null)
   const inputRef = useRef(null)
   const leftSidebarRef = useRef(null)
   const rightSidebarRef = useRef(null)
   const chatHeaderRef = useRef(null)
   const chatBodyRef = useRef(null)
+  const modalOverlayRef = useRef(null)
+  const modalRef = useRef(null)
+  const studyLogOverlayRef = useRef(null)
+  const studyLogRef = useRef(null)
 
   const avatar = (name) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`
   const myAvatar = avatar((user || mockCurrentUser)?.full_name || 'User')
@@ -129,6 +159,65 @@ export default function ChatPage() {
       return { ...m, reactions: hasIt ? m.reactions.filter(r => r !== emoji) : [...m.reactions, emoji] }
     }))
     setReactionPickerId(null)
+  }
+
+  const openResourceHub = () => {
+    setResourceHubOpen(true)
+    setTimeout(() => {
+      gsap.fromTo(modalOverlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power2.out' })
+      gsap.fromTo(modalRef.current, { y: 60, scale: 0.9, opacity: 0, rotateX: 10 }, { y: 0, scale: 1, opacity: 1, rotateX: 0, duration: 0.6, ease: 'expo.out' })
+      gsap.fromTo('.resource-item', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, stagger: 0.08, ease: 'power2.out', delay: 0.2 })
+    }, 10)
+  }
+
+  const closeResourceHub = () => {
+    gsap.to(modalOverlayRef.current, { opacity: 0, duration: 0.3, ease: 'power2.in' })
+    gsap.to(modalRef.current, { y: 40, scale: 0.95, opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => setResourceHubOpen(false) })
+  }
+
+  const openStudyLog = () => {
+    setStudyLogOpen(true)
+    setTimeout(() => {
+      gsap.fromTo(studyLogOverlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power2.out' })
+      gsap.fromTo(studyLogRef.current, { x: 40, opacity: 0, scale: 0.95 }, { x: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.1)' })
+      gsap.fromTo('.log-item', { x: -25, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, stagger: 0.15, ease: 'power2.out', delay: 0.15 })
+      gsap.fromTo('.log-line', { height: 0 }, { height: '100%', duration: 1.2, ease: 'power3.inOut', delay: 0.3 })
+    }, 10)
+  }
+
+  const closeStudyLog = () => {
+    gsap.to(studyLogOverlayRef.current, { opacity: 0, duration: 0.3, ease: 'power2.in' })
+    gsap.to(studyLogRef.current, { x: 30, opacity: 0, scale: 0.95, duration: 0.3, ease: 'power2.in', onComplete: () => setStudyLogOpen(false) })
+  }
+
+  const addResource = (e) => {
+    e.preventDefault()
+    if (!newLink.trim()) return
+    const id = Date.now()
+    const isNotion = newLink.toLowerCase().includes('notion')
+    const isDrive = newLink.toLowerCase().includes('drive.google')
+    const isCanva = newLink.toLowerCase().includes('canva')
+    const provider = isNotion ? 'Notion' : isDrive ? 'Google Drive' : isCanva ? 'Canva' : 'Web Link'
+    
+    // Auto-generate title from URL domain for demo
+    let domain = new URL(newLink.startsWith('http') ? newLink : `https://${newLink}`).hostname
+    let titleParts = domain.split('.')
+    let title = titleParts.length > 1 ? titleParts[titleParts.length - 2] : domain
+    title = title.charAt(0).toUpperCase() + title.slice(1) + ' Resource'
+    
+    const newItem = { id, title: title, url: newLink.startsWith('http') ? newLink : `https://${newLink}`, provider, type: 'link', date: 'Just now', fresh: true }
+    setResources(p => [newItem, ...p])
+    setNewLink('')
+    
+    setTimeout(() => {
+      gsap.fromTo(`.resource-item-${id}`, 
+        { height: 0, opacity: 0, scale: 0.9, marginBottom: 0 }, 
+        { height: 'auto', opacity: 1, scale: 1, marginBottom: 12, duration: 0.5, ease: 'back.out(1.2)' })
+    }, 10)
+    
+    // Add message to chat as well
+    setMessages(p => [...p, { id: Date.now() + 1, from: 'me', type: 'resource', resource: newItem, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), read: false, fresh: true, reactions: [] }])
+    setTimeout(() => { messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, 100)
   }
 
   const completedGoals = goals.filter(g => g.done).length
@@ -221,7 +310,7 @@ export default function ChatPage() {
                   <p className="text-[11px] text-blue-200 font-medium mt-0.5">Pick a time to study</p>
                 </div>
               </button>
-              <button className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left">
+              <button onClick={openResourceHub} className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left">
                 <div className="w-9 h-9 rounded-[9px] bg-[#eff6ff] flex items-center justify-center shrink-0 text-[#1a56db]">
                   <FolderOpen className="w-4 h-4" />
                 </div>
@@ -230,7 +319,7 @@ export default function ChatPage() {
                   <p className="text-[11px] text-[#94a3b8] font-medium mt-0.5">Files & notes</p>
                 </div>
               </button>
-              <button className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left">
+              <button onClick={openStudyLog} className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left">
                 <div className="w-9 h-9 rounded-[9px] bg-[#eff6ff] flex items-center justify-center shrink-0 text-[#1a56db]">
                   <BarChart2 className="w-4 h-4" />
                 </div>
@@ -392,12 +481,29 @@ export default function ChatPage() {
                     )}
 
                     {/* Bubble */}
-                    <div className={`px-5 py-3.5 rounded-[22px] text-[14px] leading-relaxed shadow-sm ${isMe
-                        ? 'bg-[#1a56db] text-white rounded-br-[4px] shadow-blue-100'
-                        : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#f1f5f9]'
-                      }`}>
-                      {msg.text}
-                    </div>
+                    {msg.type === 'resource' && msg.resource ? (
+                      <div className={`p-4 rounded-[22px] shadow-sm w-[260px] ${isMe ? 'bg-gradient-to-br from-[#1a56db] to-[#3b82f6] text-white rounded-br-[4px] shadow-blue-200' : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#e2e8f0]'}`}>
+                        <div className="flex gap-3 items-center mb-3">
+                          <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20 text-white' : 'bg-[#eff6ff] text-[#1a56db]'}`}>
+                            <LinkIcon className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{msg.resource.provider}</p>
+                            <p className={`text-[14px] font-bold truncate leading-tight ${isMe ? 'text-white' : 'text-[#0f172a]'}`}>{msg.resource.title}</p>
+                          </div>
+                        </div>
+                        <a href={msg.resource.url} target="_blank" rel="noreferrer" className={`flex justify-center items-center gap-2 py-2.5 w-full rounded-[14px] text-[13px] font-bold transition-transform hover:scale-[1.03] active:scale-95 ${isMe ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-[#f1f5f9] text-[#1a56db] hover:bg-[#e2e8f0]'}`}>
+                          Open <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    ) : (
+                      <div className={`px-5 py-3.5 rounded-[22px] text-[14px] leading-relaxed shadow-sm ${isMe
+                          ? 'bg-[#1a56db] text-white rounded-br-[4px] shadow-blue-100'
+                          : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#f1f5f9]'
+                        }`}>
+                        {msg.text}
+                      </div>
+                    )}
 
                     {/* Reactions display */}
                     {msg.reactions.length > 0 && (
@@ -447,8 +553,8 @@ export default function ChatPage() {
             <form onSubmit={sendMsg}
               className={`flex items-center gap-3 rounded-[24px] px-5 py-3 border bg-[#f8fafc] transition-all duration-200 ${inputFocused ? 'border-[#1a56db] ring-4 ring-[#1a56db]/10 bg-white' : 'border-[#e2e8f0]'
                 }`}>
-              <button type="button" className="action-btn text-[#94a3b8] hover:text-[#1a56db] shrink-0">
-                <Paperclip className="w-[21px] h-[21px]" />
+              <button type="button" onClick={openResourceHub} title="Share Link" className="action-btn text-[#94a3b8] hover:text-[#1a56db] shrink-0">
+                <LinkIcon className="w-[21px] h-[21px]" />
               </button>
               <input
                 ref={inputRef}
@@ -575,6 +681,190 @@ export default function ChatPage() {
           </div>
         </aside>
       </div>
+
+      {/* ══════ RESOURCE HUB MODAL ══════ */}
+      {resourceHubOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ perspective: '1000px' }}>
+          <div ref={modalOverlayRef} className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-sm" onClick={closeResourceHub} />
+          
+          <div ref={modalRef} className="relative w-full max-w-xl bg-white backdrop-blur-xl rounded-[28px] overflow-hidden shadow-2xl border border-white/50 flex flex-col max-h-[85vh]">
+            
+            {/* Header */}
+            <div className="px-6 md:px-8 pt-8 pb-6 bg-gradient-to-b from-[#f8fafc] to-white relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1a56db] to-[#60a5fa]" />
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h2 className="text-[24px] font-black text-[#0f172a] tracking-tight">Resource Hub</h2>
+                  <p className="text-[14px] text-[#64748b] font-medium mt-1">Shared links, docs, & materials without taking up server space.</p>
+                </div>
+                <button onClick={closeResourceHub} className="w-10 h-10 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#64748b] hover:bg-[#e2e8f0] hover:scale-110 transition-all shrink-0">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Input Form */}
+            <div className="px-6 md:px-8 pb-6 relative z-20 shadow-sm">
+              <form onSubmit={addResource} className="flex gap-2 relative">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                     <LinkIcon className="w-5 h-5 text-[#94a3b8]" />
+                  </div>
+                  <input value={newLink} onChange={e => setNewLink(e.target.value)} type="url" placeholder="Paste G-Drive, Notion, or Canvas link..." required
+                     className="w-full h-14 pl-12 pr-4 bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-[16px] text-[14px] font-semibold text-[#0f172a] placeholder:text-[#94a3b8] placeholder:font-medium focus:bg-white focus:border-[#1a56db] focus:ring-4 focus:ring-[#1a56db]/10 transition-all outline-none" />
+                </div>
+                <button type="submit" className="h-14 px-6 bg-[#1a56db] text-white font-bold text-[14px] rounded-[16px] shadow-lg shadow-blue-200 hover:bg-[#1e40af] hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                  <Plus className="w-5 h-5" /> Share
+                </button>
+              </form>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-8 pt-2" style={{ scrollbarWidth: 'none' }}>
+               <style>{`
+                 .resource-list::-webkit-scrollbar { display: none; }
+               `}</style>
+               <div className="space-y-3 resource-list">
+                 {resources.map(res => (
+                    <div key={res.id} className={`resource-item resource-item-${res.id} mb-3`}>
+                       <a href={res.url} target="_blank" rel="noreferrer" className="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-[#e2e8f0] shadow-sm hover:border-[#bae6fd] hover:shadow-md hover:-translate-y-1 hover:bg-[#f0f9ff] transition-all group relative overflow-hidden">
+                         
+                         <div className="relative w-[50px] h-[50px] rounded-[14px] flex items-center justify-center shrink-0 overflow-hidden bg-white border border-[#f1f5f9] shadow-sm">
+                            <div className={`absolute inset-0 opacity-10 ${res.provider === 'Notion' ? 'bg-slate-800' : res.provider === 'Google Drive' ? 'bg-green-500' : res.provider === 'Canva' ? 'bg-purple-500' : 'bg-[#1a56db]'}`} />
+                            {res.provider === 'Notion' ? <FileText className="w-5 h-5 text-slate-700 relative z-10" /> : 
+                             res.provider === 'Google Drive' ? <FolderOpen className="w-5 h-5 text-emerald-600 relative z-10" /> : 
+                             res.provider === 'Canva' ? <ImageIcon className="w-5 h-5 text-purple-600 relative z-10" /> : 
+                             <Globe className="w-5 h-5 text-[#1a56db] relative z-10" />}
+                         </div>
+
+                         <div className="flex-1 min-w-0">
+                           <div className="flex items-center gap-2 mb-1">
+                             <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-0.5 rounded-full group-hover:bg-white group-hover:text-[#1a56db] group-hover:border-[#bfdbfe] transition-colors">{res.provider}</span>
+                             <span className="text-[11px] text-[#94a3b8] font-semibold">{res.date}</span>
+                           </div>
+                           <p className="text-[15px] font-extrabold text-[#0f172a] truncate group-hover:text-[#1a56db] transition-colors">{res.title}</p>
+                         </div>
+                         
+                         <div className="w-9 h-9 rounded-full bg-[#f8fafc] flex items-center justify-center text-[#94a3b8] border border-[#f1f5f9] group-hover:bg-[#1a56db] group-hover:border-[#1a56db] group-hover:text-white group-hover:shadow-md transition-all shrink-0 mr-1">
+                            <ExternalLink className="w-4 h-4 ml-0.5" />
+                         </div>
+                       </a>
+                    </div>
+                 ))}
+                 {resources.length === 0 && (
+                   <div className="text-center py-12 px-4 bg-[#f8fafc] rounded-[24px] border-2 border-dashed border-[#e2e8f0]">
+                      <div className="w-16 h-16 bg-white border border-[#f1f5f9] rounded-full flex items-center justify-center mx-auto mb-4 text-[#cbd5e1] shadow-sm">
+                        <LinkIcon className="w-8 h-8" />
+                      </div>
+                      <p className="text-[16px] font-extrabold text-[#334155] mb-1">No shared resources yet</p>
+                      <p className="text-[13px] text-[#64748b] font-medium max-w-[250px] mx-auto">Paste a link above to share study materials safely without using up server space.</p>
+                   </div>
+                 )}
+               </div>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
+      {/* ══════ STUDY LOG (JOURNEY) MODAL ══════ */}
+      {studyLogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center lg:justify-end px-4 lg:px-6 py-6" style={{ perspective: '1000px' }}>
+          <div ref={studyLogOverlayRef} className="absolute inset-0 bg-[#0f172a]/30 backdrop-blur-sm" onClick={closeStudyLog} />
+          
+          <div ref={studyLogRef} className="relative w-full max-w-[420px] h-[90vh] lg:h-[calc(100vh-120px)] bg-[#f8fafc] backdrop-blur-xl rounded-[32px] overflow-hidden shadow-2xl border border-white/80 flex flex-col z-10" style={{ transformOrigin: 'right center' }}>
+            
+            {/* Header */}
+            <div className="px-8 pt-10 pb-6 bg-white shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)] relative z-20">
+               <button onClick={closeStudyLog} className="absolute top-6 right-6 w-9 h-9 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#64748b] hover:bg-[#e2e8f0] hover:scale-110 hover:text-[#0f172a] transition-all">
+                  <X className="w-4 h-4" />
+               </button>
+               <div className="w-12 h-12 rounded-full bg-[#eff6ff] flex items-center justify-center text-[#1a56db] mb-4">
+                  <BarChart2 className="w-6 h-6" />
+               </div>
+               <h2 className="text-[26px] font-black text-[#0f172a] tracking-tight leading-none mb-1">Study Journey</h2>
+               <p className="text-[14px] text-[#64748b] font-medium mt-2">See how far you and <span className="text-[#0f172a] font-bold">{partner.full_name.split(' ')[0]}</span> have come!</p>
+            </div>
+            
+            {/* Stats row over timeline */}
+            <div className="flex bg-white px-8 pb-6 border-b border-[#f1f5f9] shrink-0 gap-3 relative z-20">
+               <div className="flex-1 bg-gradient-to-br from-[#1a56db] to-[#3b82f6] rounded-[16px] p-3 text-white shadow-md shadow-blue-200 hover:-translate-y-1 transition-transform cursor-default">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1 opacity-90"><Clock className="w-3 h-3" /> Total Log</span>
+                  <p className="text-[20px] font-black leading-none">2h 0m</p>
+               </div>
+               <div className="flex-1 bg-white border border-[#e2e8f0] rounded-[16px] p-3 text-[#0f172a] shadow-sm hover:border-[#6ee7b7] transition-colors cursor-default">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1 text-[#64748b]"><Trophy className="w-3 h-3 text-[#f59e0b]" /> Milestone</span>
+                  <p className="text-[20px] font-black leading-none text-[#10b981]">1 / 3</p>
+               </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="flex-1 overflow-y-auto px-8 py-8 relative" style={{ scrollbarWidth: 'none' }}>
+               <style>{`
+                 .timeline-scroll::-webkit-scrollbar { display: none; }
+               `}</style>
+               
+               {/* Vertical line connecting nodes */}
+               <div className="absolute top-[40px] left-[48px] bottom-[40px] w-[3px] bg-[#e2e8f0]/60 z-0 overflow-hidden rounded-full">
+                  <div className="log-line w-full bg-gradient-to-b from-[#1a56db] via-[#8b5cf6] to-[#10b981] rounded-full" style={{ transformOrigin: 'top' }} />
+               </div>
+
+               <div className="space-y-8 relative z-10 timeline-scroll">
+                  {MOCK_JOURNEY.map((item) => (
+                     <div key={item.id} className="log-item flex gap-5 group">
+                        {/* Timeline node */}
+                        <div className={`w-[34px] h-[34px] rounded-full flex justify-center items-center shrink-0 border-[3px] shadow-sm transition-transform duration-300 group-hover:scale-110 ${item.color} ${item.border} text-white relative z-10 bg-white`}>
+                           {item.icon === 'zap' && <Zap className="w-4 h-4 fill-white" />}
+                           {item.icon === 'message' && <MessageCircle className="w-4 h-4 fill-white" />}
+                           {item.icon === 'calendar' && <Calendar className="w-4 h-4" />}
+                           {item.icon === 'trophy' && <Trophy className="w-4 h-4 fill-white" />}
+                        </div>
+                        
+                        {/* Timeline content */}
+                        <div className="flex-1 pt-0.5 pb-2">
+                           <div className="flex justify-between items-baseline mb-1">
+                              <h3 className={`text-[15px] font-black ${item.text}`}>{item.title}</h3>
+                              <span className="text-[11px] font-bold text-[#94a3b8]">{item.date}</span>
+                           </div>
+                           <p className="text-[13px] text-[#475569] font-medium leading-[1.6]">{item.desc}</p>
+                           
+                           {item.type === 'session' && (
+                              <div className="mt-3 bg-white p-3 rounded-[12px] border border-[#e2e8f0] shadow-sm flex items-center gap-3">
+                                 <div className="w-8 h-8 rounded-[12px] bg-[#f0fdf4] flex items-center justify-center shrink-0">
+                                    <CheckCheck className="w-4 h-4 text-[#16a34a]" />
+                                 </div>
+                                 <div className="min-w-0">
+                                    <p className="text-[12px] font-extrabold text-[#0f172a] leading-tight mb-0.5">Productive Session!</p>
+                                    <p className="text-[11px] font-semibold text-[#64748b]">Logged {item.time}</p>
+                                 </div>
+                              </div>
+                           )}
+                           
+                           {item.type === 'milestone' && (
+                              <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fffbeb] border border-[#fde68a] text-[#d97706] text-[11px] font-bold rounded-full">
+                                 <Zap className="w-3.5 h-3.5 fill-[#d97706]" /> +50 XP Earned
+                              </div>
+                           )}
+                        </div>
+                     </div>
+                  ))}
+                  
+                  {/* Future node placeholder */}
+                  <div className="log-item flex gap-5 opacity-40">
+                     <div className="w-[34px] h-[34px] rounded-full flex justify-center items-center shrink-0 bg-[#f1f5f9] border-[3px] border-[#e2e8f0] text-[#94a3b8] relative z-10">
+                        <Clock className="w-4 h-4" />
+                     </div>
+                     <div className="flex-1 pt-1">
+                        <h3 className="text-[14px] font-bold text-[#64748b]">Next Session</h3>
+                        <p className="text-[12px] text-[#94a3b8] font-medium mt-0.5">Keep the streak going!</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            
+          </div>
+        </div>
+      )}
     </>
   )
 }
