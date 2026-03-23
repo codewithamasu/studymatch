@@ -28,39 +28,39 @@ const ALL_SUBJECTS = [
 ]
 
 const SKILL_LEVELS = [
-  { value: 'beginner',     label: 'Beginner',     emoji: '🌱', desc: 'Baru mulai belajar' },
-  { value: 'intermediate', label: 'Intermediate', emoji: '📚', desc: 'Sudah paham dasar' },
-  { value: 'advanced',     label: 'Advanced',     emoji: '🚀', desc: 'Menguasai dengan baik' },
+  { value: 'beginner',     label: 'Beginner',     emoji: '🌱', desc: 'Just starting to learn' },
+  { value: 'intermediate', label: 'Intermediate', emoji: '📚', desc: 'Understands the basics' },
+  { value: 'advanced',     label: 'Advanced',     emoji: '🚀', desc: 'Mastered the material' },
 ]
 
 const STUDY_GOALS_DETAIL = [
-  { value: 'exam_prep',      label: 'Persiapan Ujian',    desc: 'Fokusin belajar intensif untuk ujian akhir atau sertifikasi.' },
-  { value: 'homework_help',  label: 'Bantuan Tugas',       desc: 'Bantu selesaikan PR dan pertanyaan konsep sehari-hari.' },
-  { value: 'skill_mastery',  label: 'Kuasai Skill Baru',  desc: 'Deep dive jangka panjang untuk tumbuh dan berkembang.' },
-  { value: 'project',        label: 'Project Bareng',      desc: 'Kolaborasi mengerjakan proyek akademis atau portofolio.' },
+  { value: 'exam_prep',      label: 'Exam Prep',          desc: 'Focus on intensive study for final exams or certifications.' },
+  { value: 'homework_help',  label: 'Homework Help',      desc: 'Help solve homework and daily concept questions.' },
+  { value: 'skill_mastery',  label: 'Master New Skill',   desc: 'Long-term deep dive to grow and develop.' },
+  { value: 'project',        label: 'Collaboration',      desc: 'Collaborate on academic projects or portfolios.' },
 ]
 
 const MASTERY_LABELS = [
-  { max: 25,  label: 'Pemula',       desc: 'Baru mulai, masih belajar dasar-dasarnya.' },
-  { max: 50,  label: 'Menengah',     desc: 'Paham dasar, tapi masih perlu banyak latihan.' },
-  { max: 75,  label: 'Mahir',        desc: 'Nyaman dengan materi, tinggal polish.' },
-  { max: 100, label: 'Sangat Ahli',  desc: 'Siap jadi tutor, menguasai topik ini.' },
+  { max: 25,  label: 'Beginner',     desc: 'Just starting, still learning the basics.' },
+  { max: 50,  label: 'Intermediate', desc: 'Understands basics, but still needs practice.' },
+  { max: 75,  label: 'Advanced',     desc: 'Comfortable with material, just needs polish.' },
+  { max: 100, label: 'Expert',       desc: 'Ready to tutor and master this topic.' },
 ]
 
 const LEARNING_STYLES = [
-  { value: 'visual',      label: 'Visual',      emoji: '👁️', desc: 'Gambar & diagram' },
-  { value: 'auditory',    label: 'Auditory',    emoji: '👂', desc: 'Diskusi & mendengar' },
-  { value: 'kinesthetic', label: 'Kinesthetic', emoji: '✋', desc: 'Praktik langsung' },
+  { value: 'visual',      label: 'Visual',      emoji: '👁️', desc: 'Images & diagrams' },
+  { value: 'auditory',    label: 'Auditory',    emoji: '👂', desc: 'Discussion & listening' },
+  { value: 'kinesthetic', label: 'Kinesthetic', emoji: '✋', desc: 'Hands-on practice' },
 ]
 
 const DAYS = [
-  { value: 'mon', label: 'SEN', full: 'Senin' },
-  { value: 'tue', label: 'SEL', full: 'Selasa' },
-  { value: 'wed', label: 'RAB', full: 'Rabu' },
-  { value: 'thu', label: 'KAM', full: 'Kamis' },
-  { value: 'fri', label: 'JUM', full: 'Jumat' },
-  { value: 'sat', label: 'SAB', full: 'Sabtu' },
-  { value: 'sun', label: 'MIN', full: 'Minggu' },
+  { value: 'mon', label: 'MON', full: 'Monday' },
+  { value: 'tue', label: 'TUE', full: 'Tuesday' },
+  { value: 'wed', label: 'WED', full: 'Wednesday' },
+  { value: 'thu', label: 'THU', full: 'Thursday' },
+  { value: 'fri', label: 'FRI', full: 'Friday' },
+  { value: 'sat', label: 'SAT', full: 'Saturday' },
+  { value: 'sun', label: 'SUN', full: 'Sunday' },
 ]
 
 const LANGUAGES = [
@@ -72,16 +72,16 @@ const LANGUAGES = [
 ]
 
 const TIME_SLOTS = [
-  { value: 'morning',    label: 'Pagi',       sub: '06.00 – 12.00' },
-  { value: 'afternoon',  label: 'Siang',      sub: '12.00 – 17.00' },
-  { value: 'evening',    label: 'Malam',      sub: '17.00 – 21.00' },
+  { value: 'morning',    label: 'Morning',   sub: '06.00 – 12.00' },
+  { value: 'afternoon',  label: 'Afternoon', sub: '12.00 – 17.00' },
+  { value: 'evening',    label: 'Evening',   sub: '17.00 – 21.00' },
   { value: 'late_night', label: 'Late Night', sub: '21.00+' },
 ]
 
 const STEP_TITLES = [
-  { heading: 'What are you studying?',       sub: 'Pilih mata kuliah yang ingin kamu pelajari bersama partner-mu.' },
-  { heading: 'Define your mastery & goals.', sub: 'Ceritakan di mana posisimu sekarang dan apa yang ingin kamu capai.' },
-  { heading: 'Preferences & Availability.',  sub: 'Ceritakan cara dan waktu belajar yang paling nyaman buatmu.' },
+  { heading: 'What are you studying?',       sub: 'Choose subjects you want to study with your partner.' },
+  { heading: 'Define your mastery & goals.', sub: 'Tell us where you are now and what you want to achieve.' },
+  { heading: 'Preferences & Availability.',  sub: 'Tell us your preferred study methods and times.' },
 ]
 
 function normalizeSubjectInput(value) {
@@ -185,7 +185,7 @@ export default function OnboardingPage() {
     const { error } = await updateProfile(profile)
     setSaving(false)
     if (error) {
-      setErrorMessage(error.message || 'Gagal menyimpan profil. Coba lagi.')
+      setErrorMessage(error.message || 'Failed to save profile. Please try again.')
       return
     }
     resetOnboarding()
@@ -340,7 +340,7 @@ export default function OnboardingPage() {
                       : 'bg-slate-50'
                   }`}>
                     {profile.subjects.length === 0 && (
-                      <span className="text-sm text-slate-400 italic flex items-center">Pilih setidaknya 1 mata kuliah...</span>
+                      <span className="text-sm text-slate-400 italic flex items-center">Pick at least 1 subject...</span>
                     )}
                     {profile.subjects.map(subject => (
                       <span
@@ -414,7 +414,7 @@ export default function OnboardingPage() {
 
                   <div className="rounded-xl border border-black/[0.08] bg-white p-6 space-y-7">
                     {profile.subjects.length === 0 ? (
-                      <p className="text-sm text-slate-400 italic">Kamu belum memilih mata kuliah di step sebelumnya.</p>
+                      <p className="text-sm text-slate-400 italic">You haven't selected any subjects in the previous step.</p>
                     ) : (
                       profile.subjects.map(subject => {
                         const val = profile.subject_mastery[subject] ?? 50
@@ -510,7 +510,7 @@ export default function OnboardingPage() {
                   <div className="p-6 bg-white rounded-xl border border-black/[0.08] flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-[#136DEC] text-[20px]">distance</span>
-                      <h3 className="text-base font-bold text-slate-900">Mode Belajar</h3>
+                      <h3 className="text-base font-bold text-slate-900">Study Mode</h3>
                     </div>
                     {/* Segmented control */}
                     <div className="flex bg-slate-100 p-1.5 rounded-xl border border-black/[0.06] gap-1">
@@ -534,7 +534,7 @@ export default function OnboardingPage() {
                   <div className="p-6 bg-white rounded-xl border border-black/[0.08] flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-[#136DEC] text-[20px]">translate</span>
-                      <h3 className="text-base font-bold text-slate-900">Bahasa</h3>
+                      <h3 className="text-base font-bold text-slate-900">Language</h3>
                     </div>
                     <select
                       value={profile.language}
@@ -553,7 +553,7 @@ export default function OnboardingPage() {
                 <div className="p-6 bg-white rounded-xl border border-black/[0.08]">
                   <div className="flex items-center gap-2 mb-6">
                     <span className="material-symbols-outlined text-[#136DEC] text-[20px]">calendar_month</span>
-                    <h3 className="text-base font-bold text-slate-900">Ketersediaan Mingguan</h3>
+                    <h3 className="text-base font-bold text-slate-900">Weekly Availability</h3>
                   </div>
 
                   {/* Day cards */}
@@ -584,7 +584,7 @@ export default function OnboardingPage() {
 
                   {/* Preferred Times */}
                   <div className="mt-8">
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-[0.14em] mb-4">Waktu Belajar Favorit</h4>
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-[0.14em] mb-4">Preferred Study Times</h4>
                     <div className="flex flex-wrap gap-2.5">
                       {TIME_SLOTS.map(slot => {
                         const isActive = profile.preferred_times.includes(slot.value)
@@ -611,14 +611,14 @@ export default function OnboardingPage() {
                 <div className="rounded-xl border border-black/[0.07] bg-white p-5">
                   <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    Ringkasan Profil Kamu
+                    Your Profile Summary
                   </h4>
                   <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
                     {[
                       { label: 'Subjects', value: profile.subjects.join(', ') || '—' },
                       { label: 'Goals',    value: profile.study_goals.map(g => STUDY_GOALS_DETAIL.find(x => x.value === g)?.label).join(', ') || '—' },
                       { label: 'Mode',     value: profile.study_mode === 'online' ? 'Online' : 'In-Person' },
-                      { label: 'Hari',     value: profile.availability.days.map(d => DAYS.find(x => x.value === d)?.full).join(', ') || '—' },
+                      { label: 'Days',     value: profile.availability.days.map(d => DAYS.find(x => x.value === d)?.full).join(', ') || '—' },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <span className="text-slate-400 text-xs font-semibold uppercase tracking-[0.1em]">{label}</span>
@@ -645,7 +645,7 @@ export default function OnboardingPage() {
               }`}
             >
               <ArrowLeft className="w-4 h-4" />
-              Kembali
+              Back
             </button>
 
             <button
@@ -657,7 +657,7 @@ export default function OnboardingPage() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  {step === 2 ? 'Mulai Matching ✨' : 'Next Step'}
+                  {step === 2 ? 'Start Matching ✨' : 'Next Step'}
                   {!saving && <ArrowRight className="w-4 h-4" />}
                 </>
               )}

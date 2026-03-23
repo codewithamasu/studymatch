@@ -112,7 +112,7 @@ export default function DiscoverPage() {
         )
       } catch (error) {
         if (!mounted) return
-        setLoadError(error?.message || 'Gagal memuat kandidat.')
+        setLoadError(error?.message || 'Failed to load candidates.')
         setCandidates([])
       } finally {
         if (mounted) setLoading(false)
@@ -152,7 +152,7 @@ export default function DiscoverPage() {
       setCurrentIndex(0)
       setSwiped([])
     } catch (error) {
-      setSwipeError('Gagal meriset penemuan: ' + error.message)
+      setSwipeError('Failed to reset discovery: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -208,7 +208,7 @@ export default function DiscoverPage() {
           }, 300)
         }
       } catch (error) {
-        setSwipeError(error?.message || 'Gagal menyimpan swipe.')
+        setSwipeError(error?.message || 'Failed to save swipe.')
         return false
       }
     } else if (direction === 'right' || direction === 'up') {
@@ -251,7 +251,7 @@ export default function DiscoverPage() {
           >
             Loading candidates
           </h2>
-          <p className="mt-2 text-sm text-gray-500">Mengambil partner studi dari Supabase.</p>
+          <p className="mt-2 text-sm text-gray-500">Fetching study partners from Supabase.</p>
         </div>
       </div>
     )
@@ -265,7 +265,7 @@ export default function DiscoverPage() {
             className="text-xl font-semibold tracking-[-0.04em] text-gray-900"
             style={{ fontFamily: displayFont }}
           >
-            Gagal memuat Discover
+            Failed to load Discover
           </h2>
           <p className="mt-2 text-sm text-gray-500">{loadError}</p>
         </div>
@@ -280,14 +280,14 @@ export default function DiscoverPage() {
                 <div className="w-20 h-20 bg-[#f0f9ff] rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-10 h-10 text-blue-500" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3" style={{ fontFamily: displayFont }}>Semua profil dilihat</h2>
-                <p className="text-gray-500 mb-8 leading-relaxed">Coba ubah filter atau tunggu partner baru bergabung di daerahmu!</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3" style={{ fontFamily: displayFont }}>All profiles viewed</h2>
+                <p className="text-gray-500 mb-8 leading-relaxed">Try changing filters or wait for new partners to join in your area!</p>
                 <div className="space-y-3">
                   <Button
                     onClick={() => setCurrentIndex(0)}
                     className="w-full bg-[#1a56db] hover:bg-blue-700 text-white rounded-xl py-6 font-semibold shadow-lg shadow-blue-200"
                   >
-                    Refresh Pencarian
+                    Refresh Search
                   </Button>
                   <Button
                     onClick={handleResetSwipes}
@@ -505,7 +505,7 @@ export default function DiscoverPage() {
                  It's a Study Match!
               </h2>
               <p className="text-gray-500 mb-6">
-                Kamu dan <strong>{matchPartner.full_name}</strong> saling tertarik untuk belajar bersama!
+                You and <strong>{matchPartner.full_name}</strong> are both interested in studying together!
               </p>
 
               <div className="flex items-center justify-center gap-4 mb-8">
@@ -527,10 +527,10 @@ export default function DiscoverPage() {
               <div className="space-y-3">
                 <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => { setShowMatch(false); navigate(`/chat/${matchPartner.id}`) }}>
                   <Heart className="w-4 h-4 mr-2 fill-white" />
-                  Kirim Pesan
+                  Send Message
                 </Button>
                 <Button variant="outline" className="w-full rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50" onClick={() => setShowMatch(false)}>
-                  Lanjut Swiping
+                  Keep Swiping
                 </Button>
               </div>
             </div>

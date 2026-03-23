@@ -11,7 +11,6 @@ import {
   CheckCheck,
   Clock,
   ChevronLeft,
-  MoreHorizontal,
   X,
   Sparkles,
   BookOpen,
@@ -144,6 +143,7 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState('')
   const [inputFocused, setInputFocused] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false)
   const [searchActive, setSearchActive] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -188,19 +188,28 @@ export default function ChatPage() {
       }
 
       // Goals from partner's study objectives
-      if (partnerGoals.length > 0) {
-        setGoals(partnerGoals.map((g, idx) => ({ id: `pg-${idx}`, text: g.label, done: false })))
+      const storageKey = `study_goals_${user.id}_${userId}`
+      const savedGoals = localStorage.getItem(storageKey)
+
+      if (savedGoals) {
+        setGoals(JSON.parse(savedGoals))
+      } else if (partnerGoals.length > 0) {
+        const initialGoals = partnerGoals.map((g, idx) => ({ id: `pg-${idx}`, text: g.label, done: false }))
+        setGoals(initialGoals)
+        localStorage.setItem(storageKey, JSON.stringify(initialGoals))
       } else {
-        setGoals([
-          { id: 'g1', text: 'Jadwalkan sesi belajar pertama', done: false },
-          { id: 'g2', text: 'Diskusikan materi kuliah', done: false },
-        ])
+        const defaultGoals = [
+          { id: 'g1', text: 'Schedule first study session', done: false },
+          { id: 'g2', text: 'Discuss course material', done: false },
+        ]
+        setGoals(defaultGoals)
+        localStorage.setItem(storageKey, JSON.stringify(defaultGoals))
       }
 
       setPartnerStats(stats)
       setMatchInfo(match)
     } catch (error) {
-      setLoadError(error?.message || 'Gagal memuat percakapan.')
+      setLoadError(error?.message || 'Failed to load conversation.')
     } finally {
       setLoading(false)
     }
@@ -223,9 +232,10 @@ export default function ChatPage() {
   useEffect(() => {
     if (loading) return
     const ctx = gsap.context(() => {
+      const isDesktop = window.innerWidth >= 1024
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-      if (leftSidebarRef.current) tl.fromTo(leftSidebarRef.current, { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55 }, 0)
-      if (rightSidebarRef.current) tl.fromTo(rightSidebarRef.current, { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55 }, 0)
+      if (leftSidebarRef.current && isDesktop) tl.fromTo(leftSidebarRef.current, { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55 }, 0)
+      if (rightSidebarRef.current && isDesktop) tl.fromTo(rightSidebarRef.current, { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55 }, 0)
       if (chatHeaderRef.current) tl.fromTo(chatHeaderRef.current, { y: -20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 }, 0.15)
       if (chatBodyRef.current) tl.fromTo(chatBodyRef.current, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45 }, 0.25)
       tl.fromTo('.sidebar-card', { y: 20, opacity: 0, scale: 0.97 }, { y: 0, opacity: 1, scale: 1, duration: 0.4, stagger: 0.07 }, 0.3)
@@ -371,6 +381,7 @@ export default function ChatPage() {
         .pill-btn:hover { background:#eff6ff; transform:translateY(-1px); box-shadow:0 4px 14px rgba(26,86,219,.12); }
         .card-hover { transition: box-shadow .2s, transform .2s; }
         .card-hover:hover { box-shadow:0 4px 20px rgba(0,0,0,.06); transform:translateY(-1px); }
+        .msg-bubble { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
       `}</style>
 
       {sendError && (
@@ -379,13 +390,16 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div className="-mt-16 flex bg-[#f0f4f8] overflow-hidden" style={{ height: '100vh' }}>
+      <div className="flex bg-[#f0f4f8] overflow-hidden" style={{ height: 'calc(100vh - 4.5rem)' }}>
 
         {/* Mobile backdrop */}
-        {sidebarOpen && (
+        {(sidebarOpen || rightSidebarOpen) && (
           <div
             className="fixed inset-0 bg-black/30 z-30 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => {
+              setSidebarOpen(false)
+              setRightSidebarOpen(false)
+            }}
             aria-hidden="true"
           />
         )}
@@ -394,8 +408,11 @@ export default function ChatPage() {
         <aside
           ref={leftSidebarRef}
           aria-label="Info partner"
-          className={`w-[270px] shrink-0 flex flex-col bg-[#f5f6f8] overflow-y-auto transition-transform duration-300 ease-in-out fixed lg:static z-40 lg:z-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-          style={{ height: '100vh', paddingTop: 64 }}
+          className={`w-[270px] shrink-0 flex flex-col bg-[#f5f6f8] overflow-y-auto transition-transform duration-300 ease-in-out z-40
+            fixed top-[4.5rem] bottom-0 left-0 lg:static lg:translate-x-0
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
+          style={{ height: 'calc(100vh - 4.5rem)' }}
         >
           <div className="p-4 flex flex-col gap-4">
 
@@ -492,13 +509,12 @@ export default function ChatPage() {
         </aside>
 
         {/* ══ MAIN CHAT ══ */}
-        <main className="flex-1 min-w-0 flex flex-col" style={{ minHeight: '100vh', paddingTop: 64 }} aria-label="Chat room">
+        <main className="flex-1 min-w-0 flex flex-col relative" aria-label="Chat room">
 
           {/* Chat Header */}
           <header
             ref={chatHeaderRef}
-            className="h-[68px] flex items-center justify-between px-4 md:px-8 bg-white border-b border-[#f1f5f9] shrink-0 sticky z-20"
-            style={{ top: 64 }}
+            className="h-[68px] flex items-center justify-between px-4 md:px-8 bg-white border-b border-[#f1f5f9] shrink-0 sticky top-0 z-20"
           >
             <div className="flex items-center gap-3">
               {/* Mobile back / hamburger */}
@@ -551,13 +567,17 @@ export default function ChatPage() {
               >
                 {searchActive ? <X className="w-[18px] h-[18px]" aria-hidden="true" /> : <Search className="w-[18px] h-[18px]" aria-hidden="true" />}
               </button>
+              {/* Info toggle — mobile only */}
               <button
                 type="button"
-                title="More options"
-                aria-label="More options"
-                className="cursor-pointer action-btn w-9 h-9 rounded-full text-[#94a3b8] flex items-center justify-center hover:text-[#1a56db] hover:bg-[#eff6ff]"
+                title="Conversation info"
+                aria-label="Conversation info"
+                onClick={() => setRightSidebarOpen((v) => !v)}
+                className={`cursor-pointer lg:hidden action-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                  rightSidebarOpen ? 'text-[#1a56db] bg-[#eff6ff]' : 'text-[#94a3b8] hover:text-[#1a56db] hover:bg-[#eff6ff]'
+                }`}
               >
-                <MoreHorizontal className="w-5 h-5" aria-hidden="true" />
+                <Sparkles className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
           </header>
@@ -727,7 +747,7 @@ export default function ChatPage() {
                         )
                       }
                       return (
-                        <div className={`px-5 py-3.5 rounded-[22px] text-[14px] leading-relaxed shadow-sm ${
+                        <div className={`msg-bubble px-5 py-3.5 rounded-[22px] text-[14px] leading-relaxed shadow-sm ${
                           isMe
                             ? 'bg-[#1a56db] text-white rounded-br-[4px] shadow-blue-100'
                             : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#f1f5f9]'
@@ -862,8 +882,11 @@ export default function ChatPage() {
         <aside
           ref={rightSidebarRef}
           aria-label="Informasi sesi dan tujuan"
-          className="hidden lg:flex w-[290px] shrink-0 bg-[#f5f6f8] flex-col overflow-y-auto"
-          style={{ height: '100vh', paddingTop: 64 }}
+          className={`w-[290px] shrink-0 flex flex-col bg-[#f5f6f8] overflow-y-auto transition-transform duration-300 ease-in-out z-40
+            fixed top-[4.5rem] bottom-0 right-0 lg:static lg:translate-x-0
+            ${rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
+          style={{ height: 'calc(100vh - 4.5rem)' }}
         >
           <div className="p-4 flex flex-col gap-4">
 
@@ -910,7 +933,13 @@ export default function ChatPage() {
                   <button
                     type="button"
                     key={g.id}
-                    onClick={() => setGoals((p) => p.map((x) => x.id === g.id ? { ...x, done: !x.done } : x))}
+                    onClick={() => {
+                      setGoals((p) => {
+                        const updated = p.map((x) => (x.id === g.id ? { ...x, done: !x.done } : x))
+                        localStorage.setItem(`study_goals_${user.id}_${userId}`, JSON.stringify(updated))
+                        return updated
+                      })
+                    }}
                     aria-pressed={g.done}
                     className="goal-check w-full flex items-center gap-3 px-3 py-3.5 rounded-[12px] text-left hover:bg-[#f8fafc] group border border-[#f1f5f9]"
                   >
