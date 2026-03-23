@@ -1,8 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/store/useAuthStore'
 import gsap from 'gsap'
 import {
   Calendar,
@@ -35,10 +33,9 @@ import {
   MessageCircle,
   Trophy,
 } from 'lucide-react'
-import { mockUsers, mockCurrentUser } from '@/data/mockData'
-import { useAuthStore } from '@/store/useAuthStore'
+import { mockUsers, mockCurrentUser, calculateCompatibility, mockSessions } from '@/data/mockData'
 import { useChatStore } from '@/store/useChatStore'
-import { isSupabaseConfigured } from '@/lib/supabase'
+import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { fetchConversationThread, sendConversationMessage, markConversationRead } from '@/lib/studymatchRealtime'
 
 const QUICK_REPLIES = [
@@ -66,26 +63,143 @@ const INITIAL_RESOURCES = [
   { id: 3, title: 'Group Project Slides', url: 'https://canva.com/', provider: 'Canva', type: 'presentation', date: 'Mar 15' },
 ]
 
-const GOALS = [
-  { id: 1, text: 'Review AVL Trees', done: false },
-  { id: 2, text: 'Draft Lab Report 4', done: false },
-  { id: 3, text: 'Complete Problem Set', done: false },
-]
-
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
 
-export default function ChatPage() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const partner = mockUsers.find(u => u.full_name === 'Alex Johnson') || mockUsers[0]
+const AutoScrollPill = ({ text }) => {
+  const containerRef = useRef(null)
+  const textRef = useRef(null)
+  const [shouldAnimate, setShouldAnimate] = useState(false)
 
-  const [goals, setGoals] = useState(GOALS)
+  useEffect(() => {
+    if (containerRef.current && textRef.current) {
+      setShouldAnimate(textRef.current.scrollWidth > containerRef.current.clientWidth)
+    }
+  }, [text])
+
+  return (
+    <div 
+      ref={containerRef}
+      className="relative overflow-hidden w-[86px] h-[26px] bg-[#eff6ff] text-[#1a56db] text-[11px] font-bold rounded-full border border-[#bfdbfe]/60 cursor-default"
+      title={text}
+    >
+      <div 
+        ref={textRef}
+        className={`h-full flex items-center ${shouldAnimate ? 'w-max hover-marquee' : 'justify-center w-full px-2'}`}
+      >
+        <span className={`whitespace-nowrap ${shouldAnimate ? 'pr-4 pl-2' : 'truncate'}`}>{text}</span>
+        {shouldAnimate && <span className="whitespace-nowrap pr-4">{text}</span>}
+      </div>
+    </div>
+  )
+}
+
+export default function ChatPage() {
+  const user = useAuthStore((state) => state.user)
+  const { userId } = useParams()
+  const navigate = useNavigate()
+
+  const {
+    messagesByConversation,
+    isTypingByConversation,
+    reactionPickerId,
+    drafts,
+    hydrateConversation,
+    setTyping,
+    setReactionPickerId,
+    setDraft,
+    sendMessage,
+    addReaction: addReactionToConversation,
+  } = useChatStore()
+
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [sendError, setSendError] = useState('')
+  const [thread, setThread] = useState(null)
+  
+  const partner = thread?.peerProfile || mockUsers.find(u => String(u.id) === String(userId)) || mockUsers.find(u => u.full_name === 'Alex Johnson') || mockUsers[0]
+  
+  const threadId = thread?.conversation?.id || userId
+  const messages = messagesByConversation[threadId] || INITIAL_MESSAGES
+  const draft = drafts[threadId] || ''
+  const isTyping = isTypingByConversation[threadId] || false
+
+  const [goals, setGoals] = useState([])
+  
+  useEffect(() => {
+    if (partner?.study_profile) {
+      const subject = partner.study_profile.subjects?.[0] || 'Materi Utama'
+      const subject2 = partner.study_profile.subjects?.[1] || 'Latihan Soal'
+      const goalStr = partner.study_profile.study_goal ? partner.study_profile.study_goal.replace('_', ' ') : 'Target Belajar'
+      setGoals([
+        { id: 1, text: `Review ${subject}`, done: true },
+        { id: 2, text: `Bahas ${subject2}`, done: false },
+        { id: 3, text: `Persiapan ${goalStr}`, done: false }
+      ])
+    } else {
+      setGoals([
+        { id: 1, text: 'Review Materi', done: true },
+        { id: 2, text: 'Bahas Tugas', done: false },
+        { id: 3, text: 'Persiapan Kuis', done: false }
+      ])
+    }
+  }, [partner?.id])
   const [inputFocused, setInputFocused] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [resourceHubOpen, setResourceHubOpen] = useState(false)
   const [newLink, setNewLink] = useState('')
-  const [resources, setResources] = useState(INITIAL_RESOURCES)
   const [studyLogOpen, setStudyLogOpen] = useState(false)
+
+  const dynamicResources = useMemo(() => {
+    return messages
+      .filter((m) => m.type === 'resource' && m.resource)
+      .map((m) => m.resource)
+      .reverse()
+  }, [messages])
+
+  const dynamicJourney = useMemo(() => {
+    const journey = []
+    
+    // Match event
+    journey.push({
+      id: 'match', type: 'match', title: "It's a Match!", 
+      date: 'Today', time: '', 
+      desc: `Kamu dan ${partner.full_name.split(' ')[0]} memutuskan untuk belajar bareng! ✨`, 
+      icon: 'zap', color: 'bg-[#f59e0b]', border: 'border-[#fcd34d]', text: 'text-[#f59e0b]'
+    })
+
+    // First Chat
+    if (messages.length > 0) {
+      journey.push({
+        id: 'chat', type: 'chat', title: 'Percakapan Pertama', 
+        date: 'Today', time: messages[0].time, 
+        desc: `Mulai merencanakan sesi belajar bersama.`, 
+        icon: 'message', color: 'bg-[#3b82f6]', border: 'border-[#93c5fd]', text: 'text-[#3b82f6]'
+      })
+    }
+
+    // Resources Shared
+    if (dynamicResources.length > 0) {
+      journey.push({
+        id: 'resource', type: 'session', title: 'Berbagi Ilmu', 
+        date: 'Today', time: '', 
+        desc: `Telah berbagi ${dynamicResources.length} link / referensi belajar.`, 
+        icon: 'link', color: 'bg-[#8b5cf6]', border: 'border-[#c4b5fd]', text: 'text-[#8b5cf6]'
+      })
+    }
+
+    // Goals Achieved
+    const completedGoals = goals.filter(g => g.done).length
+    if (completedGoals > 0) {
+      journey.push({
+        id: 'milestone', type: 'milestone', title: 'Tugas Terselesaikan', 
+        date: 'Today', time: '', 
+        desc: `Berhasil menyelesaikan ${completedGoals} target belajar! 🏆`, 
+        icon: 'trophy', color: 'bg-[#10b981]', border: 'border-[#6ee7b7]', text: 'text-[#10b981]'
+      })
+    }
+
+    return journey
+  }, [messages, partner, dynamicResources, goals])
   
   const messagesEnd = useRef(null)
   const inputRef = useRef(null)
@@ -146,7 +260,21 @@ export default function ChatPage() {
         setThread(data)
 
         if (data.conversation?.id) {
-          hydrateConversation(data.conversation.id, data.messages)
+          const transformedMessages = data.messages.map(m => ({
+            id: m.id,
+            text: m.body,
+            from: m.sender_profile_id === user.id ? 'me' : 'partner',
+            time: new Date(m.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            read: true,
+            type: m.metadata?.type || 'text',
+            resource: m.metadata?.resource || null,
+            reactions: m.metadata?.reactions || []
+          }))
+          if (transformedMessages.length === 0) {
+            hydrateConversation(data.conversation.id, INITIAL_MESSAGES)
+          } else {
+            hydrateConversation(data.conversation.id, transformedMessages)
+          }
         }
       } catch (error) {
         if (!mounted) return
@@ -162,6 +290,35 @@ export default function ChatPage() {
       mounted = false
     }
   }, [hydrateConversation, user?.id, userId])
+
+  // Real-time message listener
+  useEffect(() => {
+    if (!threadId || !isSupabaseConfigured || !user?.id) return
+
+    const channel = supabase
+      .channel(`room:${threadId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${threadId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new
+          // Check if message is from partner
+          if (newMsg.sender_profile_id !== user.id) {
+            useChatStore.getState().receiveMessage(threadId, newMsg.body, newMsg.metadata)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [threadId, user?.id])
 
   // GSAP mount animation
   useEffect(() => {
@@ -271,8 +428,7 @@ export default function ChatPage() {
     let title = titleParts.length > 1 ? titleParts[titleParts.length - 2] : domain
     title = title.charAt(0).toUpperCase() + title.slice(1) + ' Resource'
     
-    const newItem = { id, title: title, url: newLink.startsWith('http') ? newLink : `https://${newLink}`, provider, type: 'link', date: 'Just now', fresh: true }
-    setResources(p => [newItem, ...p])
+    const newItem = { id, title: title, url: newLink.startsWith('http') ? newLink : `https://${newLink}`, provider, type: 'link', date: 'Barusan', fresh: true }
     setNewLink('')
     
     setTimeout(() => {
@@ -282,12 +438,34 @@ export default function ChatPage() {
     }, 10)
     
     // Add message to chat as well
-    setMessages(p => [...p, { id: Date.now() + 1, from: 'me', type: 'resource', resource: newItem, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), read: false, fresh: true, reactions: [] }])
+    useChatStore.setState(s => ({
+      ...s,
+      messagesByConversation: {
+        ...s.messagesByConversation,
+        [threadId]: [
+          ...(s.messagesByConversation[threadId] || INITIAL_MESSAGES),
+          { id: Date.now() + 1, from: 'me', text: '', type: 'resource', resource: newItem, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), read: false, fresh: true, reactions: [] }
+        ]
+      }
+    }))
     setTimeout(() => { messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, 100)
+    
+    // Save to Database
+    if (isSupabaseConfigured && threadId && user?.id) {
+      sendConversationMessage(threadId, user.id, '[Membagikan Resource Belajar]', { type: 'resource', resource: newItem }).catch(() => {})
+    }
   }
 
   const completedGoals = goals.filter(g => g.done).length
   const progressPct = Math.round((completedGoals / goals.length) * 100)
+
+  // Dynamic Total Log Calculation
+  const totalStudyMinutes = mockSessions
+    .filter(s => String(s.partner.id) === String(partner.id) && s.status === 'completed')
+    .reduce((total, s) => total + s.duration_minutes, 0)
+  const logHrs = Math.floor(totalStudyMinutes / 60)
+  const logMins = totalStudyMinutes % 60
+  const totalLogStr = totalStudyMinutes > 0 ? `${logHrs}h ${logMins > 0 ? logMins + 'm' : ''}` : '0h 0m'
 
   if (loadError && !loading) {
     return (
@@ -348,6 +526,8 @@ export default function ChatPage() {
         .pill-btn:hover { background:#eff6ff; transform:translateY(-1px); box-shadow:0 4px 14px rgba(26,86,219,.12); }
         .card-hover { transition: box-shadow .2s, transform .2s; }
         .card-hover:hover { box-shadow:0 4px 20px rgba(0,0,0,.06); transform:translateY(-1px); }
+        @keyframes marquee-pill { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .hover-marquee:hover { animation: marquee-pill 2.5s linear infinite; }
       `}</style>
 
       {sendError && (
@@ -384,19 +564,22 @@ export default function ChatPage() {
               <span className="online-dot absolute bottom-1.5 right-1.5 w-4 h-4 bg-[#22c55e] rounded-full border-2 border-white block" />
             </div>
             <h2 className="text-[16px] font-extrabold text-[#0f172a] tracking-tight mb-0.5">{partner.full_name}</h2>
-            <p className="text-[12px] text-[#64748b] font-medium mb-4">Computer Science · Year 3</p>
-            <div className="flex justify-center gap-2 flex-wrap">
-              {['Python', 'AI Ethics'].map(t => (
-                <span key={t} className="px-3 py-1 bg-[#eff6ff] text-[#1a56db] text-[11px] font-bold rounded-full border border-[#bfdbfe]/60">{t}</span>
+            <p className="text-[12px] text-[#64748b] font-medium mb-4">{partner.university || 'Mahasiswa'}</p>
+            <div className="flex justify-center gap-1.5 flex-wrap">
+              {(partner.study_profile?.subjects || []).map(t => (
+                <AutoScrollPill key={t} text={t} />
               ))}
             </div>
             <div className="mt-5 px-2">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-wider">Compatibility</span>
-                <span className="text-[12px] font-extrabold text-[#1a56db]">92%</span>
+                <span className="text-[12px] font-extrabold text-[#1a56db]">
+                  {(user && partner && partner.study_profile) ? calculateCompatibility(user, partner).total : 85}%
+                </span>
               </div>
               <div className="h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-[#1a56db] to-[#60a5fa] rounded-full" style={{ width: '92%' }} />
+                <div className="h-full bg-gradient-to-r from-[#1a56db] to-[#60a5fa] rounded-full" 
+                     style={{ width: `${(user && partner && partner.study_profile) ? calculateCompatibility(user, partner).total : 85}%` }} />
               </div>
             </div>
           </div>
@@ -421,8 +604,8 @@ export default function ChatPage() {
                   <FolderOpen className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="font-bold text-[13px] leading-tight">Shared Resources</p>
-                  <p className="text-[11px] text-[#94a3b8] font-medium mt-0.5">Files & notes</p>
+                  <p className="font-bold text-[13px] leading-tight">Resource Hub</p>
+                  <p className="text-[11px] text-[#94a3b8] font-medium mt-0.5">Berbagi link materi</p>
                 </div>
               </button>
               <button onClick={openStudyLog} className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left">
@@ -751,13 +934,13 @@ export default function ChatPage() {
 
             {/* Stats Card */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-4">This Week</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-4">Minggu Ini</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: <BookOpen className="w-5 h-5" />, value: '3', label: 'Sessions' },
-                  { icon: <Star className="w-5 h-5" />, value: '5.0', label: 'Rating' },
-                  { icon: <Clock className="w-5 h-5" />, value: '6h', label: 'Studied' },
-                  { icon: <Zap className="w-5 h-5 fill-current" />, value: '4', label: 'Streak' },
+                  { icon: <BookOpen className="w-5 h-5" />, value: mockSessions.filter(s => String(s.partner.id) === String(partner.id)).length, label: 'Sessions' },
+                  { icon: <Star className="w-5 h-5" />, value: ((user && partner && partner.study_profile ? calculateCompatibility(user, partner).total : 90) / 20).toFixed(1), label: 'Rating' },
+                  { icon: <Clock className="w-5 h-5" />, value: totalLogStr, label: 'Studied' },
+                  { icon: <Zap className="w-5 h-5 fill-current" />, value: mockSessions.filter(s => String(s.partner.id) === String(partner.id) && s.status === 'completed').length + 1, label: 'Streak' },
                 ].map(s => (
                   <div key={s.label}
                     className="bg-[#f8fafc] rounded-[14px] p-4 flex flex-col gap-1.5 border border-[#f1f5f9]">
@@ -833,44 +1016,45 @@ export default function ChatPage() {
                  .resource-list::-webkit-scrollbar { display: none; }
                `}</style>
                <div className="space-y-3 resource-list">
-                 {resources.map(res => (
-                    <div key={res.id} className={`resource-item resource-item-${res.id} mb-3`}>
-                       <a href={res.url} target="_blank" rel="noreferrer" className="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-[#e2e8f0] shadow-sm hover:border-[#bae6fd] hover:shadow-md hover:-translate-y-1 hover:bg-[#f0f9ff] transition-all group relative overflow-hidden">
-                         
-                         <div className="relative w-[50px] h-[50px] rounded-[14px] flex items-center justify-center shrink-0 overflow-hidden bg-white border border-[#f1f5f9] shadow-sm">
-                            <div className={`absolute inset-0 opacity-10 ${res.provider === 'Notion' ? 'bg-slate-800' : res.provider === 'Google Drive' ? 'bg-green-500' : res.provider === 'Canva' ? 'bg-purple-500' : 'bg-[#1a56db]'}`} />
-                            {res.provider === 'Notion' ? <FileText className="w-5 h-5 text-slate-700 relative z-10" /> : 
-                             res.provider === 'Google Drive' ? <FolderOpen className="w-5 h-5 text-emerald-600 relative z-10" /> : 
-                             res.provider === 'Canva' ? <ImageIcon className="w-5 h-5 text-purple-600 relative z-10" /> : 
-                             <Globe className="w-5 h-5 text-[#1a56db] relative z-10" />}
-                         </div>
+                <div className="bg-[#eff6ff] text-[#1a56db] px-3 py-1.5 rounded-xl font-bold text-[13px]">
+                  {dynamicResources.length} Items
+                </div>
+              </div>
 
-                         <div className="flex-1 min-w-0">
-                           <div className="flex items-center gap-2 mb-1">
-                             <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-0.5 rounded-full group-hover:bg-white group-hover:text-[#1a56db] group-hover:border-[#bfdbfe] transition-colors">{res.provider}</span>
-                             <span className="text-[11px] text-[#94a3b8] font-semibold">{res.date}</span>
-                           </div>
-                           <p className="text-[15px] font-extrabold text-[#0f172a] truncate group-hover:text-[#1a56db] transition-colors">{res.title}</p>
-                         </div>
-                         
-                         <div className="w-9 h-9 rounded-full bg-[#f8fafc] flex items-center justify-center text-[#94a3b8] border border-[#f1f5f9] group-hover:bg-[#1a56db] group-hover:border-[#1a56db] group-hover:text-white group-hover:shadow-md transition-all shrink-0 mr-1">
-                            <ExternalLink className="w-4 h-4 ml-0.5" />
-                         </div>
-                       </a>
-                    </div>
-                 ))}
-                 {resources.length === 0 && (
-                   <div className="text-center py-12 px-4 bg-[#f8fafc] rounded-[24px] border-2 border-dashed border-[#e2e8f0]">
-                      <div className="w-16 h-16 bg-white border border-[#f1f5f9] rounded-full flex items-center justify-center mx-auto mb-4 text-[#cbd5e1] shadow-sm">
-                        <LinkIcon className="w-8 h-8" />
+              {dynamicResources.length === 0 ? (
+                <div className="text-center py-12 px-4 bg-[#f8fafc] rounded-[24px] border-2 border-dashed border-[#e2e8f0]">
+                  <div className="w-16 h-16 bg-white border border-[#f1f5f9] rounded-full flex items-center justify-center mx-auto mb-4 text-[#cbd5e1] shadow-sm">
+                    <LinkIcon className="w-8 h-8" />
+                  </div>
+                  <p className="text-[16px] font-extrabold text-[#334155] mb-1">Belum ada resource diskusi</p>
+                  <p className="text-[13px] text-[#64748b] font-medium max-w-[250px] mx-auto">Bagikan materi atau link penting ke partnermu untuk diakses sewaktu-waktu.</p>
+                </div>
+              ) : (
+                dynamicResources.map(res => (
+                  <div key={res.id} className={`resource-item resource-item-${res.id} mb-3`}>
+                    <a href={res.url} target="_blank" rel="noreferrer" className="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-[#e2e8f0] shadow-sm hover:border-[#bae6fd] hover:shadow-md hover:-translate-y-1 hover:bg-[#f0f9ff] transition-all group relative overflow-hidden">
+                      <div className="relative w-[50px] h-[50px] rounded-[14px] flex items-center justify-center shrink-0 overflow-hidden bg-white border border-[#f1f5f9] shadow-sm">
+                        <div className={`absolute inset-0 opacity-10 ${res.provider === 'Notion' ? 'bg-slate-800' : res.provider === 'Google Drive' ? 'bg-green-500' : res.provider === 'Canva' ? 'bg-purple-500' : 'bg-[#1a56db]'}`} />
+                        {res.provider === 'Notion' ? <FileText className="w-5 h-5 text-slate-700 relative z-10" /> : 
+                         res.provider === 'Google Drive' ? <FolderOpen className="w-5 h-5 text-emerald-600 relative z-10" /> : 
+                         res.provider === 'Canva' ? <ImageIcon className="w-5 h-5 text-purple-600 relative z-10" /> : 
+                         <Globe className="w-5 h-5 text-[#1a56db] relative z-10" />}
                       </div>
-                      <p className="text-[16px] font-extrabold text-[#334155] mb-1">No shared resources yet</p>
-                      <p className="text-[13px] text-[#64748b] font-medium max-w-[250px] mx-auto">Paste a link above to share study materials safely without using up server space.</p>
-                   </div>
-                 )}
-               </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-0.5 rounded-full group-hover:bg-white group-hover:text-[#1a56db] group-hover:border-[#bfdbfe] transition-colors">{res.provider}</span>
+                          <span className="text-[11px] text-[#94a3b8] font-semibold">{res.date}</span>
+                        </div>
+                        <p className="text-[15px] font-extrabold text-[#0f172a] truncate group-hover:text-[#1a56db] transition-colors">{res.title}</p>
+                      </div>
+                      <div className="w-9 h-9 rounded-full bg-[#f8fafc] flex items-center justify-center text-[#94a3b8] border border-[#f1f5f9] group-hover:bg-[#1a56db] group-hover:border-[#1a56db] group-hover:text-white group-hover:shadow-md transition-all shrink-0 mr-1">
+                        <ExternalLink className="w-4 h-4 ml-0.5" />
+                      </div>
+                    </a>
+                  </div>
+                ))
+              )}
             </div>
-            
           </div>
         </div>
       )}
@@ -898,11 +1082,11 @@ export default function ChatPage() {
             <div className="flex bg-white px-8 pb-6 border-b border-[#f1f5f9] shrink-0 gap-3 relative z-20">
                <div className="flex-1 bg-gradient-to-br from-[#1a56db] to-[#3b82f6] rounded-[16px] p-3 text-white shadow-md shadow-blue-200 hover:-translate-y-1 transition-transform cursor-default">
                   <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1 opacity-90"><Clock className="w-3 h-3" /> Total Log</span>
-                  <p className="text-[20px] font-black leading-none">2h 0m</p>
+                  <p className="text-[20px] font-black leading-none">{totalLogStr}</p>
                </div>
                <div className="flex-1 bg-white border border-[#e2e8f0] rounded-[16px] p-3 text-[#0f172a] shadow-sm hover:border-[#6ee7b7] transition-colors cursor-default">
                   <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1 text-[#64748b]"><Trophy className="w-3 h-3 text-[#f59e0b]" /> Milestone</span>
-                  <p className="text-[20px] font-black leading-none text-[#10b981]">1 / 3</p>
+                  <p className="text-[20px] font-black leading-none text-[#10b981]">{completedGoals} / {goals.length}</p>
                </div>
             </div>
 
@@ -918,7 +1102,7 @@ export default function ChatPage() {
                </div>
 
                <div className="space-y-8 relative z-10 timeline-scroll">
-                  {MOCK_JOURNEY.map((item) => (
+                  {dynamicJourney.map((item) => (
                      <div key={item.id} className="log-item flex gap-5 group">
                         {/* Timeline node */}
                         <div className={`w-[34px] h-[34px] rounded-full flex justify-center items-center shrink-0 border-[3px] shadow-sm transition-transform duration-300 group-hover:scale-110 ${item.color} ${item.border} text-white relative z-10 bg-white`}>
@@ -926,6 +1110,7 @@ export default function ChatPage() {
                            {item.icon === 'message' && <MessageCircle className="w-4 h-4 fill-white" />}
                            {item.icon === 'calendar' && <Calendar className="w-4 h-4" />}
                            {item.icon === 'trophy' && <Trophy className="w-4 h-4 fill-white" />}
+                           {item.icon === 'link' && <LinkIcon className="w-4 h-4" />}
                         </div>
                         
                         {/* Timeline content */}

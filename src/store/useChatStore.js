@@ -76,7 +76,7 @@ export const useChatStore = create(
         },
       })),
 
-    receiveMessage: (conversationId, text) =>
+    receiveMessage: (conversationId, text, metadata = {}) =>
       set((state) => ({
         messagesByConversation: {
           ...state.messagesByConversation,
@@ -85,14 +85,16 @@ export const useChatStore = create(
             {
               id: Date.now() + 1,
               from: 'partner',
-              text,
+              text: metadata.type === 'resource' ? '' : text,
+              type: metadata.type || 'text',
+              resource: metadata.resource || null,
               time: new Date().toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
               }),
               read: false,
               fresh: true,
-              reactions: [],
+              reactions: metadata.reactions || [],
             },
           ],
         },

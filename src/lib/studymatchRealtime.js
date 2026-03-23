@@ -323,7 +323,7 @@ export async function fetchConversationThread(currentUserId, peerProfileId) {
   }
 }
 
-export async function sendConversationMessage(conversationId, senderProfileId, body) {
+export async function sendConversationMessage(conversationId, senderProfileId, body, metadata = {}) {
   if (!isSupabaseConfigured) return null
 
   const { data, error } = await supabase
@@ -332,6 +332,7 @@ export async function sendConversationMessage(conversationId, senderProfileId, b
       conversation_id: conversationId,
       sender_profile_id: senderProfileId,
       body,
+      metadata
     })
     .select('id, conversation_id, sender_profile_id, body, sent_at, edited_at, deleted_at, metadata')
     .single()

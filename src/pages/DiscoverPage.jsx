@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
-import { useNavigate } from 'react-router-dom'
 import {
   Heart,
   X,
@@ -44,56 +43,53 @@ export default function DiscoverPage() {
   const cardRef = useRef(null)
   const matchRef = useRef(null)
 
-  useEffect(() => {
-    let mounted = true
+  const fetchCandidates = async () => {
+    setLoading(true)
+    setLoadError('')
+    setCurrentIndex(0)
+    setSwiped([])
+    setShowMatch(false)
+    setMatchPartner(null)
 
-    async function loadCandidates() {
-      setLoading(true)
-      setLoadError('')
-
-      try {
-        if (!user?.id) {
-          if (mounted) setCandidates([])
-          return
-        }
-
-        if (!isSupabaseConfigured) {
-          const demoCandidates = mockUsers
-            .filter((candidate) => candidate.id !== 'current')
-            .map((candidate) => ({
-              ...candidate,
-              compatibility: calculateCompatibility(mockCurrentUser, candidate),
-            }))
-            .sort((a, b) => b.compatibility.total - a.compatibility.total)
-
-          if (mounted) setCandidates(demoCandidates)
-          return
-        }
-
-        const realCandidates = await fetchDiscoverCandidates(user.id)
-        if (!mounted) return
-        setCandidates(
-          realCandidates
-            .map((candidate) => ({
-              ...candidate,
-              compatibility: calculateCompatibility(user, candidate),
-            }))
-            .sort((a, b) => b.compatibility.total - a.compatibility.total)
-        )
-      } catch (error) {
-        if (!mounted) return
-        setLoadError(error?.message || 'Gagal memuat kandidat.')
+    try {
+      if (!user?.id) {
         setCandidates([])
-      } finally {
-        if (mounted) setLoading(false)
+        return
       }
-    }
 
-    loadCandidates()
+      if (!isSupabaseConfigured) {
+        const demoCandidates = mockUsers
+          .filter((candidate) => candidate.id !== 'current')
+          .map((candidate) => ({
+            ...candidate,
+            compatibility: calculateCompatibility(mockCurrentUser, candidate),
+          }))
+          .sort((a, b) => b.compatibility.total - a.compatibility.total)
 
-    return () => {
-      mounted = false
+        setCandidates(demoCandidates)
+        return
+      }
+
+      const realCandidates = await fetchDiscoverCandidates(user.id)
+      setCandidates(
+        realCandidates
+          .map((candidate) => ({
+            ...candidate,
+            compatibility: calculateCompatibility(user, candidate),
+          }))
+          .sort((a, b) => b.compatibility.total - a.compatibility.total)
+      )
+    } catch (error) {
+      setLoadError(error?.message || 'Gagal memuat kandidat.')
+      setCandidates([])
+    } finally {
+      setTimeout(() => setLoading(false), 500) // add slight delay for better UX
     }
+  }
+
+  useEffect(() => {
+    fetchCandidates()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   useEffect(() => {
@@ -215,11 +211,17 @@ export default function DiscoverPage() {
           <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mx-auto mb-6">
             <Users className="w-10 h-10 text-gray-400" />
           </div>
-          <h2 className="font-heading text-2xl font-bold mb-2 text-gray-900">Semua Profil Dilihat!</h2>
-          <p className="text-gray-500 mb-6">Kamu sudah melihat semua kandidat partner belajar.</p>
-          <Button onClick={() => { setCurrentIndex(0); setSwiped([]) }}>
+          <h2 className="font-heading text-2xl font-bold mb-2 text-gray-900">
+            {candidates.length === 0 ? "Belum Ada Kandidat" : "Semua Profil Dilihat!"}
+          </h2>
+          <p className="text-gray-500 mb-6">
+            {candidates.length === 0 
+              ? "Sistem tidak menemukan kandidat partner lain di database kamu."
+              : "Kamu sudah melihat semua kandidat partner belajar yang tersedia saat ini."}
+          </p>
+          <Button onClick={fetchCandidates}>
             <RotateCcw className="w-4 h-4 mr-2" />
-            Mulai Ulang
+            Cari Ulang Kandidat
           </Button>
         </div>
       </div>
