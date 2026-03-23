@@ -175,7 +175,7 @@ export default function Navbar({ mode = 'app' }) {
                         {user?.full_name}
                       </p>
                       <p className="truncate text-xs font-medium text-[#6B7280]">
-                        {user?.university || 'Study partner'}
+                        {user?.university || 'Student'}
                       </p>
                     </div>
 
@@ -206,7 +206,7 @@ export default function Navbar({ mode = 'app' }) {
                         Campus
                       </p>
                       <p className="mt-2 text-sm font-medium text-[#4E5561]">
-                        {user?.university || 'Mahasiswa'}
+                        {user?.university || 'Student'}
                       </p>
                     </div>
 
@@ -346,7 +346,7 @@ export default function Navbar({ mode = 'app' }) {
                     {user.full_name}
                   </p>
                   <p className="truncate text-xs font-medium text-[#6B7280]">
-                    {user.university || 'Mahasiswa'}
+                    {user.university || 'Student'}
                   </p>
                 </div>
               </div>

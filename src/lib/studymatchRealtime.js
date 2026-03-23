@@ -9,7 +9,7 @@ function normalizeProfileRecord(record) {
   return {
     id: record.id,
     full_name: record.full_name,
-    university: record.university_name || 'Mahasiswa',
+    university: record.university_name || 'Student',
     avatar_url: record.avatar_url || null,
     bio: record.bio || '',
     study_profile: studyProfile,
@@ -105,7 +105,7 @@ function getFavoriteSubject(sessions = [], fallbackSubject) {
   }, new Map())
 
   const sortedSubjects = [...subjectCounts.entries()].sort((a, b) => b[1] - a[1])
-  return sortedSubjects[0]?.[0] || fallbackSubject || 'Belum ada'
+  return sortedSubjects[0]?.[0] || fallbackSubject || 'None yet'
 }
 
 function formatDashboardSession(session, partnerName) {
@@ -262,7 +262,7 @@ export async function fetchSocialPulse(currentUserId, limit = 6) {
       senderId: msg.sender_profile_id,
       senderName: sender?.full_name || 'Partner',
       avatarSeed: sender?.full_name || 'user',
-      action: `mengirim pesan: "${bodyPreview}${msg.body?.length > 50 ? '…' : ''}"`,
+      action: `sent a message: "${bodyPreview}${msg.body?.length > 50 ? '…' : ''}"`,
       time: ago,
       badge: '💬',
     }
@@ -272,11 +272,11 @@ export async function fetchSocialPulse(currentUserId, limit = 6) {
 function formatRelativeTime(isoString) {
   const diff = Date.now() - new Date(isoString).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'Baru saja'
-  if (mins < 60) return `${mins} mnt lalu`
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} jam lalu`
-  return `${Math.floor(hours / 24)} hari lalu`
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
 }
 
 export async function fetchDiscoverCandidates(currentUserId) {
@@ -719,7 +719,7 @@ export async function fetchDashboardSnapshot(currentUserId) {
       completed_sessions: 0,
       total_study_hours: 0,
       study_streak: 0,
-      favorite_subject: 'Belum ada',
+      favorite_subject: 'None yet',
       weekly_data: buildWeeklyData([]),
     },
     studyPartnerCount: 0,

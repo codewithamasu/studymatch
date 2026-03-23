@@ -67,10 +67,6 @@ const avatar = (seed, size = '32') =>
 
 // ─── Countdown Hook ───────────────────────────────────────────────────────────
 function useCountdown(targetDate) {
-  const [diff, setDiff] = [
-    new Date(targetDate) - Date.now(),
-    () => {},
-  ]
   const difMs = new Date(targetDate) - Date.now()
   const totalMins = Math.max(0, Math.floor(difMs / 60000))
   if (totalMins <= 0) return null
@@ -153,7 +149,7 @@ function SessionCard({ session }) {
   return (
     <div
       role="article"
-      aria-label={`Sesi ${session.subject} bersama ${session.partner?.full_name}`}
+      aria-label={`Session ${session.subject} with ${session.partner?.full_name}`}
       className="group flex items-center gap-4 p-4 rounded-2xl border border-neutral-200/70 bg-white hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-300"
     >
       <div
@@ -161,7 +157,7 @@ function SessionCard({ session }) {
         className="flex-shrink-0 w-12 h-12 rounded-xl bg-neutral-50 border border-neutral-200/60 flex flex-col items-center justify-center"
       >
         <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-widest leading-none">
-          {date.toLocaleDateString('id-ID', { month: 'short' })}
+          {date.toLocaleDateString('en-US', { month: 'short' })}
         </span>
         <time
           dateTime={date.toISOString()}
@@ -176,7 +172,7 @@ function SessionCard({ session }) {
         <p className="font-semibold text-neutral-900 text-sm truncate">{session.subject}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="text-xs text-neutral-500">
-            {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+            {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
           </span>
           <span className="text-neutral-300" aria-hidden="true">·</span>
           <span className="text-xs text-neutral-500">{session.duration_minutes}min</span>
@@ -213,7 +209,7 @@ function MatchAlertChip({ alert, isNew }) {
     <button
       type="button"
       onClick={() => navigate(`/chat/${alert.partner?.id}`)}
-      aria-label={`Buka chat dengan ${alert.partner?.full_name}`}
+      aria-label={`Open chat with ${alert.partner?.full_name}`}
       className="group flex-shrink-0 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-2xl"
     >
       <div className="relative">
@@ -225,7 +221,7 @@ function MatchAlertChip({ alert, isNew }) {
         />
         {isNew && (
           <span
-            aria-label="Match baru"
+            aria-label="New match"
             className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-white"
           />
         )}
@@ -245,7 +241,7 @@ function SubjectOrbit({ subjectMastery }) {
     return (
       <div role="status" className="flex flex-col items-center justify-center h-full text-neutral-400 gap-2">
         <BookOpen className="w-8 h-8 opacity-40" aria-hidden="true" />
-        <p className="text-sm text-center">Selesaikan onboarding untuk melihat subjekmu.</p>
+        <p className="text-sm text-center">Complete onboarding to see your subjects.</p>
       </div>
     )
   }
@@ -385,7 +381,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-[#F9F9F8] flex items-center justify-center pt-16 px-4">
         <div className="text-center max-w-sm">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" aria-hidden="true" />
-          <p className="font-semibold text-neutral-900 mb-1">Dashboard gagal dimuat</p>
+          <p className="font-semibold text-neutral-900 mb-1">Failed to load dashboard</p>
           <p className="text-sm text-neutral-500 mb-4">{error}</p>
           <button
             type="button"
@@ -393,7 +389,7 @@ export default function DashboardPage() {
             className="inline-flex items-center gap-2 text-sm font-medium text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors duration-200"
           >
             <RefreshCw className="w-4 h-4" aria-hidden="true" />
-            Coba Lagi
+            Try Again
           </button>
         </div>
       </div>
@@ -416,22 +412,22 @@ export default function DashboardPage() {
               className="text-2xl sm:text-3xl font-semibold tracking-[-0.045em] text-neutral-900"
               style={{ fontFamily: displayFont }}
             >
-              Selamat datang,{' '}
-              <span className="text-[#1a56db]">{user?.full_name?.split(' ')[0] || 'Sobat'}</span> 👋
+              Welcome,{' '}
+              <span className="text-[#1a56db]">{user?.full_name?.split(' ')[0] || 'Buddy'}</span> 👋
             </h1>
             <p className="mt-1 text-sm text-neutral-500">
-              {new Date().toLocaleDateString('id-ID', {
+              {new Date().toLocaleDateString('en-US', {
                 weekday: 'long', day: 'numeric', month: 'long',
               })}
             </p>
           </div>
           <Link
             to="/discover"
-            aria-label="Cari partner belajar baru"
+            aria-label="Find a new study partner"
             className="hidden sm:flex items-center gap-2 text-sm font-medium text-[#1a56db] bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl border border-blue-200/60 transition-colors duration-200"
           >
             <Sparkles className="w-4 h-4" aria-hidden="true" />
-            Cari Partner
+            Find Partner
           </Link>
         </div>
 
@@ -446,19 +442,19 @@ export default function DashboardPage() {
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
                 Match Alerts
                 <span className="text-xs font-normal text-neutral-400">
-                  ({matchAlerts.length} partner tersedia)
+                  ({matchAlerts.length} partners available)
                 </span>
               </h2>
               <Link
                 to="/chat"
                 className="text-xs text-neutral-400 hover:text-blue-600 flex items-center gap-1 transition-colors"
               >
-                Buka Chat <ChevronRight className="w-3 h-3" aria-hidden="true" />
+                Open Chat <ChevronRight className="w-3 h-3" aria-hidden="true" />
               </Link>
             </div>
             <div
               role="list"
-              aria-label="Daftar partner yang sudah match"
+              aria-label="List of matched partners"
               className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide"
             >
               {matchAlerts.map((alert, i) => (
@@ -522,7 +518,7 @@ export default function DashboardPage() {
               </div>
 
               <p className="text-[11px] text-neutral-400">
-                {Math.max(0, nextLevelXp - xp)} XP lagi untuk{' '}
+                {Math.max(0, nextLevelXp - xp)} XP more for{' '}
                 <span className="text-neutral-700 font-medium">
                   {TIER_NAMES[Math.min(level + 1, TIER_NAMES.length - 1)]}
                 </span>
@@ -530,18 +526,18 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Stats (real data: sessions + matches from Supabase) */}
-            <div className="grid grid-cols-2 gap-3" role="region" aria-label="Statistik Belajar">
+            <div className="grid grid-cols-2 gap-3" role="region" aria-label="Study Stats">
               {[
-                { label: 'Sesi Selesai', value: stats.completed_sessions, icon: Calendar, suffix: '' },
-                { label: 'Jam Belajar', value: stats.total_study_hours, icon: Clock, suffix: 'h' },
+                { label: 'Sessions Done', value: stats.completed_sessions, icon: Calendar, suffix: '' },
+                { label: 'Study Hours', value: stats.total_study_hours, icon: Clock, suffix: 'h' },
                 { label: 'Study Streak', value: stats.study_streak, icon: Flame, suffix: '🔥' },
                 { label: 'Partners', value: studyPartnerCount, icon: Users, suffix: '' },
-              ].map(({ label, value, icon: Icon, suffix }) => (
+              ].map(({ label, value, icon: StatIcon, suffix }) => (
                 <div
                   key={label}
                   className="bg-white border border-neutral-200/70 rounded-xl p-3.5 hover:border-blue-200 hover:bg-blue-50/20 transition-all duration-200"
                 >
-                  <Icon className="w-4 h-4 text-neutral-400 mb-1.5" aria-hidden="true" />
+                  <StatIcon className="w-4 h-4 text-neutral-400 mb-1.5" aria-hidden="true" />
                   <p className="text-xl font-bold text-neutral-900 leading-none">
                     <AnimatedNumber value={value} suffix={suffix} />
                   </p>
@@ -575,7 +571,7 @@ export default function DashboardPage() {
                 />
               </div>
               <p className="text-[11px] text-neutral-400 mt-1.5">
-                {stats.completed_sessions}/{stats.total_sessions} sesi selesai
+                {stats.completed_sessions}/{stats.total_sessions} sessions completed
               </p>
             </div>
           </div>
@@ -594,11 +590,11 @@ export default function DashboardPage() {
                 >
                   Subject Mastery
                 </h2>
-                <p className="text-xs text-neutral-400 mt-0.5">Skor kemampuan per subjek</p>
+                <p className="text-xs text-neutral-400 mt-0.5">Ability score per subject</p>
               </div>
-              {stats.favorite_subject !== 'Belum ada' && (
+              {stats.favorite_subject !== 'None yet' && (
                 <div
-                  aria-label={`Subjek favorit: ${stats.favorite_subject}`}
+                  aria-label={`Favorite subject: ${stats.favorite_subject}`}
                   className="flex items-center gap-1 text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"
                 >
                   <Star className="w-3 h-3" aria-hidden="true" />
@@ -633,7 +629,7 @@ export default function DashboardPage() {
               <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 py-6">
                 <MessageCircle className="w-8 h-8 text-neutral-300" aria-hidden="true" />
                 <p className="text-sm text-neutral-500">
-                  Belum ada aktivitas. Partner kamu akan muncul di sini saat mereka mengirim pesan.
+                  No activity yet. Your partners will appear here when they send a message.
                 </p>
               </div>
             ) : (
@@ -647,11 +643,11 @@ export default function DashboardPage() {
             <div className="mt-4 pt-3 border-t border-neutral-100">
               <Link
                 to="/chat"
-                aria-label="Buka semua percakapan"
+                aria-label="Open all conversations"
                 className="flex items-center justify-center gap-2 w-full text-sm font-medium text-[#1a56db] hover:bg-blue-50 py-2.5 rounded-xl border border-blue-100 transition-colors duration-200"
               >
                 <MessageCircle className="w-4 h-4" aria-hidden="true" />
-                Buka Chat
+                Open Chat
               </Link>
             </div>
           </section>
@@ -672,22 +668,22 @@ export default function DashboardPage() {
               to="/sessions"
               className="text-xs text-neutral-400 hover:text-blue-600 flex items-center gap-1 transition-colors"
             >
-              Lihat semua <ChevronRight className="w-3 h-3" aria-hidden="true" />
+               See all <ChevronRight className="w-3 h-3" aria-hidden="true" />
             </Link>
           </div>
 
           {upcomingSessions.length === 0 ? (
             <div className="bg-white border border-neutral-200/70 rounded-2xl p-8 text-center">
               <Award className="w-8 h-8 text-neutral-300 mx-auto mb-3" aria-hidden="true" />
-              <p className="font-medium text-neutral-700 mb-1">Belum ada sesi terjadwal</p>
+              <p className="font-medium text-neutral-700 mb-1">No scheduled sessions yet</p>
               <p className="text-sm text-neutral-400 mb-4">
-                Match dengan partner dan jadwalkan sesi pertamamu!
+                Match with a partner and schedule your first session!
               </p>
               <Link
                 to="/discover"
                 className="inline-flex items-center gap-2 text-sm font-medium text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors duration-200"
               >
-                <Sparkles className="w-4 h-4" aria-hidden="true" /> Mulai Discover
+                <Sparkles className="w-4 h-4" aria-hidden="true" /> Start Discovering
               </Link>
             </div>
           ) : (

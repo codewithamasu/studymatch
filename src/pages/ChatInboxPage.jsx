@@ -17,10 +17,10 @@ function formatLastTime(rawValue) {
   if (isNaN(asDate.getTime())) return rawValue
   const diffMs = Date.now() - asDate.getTime()
   const diffDays = Math.floor(diffMs / 86400000)
-  if (diffDays === 0) return asDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-  if (diffDays === 1) return 'Kemarin'
-  if (diffDays < 7) return asDate.toLocaleDateString('id-ID', { weekday: 'short' })
-  return asDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+  if (diffDays === 0) return asDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return asDate.toLocaleDateString('en-US', { weekday: 'short' })
+  return asDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ export default function ChatInboxPage() {
       const data = await fetchConversationSummaries(user.id)
       setConversations(data)
     } catch (error) {
-      setLoadError(error?.message || 'Gagal memuat percakapan.')
+      setLoadError(error?.message || 'Failed to load conversations.')
       setConversations([])
     } finally {
       setLoading(false)
@@ -135,7 +135,7 @@ export default function ChatInboxPage() {
       <div className="min-h-screen bg-[#f5f6f8] flex items-center justify-center px-4 pt-20">
         <div className="text-center max-w-sm">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" aria-hidden="true" />
-          <h2 className="text-lg font-semibold text-neutral-900 mb-1">Gagal memuat chat</h2>
+          <h2 className="text-lg font-semibold text-neutral-900 mb-1">Failed to load chat</h2>
           <p className="text-sm text-neutral-500 mb-4">{loadError}</p>
           <button
             type="button"
@@ -143,7 +143,7 @@ export default function ChatInboxPage() {
             className="inline-flex items-center gap-2 text-sm font-medium text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
-            Coba Lagi
+            Try Again
           </button>
         </div>
       </div>
@@ -170,11 +170,11 @@ export default function ChatInboxPage() {
             <h1 className="text-[28px] font-extrabold text-[#0f172a] tracking-tight">Messages</h1>
             {totalUnread > 0 && (
               <span className="bg-[#1a56db] text-white text-[12px] font-bold px-2.5 py-1 rounded-full" aria-live="polite">
-                {totalUnread} baru
+                {totalUnread} new
               </span>
             )}
           </div>
-          <p className="text-[14px] text-[#64748b]">Percakapan study partner aktifmu</p>
+          <p className="text-[14px] text-[#64748b]">Your active study partner conversations</p>
         </div>
 
         {/* Search */}
@@ -184,19 +184,19 @@ export default function ChatInboxPage() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari partner atau subjek..."
-            aria-label="Cari percakapan"
+            placeholder="Search for partners or subjects..."
+            aria-label="Search conversations"
             className="w-full pl-11 pr-4 py-3 bg-white rounded-[16px] text-[14px] text-[#1e293b] placeholder:text-[#94a3b8] outline-none focus:ring-2 focus:ring-[#1a56db]/20"
             style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}
           />
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6" role="region" aria-label="Statistik Chat">
+        <div className="grid grid-cols-3 gap-3 mb-6" role="region" aria-label="Chat Statistics">
           {[
             { label: 'Active Chats', value: conversations.length, icon: <MessageCircle className="w-4 h-4" aria-hidden="true" /> },
-            { label: 'Tersedia', value: conversations.filter((c) => c.online).length, icon: <span className="w-2 h-2 rounded-full bg-green-500 inline-block" aria-hidden="true" /> },
-            { label: 'Belum Dibaca', value: totalUnread, icon: <Sparkles className="w-4 h-4" aria-hidden="true" /> },
+            { label: 'Online', value: conversations.filter((c) => c.online).length, icon: <span className="w-2 h-2 rounded-full bg-green-500 inline-block" aria-hidden="true" /> },
+            { label: 'Unread', value: totalUnread, icon: <Sparkles className="w-4 h-4" aria-hidden="true" /> },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-[16px] px-4 py-3 text-center" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
               <div className="flex items-center justify-center gap-1.5 text-[#1a56db] mb-1">{s.icon}</div>
@@ -215,19 +215,19 @@ export default function ChatInboxPage() {
         <div
           className="bg-white rounded-[20px] overflow-hidden"
           role="list"
-          aria-label="Daftar percakapan"
+          aria-label="Conversation list"
           style={{ boxShadow: '0 1px 8px rgba(0,0,0,.07)' }}
         >
           {conversations.length === 0 ? (
             <div className="py-16 text-center">
               <Users className="w-10 h-10 text-[#cbd5e1] mx-auto mb-3" aria-hidden="true" />
-              <p className="text-[14px] font-semibold text-[#94a3b8]">Belum ada percakapan</p>
-              <p className="text-[12px] text-[#94a3b8] mt-1">Match dengan seseorang untuk mulai chat!</p>
+              <p className="text-[14px] font-semibold text-[#94a3b8]">No conversations yet</p>
+              <p className="text-[12px] text-[#94a3b8] mt-1">Match with someone to start chatting!</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-16 text-center">
-              <Search className="w-10 h-10 text-[#cbd5e1] mx-auto mb-3" aria-hidden="true" />
-              <p className="text-[14px] font-semibold text-[#94a3b8]">Tidak ditemukan</p>
+              <Users className="w-10 h-10 text-[#cbd5e1] mx-auto mb-3" aria-hidden="true" />
+              <p className="text-[14px] font-semibold text-[#94a3b8]">Not found</p>
             </div>
           ) : (
             filtered.map((c, i) => {
@@ -238,7 +238,7 @@ export default function ChatInboxPage() {
                   role="listitem"
                   type="button"
                   onClick={() => navigate(`/chat/${c.userId}`)}
-                  aria-label={`Buka chat dengan ${c.user?.full_name}`}
+                  aria-label={`Open chat with ${c.user?.full_name}`}
                   className={`conv-item w-full flex items-center gap-4 px-5 py-4 text-left cursor-pointer ${
                     i < filtered.length - 1 ? 'border-b border-[#f1f5f9]' : ''
                   }`}
@@ -269,7 +269,7 @@ export default function ChatInboxPage() {
                     <div className="flex items-center justify-between">
                       <p className="text-[13px] text-[#64748b] truncate flex-1">{c.lastMessage}</p>
                       {c.unread > 0 ? (
-                        <span aria-label={`${c.unread} pesan belum dibaca`} className="ml-2 shrink-0 w-5 h-5 bg-[#1a56db] rounded-full flex items-center justify-center text-[10px] font-bold text-white">
+                        <span aria-label={`${c.unread} unread messages`} className="ml-2 shrink-0 w-5 h-5 bg-[#1a56db] rounded-full flex items-center justify-center text-[10px] font-bold text-white">
                           {c.unread}
                         </span>
                       ) : (
@@ -292,9 +292,9 @@ export default function ChatInboxPage() {
             <Sparkles className="w-5 h-5 text-white" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-[13px] font-extrabold text-white mb-0.5">Terus temukan partner belajar</p>
+            <p className="text-[13px] font-extrabold text-white mb-0.5">Keep finding study partners</p>
             <p className="text-[12px] text-blue-200 leading-relaxed">
-              Pergi ke <strong className="text-white">Discover</strong> untuk swipe partner baru, lalu lanjutkan percakapan di sini.
+              Go to <strong className="text-white">Discover</strong> to swipe new partners, then continue the conversation here.
             </p>
           </div>
         </div>

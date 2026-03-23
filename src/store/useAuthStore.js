@@ -7,7 +7,7 @@ let authSubscription = null
 
 function getConfigError() {
   return {
-    message: 'Supabase belum dikonfigurasi. Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY terlebih dahulu.',
+    message: 'Supabase is not configured. Please fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.',
   }
 }
 
@@ -85,7 +85,7 @@ export const useAuthStore = create(
               emailRedirectTo: `${window.location.origin}/login`,
               data: {
                 full_name: fullName.trim(),
-                university: university?.trim() || 'Mahasiswa',
+                university: university?.trim() || 'Student',
               },
             },
           })
@@ -191,7 +191,7 @@ export const useAuthStore = create(
           } = await supabase.auth.getUser()
 
           if (!authUser) {
-            return { error: { message: 'Sesi tidak ditemukan. Silakan login ulang.' } }
+            return { error: { message: 'Session not found. Please log in again.' } }
           }
 
           try {

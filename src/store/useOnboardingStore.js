@@ -8,7 +8,7 @@ const createInitialProfile = () => ({
   study_goal: '',
   study_goals: [],
   study_mode: 'online',
-  language: 'id',
+  language: 'en',
   preferred_times: [],
   availability: { days: [], start: '19:00', end: '21:00' },
   learning_style: '',

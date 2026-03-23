@@ -17,7 +17,7 @@ export const useDashboardStore = create(
       completed_sessions: 0,
       total_study_hours: 0,
       study_streak: 0,
-      favorite_subject: 'Belum ada',
+      favorite_subject: 'None yet',
       weekly_data: [],
     },
     studyPartnerCount: 0,
@@ -62,7 +62,7 @@ export const useDashboardStore = create(
       } catch (err) {
         set({
           loading: false,
-          error: err?.message || 'Gagal memuat dashboard. Coba refresh halaman.',
+          error: err?.message || 'Failed to load dashboard. Please refresh the page.',
         })
       }
     },
@@ -169,8 +169,8 @@ export const useDashboardStore = create(
               senderId: msg.sender_profile_id,
               senderName: 'Partner',
               avatarSeed: msg.sender_profile_id,
-              action: `mengirim pesan: "${(msg.body || '').slice(0, 50)}${msg.body?.length > 50 ? '…' : ''}"`,
-              time: 'Baru saja',
+              action: `sent a message: "${(msg.body || '').slice(0, 50)}${msg.body?.length > 50 ? '…' : ''}"`,
+              time: 'Just now',
               badge: '💬',
             })
           }
@@ -194,7 +194,7 @@ export const useDashboardStore = create(
         stats: {
           total_sessions: 0, completed_sessions: 0,
           total_study_hours: 0, study_streak: 0,
-          favorite_subject: 'Belum ada', weekly_data: [],
+          favorite_subject: 'None yet', weekly_data: [],
         },
         studyPartnerCount: 0,
         upcomingSessions: [],

@@ -226,7 +226,7 @@ export default function LoginPage() {
                   id="login-email"
                   type="email"
                   autoComplete="email"
-                  placeholder="name@example.com"
+                  placeholder="name@university.edu"
                   value={form.email}
                   onChange={event => handleChange('email', event.target.value)}
                   required
@@ -280,7 +280,7 @@ export default function LoginPage() {
 
             <p className="mt-8 text-center text-sm text-[#8A919A]">
               Don't have an account?{' '}
-              <Link to="/register" className={`font-medium text-[#677588] transition-colors ${transitionTiming} hover:text-[#145FCB]`}>
+              <Link to="/register" className={`font-medium text-[#677588] transition-colors ${transitionTiming} hover:text-[#1a56db]`}>
                 Sign up for free
               </Link>
             </p>
@@ -291,7 +291,7 @@ export default function LoginPage() {
               disabled={submitting || anonLoading || googleLoading}
               className={`mt-6 flex h-10 w-full items-center justify-center rounded-[18px] border border-dashed border-[#D8D0C4] bg-transparent px-4 text-xs font-medium text-[#8A919A] transition-all ${transitionTiming} hover:-translate-y-px hover:border-[#C9BFAF] hover:text-[#677588] active:scale-[0.98] disabled:opacity-50`}
             >
-              {anonLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🚀 Lanjut sebagai Tamu (Dev Mode)'}
+              {anonLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🚀 Try Demo (No Account)'}
             </button>
           </div>
           </div>
