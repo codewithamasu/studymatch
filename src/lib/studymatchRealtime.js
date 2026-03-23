@@ -353,3 +353,181 @@ export async function markConversationRead(conversationId, profileId) {
   if (error) throw error
   return true
 }
+
+// ─── SESSION FUNCTIONS ──────────────────────────────────────────────────────
+
+export async function createSession(organizerProfileId, { matchId, subjectName, scheduledStart, durationMinutes, mode, meetingUrl, locationText, inviteeProfileId }) {
+  if (!isSupabaseConfigured) return null
+
+  // Find or create subject
+  let subjectId = null
+  if (subjectName) {
+    const slug = subjectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    const { data: existingSub } = await supabase
+      .from('subjects')
+      .select('id')
+      .eq('name', subjectName)
+      .single()
+
+    if (existingSub) {
+      subjectId = existingSub.id
+    } else {
+      const { data: newSub } = await supabase
+        .from('subjects')
+        .insert({ slug: `${slug}-${Date.now()}`, name: subjectName, category: 'Custom' })
+        .select('id')
+        .single()
+      if (newSub) subjectId = newSub.id
+    }
+  }
+
+  const payload = {
+    organizer_profile_id: organizerProfileId,
+    match_id: matchId || null,
+    subject_id: subjectId,
+    title: subjectName || 'Study Session',
+    study_mode: mode === 'offline' ? 'in_person' : 'online',
+    scheduled_start: scheduledStart,
+    duration_minutes: durationMinutes,
+    meeting_url: mode !== 'offline' ? (meetingUrl || `https://meet.studymatch.app/${Date.now()}`) : null,
+    location_text: mode === 'offline' ? locationText : null,
+    status: 'scheduled',
+  }
+
+  const { data: session, error: sessionError } = await supabase
+    .from('sessions')
+    .insert(payload)
+    .select('id')
+    .single()
+
+  if (sessionError) throw sessionError
+
+  // Add organizer as host
+  await supabase.from('session_participants').insert({
+    session_id: session.id,
+    profile_id: organizerProfileId,
+    participant_role: 'host',
+    attendance_status: 'accepted',
+  })
+
+  // Add invitee as invited (pending approval)
+  if (inviteeProfileId) {
+    await supabase.from('session_participants').insert({
+      session_id: session.id,
+      profile_id: inviteeProfileId,
+      participant_role: 'participant',
+      attendance_status: 'invited',
+    })
+  }
+
+  return session
+}
+
+export async function fetchMySessions(profileId) {
+  if (!isSupabaseConfigured || !profileId) return []
+
+  const { data: participations, error: partError } = await supabase
+    .from('session_participants')
+    .select('session_id, participant_role, attendance_status')
+    .eq('profile_id', profileId)
+
+  if (partError) throw partError
+  if (!participations?.length) return []
+
+  const sessionIds = participations.map(p => p.session_id)
+
+  const { data: sessions, error: sessError } = await supabase
+    .from('sessions')
+    .select(`
+      id, title, study_mode, scheduled_start, duration_minutes,
+      meeting_url, location_text, status, organizer_profile_id, notes,
+      subjects ( name )
+    `)
+    .in('id', sessionIds)
+    .order('scheduled_start', { ascending: true })
+
+  if (sessError) throw sessError
+
+  // For each session fetch participants + their profiles
+  const enriched = await Promise.all((sessions || []).map(async (s) => {
+    const { data: parts } = await supabase
+      .from('session_participants')
+      .select('profile_id, participant_role, attendance_status')
+      .eq('session_id', s.id)
+
+    const partnerParticipant = parts?.find(p => p.profile_id !== profileId)
+    let partnerProfile = null
+
+    if (partnerParticipant) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .eq('id', partnerParticipant.profile_id)
+        .single()
+      partnerProfile = prof
+    }
+
+    const myParticipation = participations.find(p => p.session_id === s.id)
+
+    return {
+      id: s.id,
+      title: s.title,
+      subject: s.subjects?.name || s.title,
+      mode: s.study_mode === 'in_person' ? 'offline' : 'online',
+      scheduled_at: s.scheduled_start,
+      duration_minutes: s.duration_minutes,
+      meeting_url: s.meeting_url,
+      location_text: s.location_text,
+      status: s.status,
+      isOrganizer: s.organizer_profile_id === profileId,
+      myAttendanceStatus: myParticipation?.attendance_status || 'accepted',
+      partner: partnerProfile,
+      declineReason: s.status === 'cancelled' ? (s.notes || null) : null,
+    }
+  }))
+
+  return enriched
+}
+
+export async function respondToSessionInvite(sessionId, profileId, accept, reason = '') {
+  if (!isSupabaseConfigured) return null
+
+  const { error } = await supabase
+    .from('session_participants')
+    .update({ attendance_status: accept ? 'accepted' : 'declined' })
+    .eq('session_id', sessionId)
+    .eq('profile_id', profileId)
+
+  if (error) throw error
+
+  // If declined, cancel the session and save the reason in notes
+  if (!accept) {
+    const updates = { status: 'cancelled' }
+    if (reason) updates.notes = reason
+    await supabase
+      .from('sessions')
+      .update(updates)
+      .eq('id', sessionId)
+  }
+
+  return true
+}
+
+export async function markSessionComplete(sessionId, profileId) {
+  if (!isSupabaseConfigured) return null
+
+  const { error } = await supabase
+    .from('sessions')
+    .update({ status: 'completed' })
+    .eq('id', sessionId)
+
+  if (error) throw error
+
+  await supabase
+    .from('session_participants')
+    .update({ attendance_status: 'attended' })
+    .eq('session_id', sessionId)
+    .eq('profile_id', profileId)
+
+  return true
+}
