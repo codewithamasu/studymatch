@@ -13,6 +13,7 @@ import DashboardPage from '@/pages/DashboardPage'
 import ChatPage from '@/pages/ChatPage'
 import ChatInboxPage from '@/pages/ChatInboxPage'
 import JitsiMeetPage from '@/pages/JitsiMeetPage'
+import ProfilePage from '@/pages/ProfilePage'
 
 function ProtectedRoute({ children }) {
   const user = useAuthStore(state => state.user)
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><ChatInboxPage /></ProtectedRoute>} />
         <Route path="/chat/:userId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/meet/:roomId" element={<ProtectedRoute><JitsiMeetPage /></ProtectedRoute>} />
 
         {/* Catch all */}

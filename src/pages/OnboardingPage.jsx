@@ -9,14 +9,14 @@ import { useOnboardingStore } from '@/store/useOnboardingStore'
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const POPULAR_SUBJECTS = [
-  { label: 'Mathematics',      icon: 'functions',       count: '1.2k study groups' },
-  { label: 'Computer Science', icon: 'code',             count: '2.5k study groups' },
-  { label: 'Psychology',       icon: 'psychology',       count: '850 study groups'  },
-  { label: 'Biology',          icon: 'science',          count: '1.1k study groups' },
-  { label: 'Art & Design',     icon: 'brush',            count: '600 study groups'  },
-  { label: 'Economics',        icon: 'account_balance',  count: '920 study groups'  },
-  { label: 'Modern Languages', icon: 'language',         count: '1.4k study groups' },
-  { label: 'History',          icon: 'history_edu',      count: '450 study groups'  },
+  { label: 'Mathematics',      icon: 'functions',       count: '1.2k study partners' },
+  { label: 'Computer Science', icon: 'code',             count: '2.5k study partners' },
+  { label: 'Psychology',       icon: 'psychology',       count: '850 study partners'  },
+  { label: 'Biology',          icon: 'science',          count: '1.1k study partners' },
+  { label: 'Art & Design',     icon: 'brush',            count: '600 study partners'  },
+  { label: 'Economics',        icon: 'account_balance',  count: '920 study partners'  },
+  { label: 'Modern Languages', icon: 'language',         count: '1.4k study partners' },
+  { label: 'History',          icon: 'history_edu',      count: '450 study partners'  },
 ]
 
 const ALL_SUBJECTS = [

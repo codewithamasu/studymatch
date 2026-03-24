@@ -189,6 +189,7 @@ export async function hydrateAppUser(authUser) {
     full_name: profileRecord?.full_name || getDisplayName(authUser),
     university: profileRecord?.university_name || metadata.university || 'Mahasiswa',
     avatar_url: profileRecord?.avatar_url || metadata.avatar_url || metadata.picture || null,
+    bio: profileRecord?.bio || metadata.bio || '',
     study_profile: studyProfile,
     has_profile: Boolean(profileRecord?.onboarding_completed_at || metadata.has_profile || studyProfile),
   }
@@ -197,9 +198,9 @@ export async function hydrateAppUser(authUser) {
 export async function saveStudyProfile(userId, profileData) {
   if (!isSupabaseConfigured) return null
 
-  const subjectNames = [...new Set(profileData.subjects.map(normalizeSubjectName).filter(Boolean))]
-  const goalCodes = [...new Set(profileData.study_goals)]
-  const preferredTimes = [...new Set(profileData.preferred_times)]
+  const subjectNames = [...new Set((profileData.subjects || []).map(normalizeSubjectName).filter(Boolean))]
+  const goalCodes = [...new Set(profileData.study_goals || [])]
+  const preferredTimes = [...new Set(profileData.preferred_times || [])]
 
   const { data: subjectRows, error: subjectError } = await supabase
     .from('subjects')
@@ -254,22 +255,28 @@ export async function saveStudyProfile(userId, profileData) {
     (code) => !goalRows?.some((row) => row.code === code)
   )
 
-  if (missingGoals.length > 0) {
+  if (missingGoals.length > 0 && goalCodes.length > 0) {
     throw new Error(`Study goal belum tersedia di database: ${missingGoals.join(', ')}`)
   }
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta'
   const preferredStudyMode = normalizeStudyModeForDb(profileData.study_mode)
 
+  const profileUpdatePayload = {
+    language_code: profileData.language || 'id',
+    learning_style: profileData.learning_style || null,
+    preferred_study_mode: preferredStudyMode,
+    global_skill_level: profileData.skill_level || null,
+    onboarding_completed_at: new Date().toISOString(),
+  }
+
+  if (profileData.full_name) profileUpdatePayload.full_name = profileData.full_name
+  if (profileData.university_name) profileUpdatePayload.university_name = profileData.university_name
+  if (profileData.bio !== undefined) profileUpdatePayload.bio = profileData.bio
+
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({
-      language_code: profileData.language,
-      learning_style: profileData.learning_style || null,
-      preferred_study_mode: preferredStudyMode,
-      global_skill_level: profileData.skill_level || null,
-      onboarding_completed_at: new Date().toISOString(),
-    })
+    .update(profileUpdatePayload)
     .eq('id', userId)
 
   if (profileError) throw profileError

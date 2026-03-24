@@ -10,6 +10,7 @@ import {
   Menu,
   MessageSquare,
   Sparkles,
+  User,
   X,
 } from 'lucide-react'
 
@@ -210,13 +211,28 @@ export default function Navbar({ mode = 'app' }) {
                       </p>
                     </div>
 
+                    <div className="h-px bg-[#E7EAEE] my-1 w-full" />
+
+                    <Link
+                      to="/profile"
+                      onClick={closeMenus}
+                      className={cn(
+                        'flex min-h-11 w-full items-center justify-between rounded-[18px] px-4 py-2 text-sm font-semibold tracking-tight text-[#4E5561]',
+                        'hover:bg-[#F4F7FB] hover:text-[#1A1A1A] transition-colors duration-200'
+                      )}
+                      role="menuitem"
+                    >
+                      <span>Profile Settings</span>
+                      <User className="h-4 w-4" />
+                    </Link>
+
                     <button
                       type="button"
                       onClick={handleSignOut}
                       className={cn(
                         'flex min-h-12 w-full items-center justify-between rounded-[18px] px-4 py-3 text-sm font-semibold tracking-tight text-[#A63C57]',
                         `motion-safe:transition-[color,background-color] ${interactionTiming}`,
-                        'hover:bg-[#FFF1F4] hover:text-[#922E49]'
+                        'hover:bg-[#FFF1F4] hover:text-[#922E49] hover:cursor-pointer'
                       )}
                       role="menuitem"
                     >
@@ -350,6 +366,18 @@ export default function Navbar({ mode = 'app' }) {
                   </p>
                 </div>
               </div>
+
+              <Link
+                to="/profile"
+                onClick={closeMenus}
+                className={cn(
+                  'mt-3 flex min-h-12 w-full items-center justify-between rounded-[18px] px-4 py-3 text-sm font-semibold tracking-tight text-[#4E5561]',
+                  'hover:bg-[#F4F7FB] hover:text-[#1A1A1A] transition-colors duration-200'
+                )}
+              >
+                <span>Profile Settings</span>
+                <User className="h-4 w-4" />
+              </Link>
 
               <button
                 type="button"

@@ -195,7 +195,17 @@ export const useAuthStore = create(
           }
 
           try {
-            await saveStudyProfile(authUser.id, profileData)
+            const currentStudyProfile = get().user?.study_profile || {}
+
+            const fullProfileData = {
+              ...currentStudyProfile,
+              ...profileData,
+              full_name: profileData.full_name || get().user?.full_name,
+              university_name: profileData.university || profileData.university_name || get().user?.university,
+              bio: profileData.bio || get().user?.bio,
+            }
+
+            await saveStudyProfile(authUser.id, fullProfileData)
             const hydratedUser = await get().refreshUser(authUser)
             return { error: null, user: hydratedUser }
           } catch (error) {

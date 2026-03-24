@@ -790,7 +790,7 @@ export default function SessionsPage() {
                         <div>
                           <p className="text-sm font-semibold tracking-tight text-[#1A1A1A]">Preferred location</p>
                           <p className="mt-1 text-sm leading-6 text-[#6C655C]">
-                            Start with a preset, then customize it if the group already has a better spot in mind.
+                            Start with a preset, then customize it if your partner already has a better spot in mind.
                           </p>
                         </div>
 

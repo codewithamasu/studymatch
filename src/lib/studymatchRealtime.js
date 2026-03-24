@@ -284,74 +284,101 @@ function formatRelativeTime(isoString) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-export async function fetchDiscoverCandidates(currentUserId) {
+export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
+  const { targetSubject, studyMode } = filters
+
+  // 1. Ambil ID yang harus dikecualikan (sudah di-swipe atau sudah match)
   const [
-    { data: profileRows, error: profileError },
     { data: swipeRows, error: swipeError },
-    { data: matchRows, error: matchError },
+    { data: matchRows, error: matchError }
   ] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select(`
-        id,
-        full_name,
-        university_name,
-        bio,
-        avatar_url,
-        onboarding_completed_at,
-        profile_subjects (
-          mastery_score,
-          is_primary,
-          subjects (
-            id,
-            slug,
-            name
-          )
-        ),
-        profile_goals (
-          study_goals (
-            code,
-            label,
-            description
-          )
-        ),
-        profile_time_preferences (
-          time_bucket
-        ),
-        availability_slots (
-          day_of_week,
-          start_time,
-          end_time,
-          timezone
-        )
-      `),
     supabase.from('swipes').select('target_profile_id').eq('actor_profile_id', currentUserId),
-    supabase
-      .from('matches')
-      .select('profile_a_id, profile_b_id')
-      .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`),
+    supabase.from('matches').select('profile_a_id, profile_b_id').or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`)
   ])
 
-  if (profileError) throw profileError
   if (swipeError) throw swipeError
   if (matchError) throw matchError
 
-  const swipedIds = new Set((swipeRows || []).map((row) => row.target_profile_id))
-  const matchedIds = new Set()
-
+  const excludedIds = new Set((swipeRows || []).map((row) => row.target_profile_id))
   for (const row of matchRows || []) {
-    if (row.profile_a_id !== currentUserId) matchedIds.add(row.profile_a_id)
-    if (row.profile_b_id !== currentUserId) matchedIds.add(row.profile_b_id)
+    if (row.profile_a_id !== currentUserId) excludedIds.add(row.profile_a_id)
+    if (row.profile_b_id !== currentUserId) excludedIds.add(row.profile_b_id)
+  }
+  excludedIds.add(currentUserId)
+
+  // 2. Bangun query dasar
+  // Kita melakukan inner join pada profile_subjects dan subjects jika ada targetSubject
+  // Supabase query notation: profile_subjects!inner(subjects!inner(name))
+  let query = supabase
+    .from('profiles')
+    .select(`
+      id,
+      full_name,
+      university_name,
+      bio,
+      avatar_url,
+      onboarding_completed_at,
+      preferred_study_mode,
+      profile_subjects!inner (
+        mastery_score,
+        is_primary,
+        subjects!inner (
+          id,
+          slug,
+          name
+        )
+      ),
+      profile_goals (
+        study_goals (
+          code,
+          label,
+          description
+        )
+      ),
+      profile_time_preferences (
+        time_bucket
+      ),
+      availability_slots (
+        day_of_week,
+        start_time,
+        end_time,
+        timezone
+      )
+    `)
+    .not('onboarding_completed_at', 'is', null)
+    .not('id', 'in', `(${Array.from(excludedIds).join(',')})`)
+    .limit(50)
+
+  // 3. Terapkan filter metadata di server-side
+  if (targetSubject) {
+    // Filter berdasarkan nama subjek di tabel subjects (melalui inner join)
+    query = query.eq('profile_subjects.subjects.name', targetSubject)
+  }
+
+  if (studyMode && studyMode !== 'hybrid') {
+    // Jika user mencari 'online', tampilkan yang online ATAU hybrid
+    // Jika user mencari 'in-person', tampilkan yang in_person ATAU hybrid
+    const dbMode = studyMode === 'in-person' ? 'in_person' : studyMode
+    query = query.or(`preferred_study_mode.eq.${dbMode},preferred_study_mode.eq.hybrid`)
+  }
+
+  const { data: profileRows, error: profileError } = await query
+
+  if (profileError) {
+    // Jika error karena 'in' list kosong atau masalah join, handle gracefully
+    console.error('Error in fetchDiscoverCandidates query:', profileError)
+    // Fallback ke query tanpa 'in' jika excludedIds hanya berisi diri sendiri (new user)
+    if (excludedIds.size === 1) {
+       // retry without the 'in' filter if it was just the self ID in a weird format
+    }
+    throw profileError
   }
 
   return (profileRows || [])
-    .filter((record) => record.id !== currentUserId)
     .map(normalizeProfileRecord)
     .filter((candidate) => candidate?.study_profile)
-    .filter((candidate) => !swipedIds.has(candidate.id))
-    .filter((candidate) => !matchedIds.has(candidate.id))
 }
 
 export async function clearSwipes(actorProfileId) {

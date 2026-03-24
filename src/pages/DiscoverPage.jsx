@@ -104,27 +104,14 @@ export default function DiscoverPage() {
           return
         }
 
-        const realCandidates = await fetchDiscoverCandidates(user.id)
+        const realCandidates = await fetchDiscoverCandidates(user.id, {
+          targetSubject,
+          studyMode
+        })
         if (!mounted) return
 
-        // Apply client-side filtering
-        const filtered = realCandidates.filter(c => {
-          let matchesSubject = true
-          let matchesMode = true
-
-          if (targetSubject && c.study_profile?.subjects) {
-            matchesSubject = c.study_profile.subjects.includes(targetSubject)
-          }
-
-          if (studyMode && c.study_profile?.study_mode) {
-             matchesMode = c.study_profile.study_mode === studyMode || c.study_profile.study_mode === 'hybrid' || studyMode === 'hybrid'
-          }
-
-          return matchesSubject && matchesMode
-        })
-
         setCandidates(
-          filtered
+          realCandidates
             .map((candidate) => ({
               ...candidate,
               compatibility: calculateCompatibility(user, candidate),
@@ -611,14 +598,20 @@ export default function DiscoverPage() {
                 />
               </div>
 
-              <div className="space-y-3">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => { setShowMatch(false); navigate(`/chat/${matchPartner.id}`) }}>
-                  <Heart className="w-4 h-4 mr-2 fill-white" />
-                  Send Message
+              <div className="space-y-3 mt-8">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)] rounded-2xl h-14" onClick={() => { setShowMatch(false); navigate(`/chat/${matchPartner.id}`) }}>
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Chat Now
                 </Button>
-                <Button variant="outline" className="w-full rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50" onClick={() => setShowMatch(false)}>
-                  Keep Swiping
-                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" className="w-full rounded-2xl border-gray-200 text-gray-700 hover:bg-gray-50 h-12" onClick={() => { setShowMatch(false); navigate(`/sessions/new?partnerId=${matchPartner.id}`) }}>
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Schedule
+                  </Button>
+                  <Button variant="ghost" className="w-full rounded-2xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 h-12" onClick={() => setShowMatch(false)}>
+                    Keep Swiping
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
