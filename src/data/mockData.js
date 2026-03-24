@@ -117,7 +117,7 @@ export const mockCurrentUser = {
   },
 }
 
-export const mockMatches = [
+export const mockMatches  = [
   {
     id: 'm1',
     partner: mockUsers[0],
