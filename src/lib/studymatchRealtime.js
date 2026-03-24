@@ -284,6 +284,91 @@ function formatRelativeTime(isoString) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
+// ─── Gamification & XP ──────────────────────────────────────────────────────
+export const XP_PER_HOUR = 40
+export const XP_PER_SESSION = 60
+
+export const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 1800, 3000, 4500, 6500, 9000, 12000, 16000]
+export const TIER_NAMES = [
+  'Curious Mind', 'Deep Diver', 'Study Spark', 'Knowledge Seeker',
+  'Focus Champion', 'Code Wizard', 'Algorithm Ace', 'Data Master',
+  'Research Guru', 'Academic Legend', 'Study God',
+]
+export const TIER_ICONS = ['🌱', '🔍', '⚡', '📚', '🏆', '🧙', '⚙️', '📊', '🔬', '🎓', '👑']
+
+/** Calculate XP based on hours and sessions */
+export function calculateXp(stats) {
+  return (stats.total_study_hours || 0) * XP_PER_HOUR +
+    (stats.completed_sessions || 0) * XP_PER_SESSION
+}
+
+export function getLevel(xp) {
+  let level = 0
+  for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
+    if (xp >= LEVEL_THRESHOLDS[i]) level = i
+    else break
+  }
+  return Math.min(level, LEVEL_THRESHOLDS.length - 1)
+}
+
+export async function fetchCampusLeaders(currentUserId) {
+  if (!isSupabaseConfigured || !currentUserId) return []
+
+  // 1. Fetch some active profiles who finished onboarding
+  const { data: profiles, error: profileErr } = await supabase
+    .from('profiles')
+    .select('id, full_name, avatar_url')
+    .neq('id', currentUserId)
+    .not('onboarding_completed_at', 'is', null)
+    .limit(10)
+
+  if (profileErr) return []
+
+  // 2. Fetch completed sessions info for these users
+  const profileIds = profiles.map(p => p.id)
+  const { data: sessRows, error: sessErr } = await supabase
+    .from('session_participants')
+    .select(`
+      profile_id,
+      sessions!inner(status, duration_minutes)
+    `)
+    .in('profile_id', profileIds)
+    .eq('sessions.status', 'completed')
+
+  if (sessErr) return []
+
+  // 3. Aggregate stats per profile
+  const statsByProfile = {}
+  profileIds.forEach(id => {
+    statsByProfile[id] = { completed_sessions: 0, total_study_hours: 0 }
+  })
+
+  sessRows.forEach(row => {
+    const s = row.sessions
+    const pid = row.profile_id
+    if (statsByProfile[pid]) {
+      statsByProfile[pid].completed_sessions += 1
+      statsByProfile[pid].total_study_hours += (s.duration_minutes || 0) / 60
+    }
+  })
+
+  // 4. Calculate XP and sort
+  return profiles.map((p) => {
+    const stats = statsByProfile[p.id]
+    const xp = calculateXp(stats)
+    const level = getLevel(xp)
+    return {
+      id: p.id,
+      name: p.full_name,
+      xp: xp,
+      badge: TIER_ICONS[level] || '🏃',
+      tier: TIER_NAMES[level],
+    }
+  })
+  .sort((a, b) => b.xp - a.xp)
+  .slice(0, 3)
+}
+
 export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
   if (!isSupabaseConfigured || !currentUserId) return []
 

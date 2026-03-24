@@ -20,6 +20,13 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import {
+  calculateXp,
+  getLevel,
+  TIER_NAMES,
+  TIER_ICONS,
+  LEVEL_THRESHOLDS,
+} from '@/lib/studymatchRealtime'
+import {
   RadarChart,
   Radar,
   PolarGrid,
@@ -34,29 +41,7 @@ import { useDashboardStore } from '@/store/useDashboardStore'
 const displayFont =
   '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
 
-const XP_PER_HOUR = 40
-const XP_PER_SESSION = 60
-const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 1800, 3000, 4500, 6500, 9000, 12000, 16000]
-const TIER_NAMES = [
-  'Curious Mind', 'Deep Diver', 'Study Spark', 'Knowledge Seeker',
-  'Focus Champion', 'Code Wizard', 'Algorithm Ace', 'Data Master',
-  'Research Guru', 'Academic Legend', 'Study God',
-]
-const TIER_ICONS = ['🌱', '🔍', '⚡', '📚', '🏆', '🧙', '⚙️', '📊', '🔬', '🎓', '👑']
-
 // ─── XP Helpers ───────────────────────────────────────────────────────────────
-function computeXp(stats) {
-  return (stats.total_study_hours || 0) * XP_PER_HOUR +
-    (stats.completed_sessions || 0) * XP_PER_SESSION
-}
-function getLevel(xp) {
-  let level = 0
-  for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
-    if (xp >= LEVEL_THRESHOLDS[i]) level = i
-    else break
-  }
-  return Math.min(level, LEVEL_THRESHOLDS.length - 1)
-}
 function getXpForNextLevel(level) {
   return LEVEL_THRESHOLDS[Math.min(level + 1, LEVEL_THRESHOLDS.length - 1)]
 }
@@ -273,6 +258,62 @@ function SubjectOrbit({ subjectMastery }) {
   )
 }
 
+// ─── Campus Leaders (Gamification) ────────────────────────────────────────────
+function CampusLeaders({ leaders }) {
+  if (!leaders || leaders.length === 0) return null
+
+  return (
+    <section
+      aria-labelledby="leaders-heading"
+      className="bg-white border border-neutral-200/70 rounded-2xl p-5"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2
+            id="leaders-heading"
+            className="text-[17px] font-bold text-neutral-900 tracking-tight"
+            style={{ fontFamily: displayFont }}
+          >
+            Campus Leaders
+          </h2>
+          <p className="text-[10px] text-neutral-400 mt-0.5 uppercase tracking-widest font-medium">Top Match of the Week</p>
+        </div>
+        <Award className="w-5 h-5 text-amber-500" aria-hidden="true" />
+      </div>
+
+      <div className="space-y-[2px]">
+        {leaders.map((leader, i) => {
+          const { tier, badge } = leader
+          return (
+            <div key={leader.id} className="group flex items-center gap-3 p-2.5 -mx-2.5 rounded-xl hover:bg-neutral-50/80 transition-all duration-300">
+              <div className="flex flex-col items-center justify-center w-5 shrink-0">
+                <span className="text-[13px] font-bold text-neutral-400 group-hover:text-blue-500 transition-colors">{i + 1}</span>
+              </div>
+              <img
+                src={avatar(leader.name, '36')}
+                alt=""
+                className="w-9 h-9 rounded-full border border-neutral-100 object-cover shrink-0 shadow-sm"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-semibold text-neutral-900 truncate leading-tight mb-0.5">
+                  {leader.name}
+                </p>
+                <p className="text-[11px] text-neutral-500 truncate flex items-center gap-1 font-medium">
+                  {badge} {tier}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-[14px] font-bold text-[#1a56db] tracking-tight">{leader.xp.toLocaleString()}</span>
+                <span className="text-[9px] text-neutral-400 block -mt-[3px] font-bold tracking-wider uppercase">XP</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 // ─── Animated Counter ─────────────────────────────────────────────────────────
 function AnimatedNumber({ value, suffix = '' }) {
   const ref = useRef(null)
@@ -322,7 +363,7 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
           <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">Up Next</p>
           <button
             onClick={() => navigate('/sessions')}
-            className="group relative flex items-start gap-4 p-4 rounded-xl bg-neutral-50/70 hover:bg-[#F4F7FB] transition-colors duration-300 w-full text-left"
+            className="group relative flex items-start gap-4 p-4 rounded-xl bg-neutral-50/70 hover:bg-[#F4F7FB] transition-colors duration-300 w-full text-left hover:cursor-pointer"
             style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 absolute top-5 left-4" />
@@ -354,7 +395,7 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
                <button
                  key={msg.id}
                  onClick={() => navigate('/chat')}
-                 className="group flex items-center gap-3 py-2 -mx-2 px-2 rounded-lg hover:bg-neutral-50/80 transition-all duration-300 text-left"
+                 className="group flex items-center gap-3 py-2 -mx-2 px-2 rounded-lg hover:bg-neutral-50/80 transition-all duration-300 text-left hover:cursor-pointer"
                  style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
                >
                  <img
@@ -386,7 +427,7 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
                <button
                  key={match.matchId}
                  onClick={() => navigate(`/chat/${match.partner?.id}`)}
-                 className="group flex flex-col items-center gap-1.5 hover:-translate-y-0.5 transition-transform duration-300"
+                 className="group flex flex-col items-center gap-1.5 hover:-translate-y-0.5 transition-transform duration-300 hover:cursor-pointer"
                  style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
                >
                  <img
@@ -430,6 +471,7 @@ export default function DashboardPage() {
     upcomingSessions,
     matchAlerts,
     socialPulse,
+    campusLeaders,
     loading,
     error,
     loadDashboard,
@@ -464,7 +506,7 @@ export default function DashboardPage() {
   }, [loading, error])
 
   // ── Derived XP / Level ───────────────────────────────────────────────────
-  const xp = computeXp(stats)
+  const xp = calculateXp(stats)
   const level = getLevel(xp)
   const nextLevelXp = getXpForNextLevel(level)
   const prevLevelXp = LEVEL_THRESHOLDS[level]
@@ -543,12 +585,13 @@ export default function DashboardPage() {
 
           {/* LEFT — Rank / XP (derived from sessions + study hours) */}
           <div className="space-y-4">
-            <div
+            <section
               className="bg-white border border-neutral-200/70 rounded-2xl p-5"
-              aria-label={`Rank kamu: ${TIER_NAMES[level]}, Level ${level}`}
+              role="region"
+              aria-labelledby="rank-xp-heading"
             >
               <div className="flex items-start justify-between mb-3">
-                <div>
+                <div id="rank-xp-heading">
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">
                     Rank / Tier
                   </p>
@@ -595,36 +638,45 @@ export default function DashboardPage() {
                   {TIER_NAMES[Math.min(level + 1, TIER_NAMES.length - 1)]}
                 </span>
               </p>
-            </div>
+            </section>
 
             {/* Quick Stats (real data: sessions + matches from Supabase) */}
-            <div className="grid grid-cols-2 gap-3" role="region" aria-label="Study Stats">
+            <section
+              className="grid grid-cols-2 gap-3"
+              role="region"
+              aria-labelledby="quick-stats-heading"
+            >
+              <h2 id="quick-stats-heading" className="sr-only">Study Statistics</h2>
               {[
                 { label: 'Sessions Done', value: stats.completed_sessions, icon: Calendar, suffix: '' },
                 { label: 'Study Hours', value: stats.total_study_hours, icon: Clock, suffix: 'h' },
                 { label: 'Study Streak', value: stats.study_streak, icon: Flame, suffix: '🔥' },
                 { label: 'Partners', value: studyPartnerCount, icon: Users, suffix: '' },
-              ].map(({ label, value, icon: StatIcon, suffix }) => (
-                <div
-                  key={label}
-                  className="bg-white border border-neutral-200/70 rounded-xl p-3.5 hover:border-blue-200 hover:bg-blue-50/20 transition-all duration-200"
-                >
-                  <StatIcon className="w-4 h-4 text-neutral-400 mb-1.5" aria-hidden="true" />
-                  <p className="text-xl font-bold text-neutral-900 leading-none">
-                    <AnimatedNumber value={value} suffix={suffix} />
-                  </p>
-                  <p className="text-[11px] text-neutral-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
+              ].map((stat) => {
+                const Icon = stat.icon
+                return (
+                  <div
+                    key={stat.label}
+                    className="bg-white border border-neutral-200/70 rounded-xl p-3.5 hover:border-blue-200 hover:bg-blue-50/20 transition-all duration-200"
+                  >
+                    <Icon className="w-4 h-4 text-neutral-400 mb-1.5" aria-hidden="true" />
+                    <p className="text-xl font-bold text-neutral-900 leading-none">
+                      <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+                    </p>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">{stat.label}</p>
+                  </div>
+                )
+              })}
+            </section>
 
             {/* Completion Rate (real data: completed_sessions / total_sessions) */}
-            <div
+            <section
               className="bg-white border border-neutral-200/70 rounded-xl p-4"
-              aria-label={`Completion rate: ${completionRate}%`}
+              role="region"
+              aria-labelledby="completion-rate-heading"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-neutral-700 flex items-center gap-1.5">
+                <span id="completion-rate-heading" className="text-sm font-medium text-neutral-700 flex items-center gap-1.5">
                   <Activity className="w-4 h-4 text-neutral-400" aria-hidden="true" />
                   Completion Rate
                 </span>
@@ -645,39 +697,44 @@ export default function DashboardPage() {
               <p className="text-[11px] text-neutral-400 mt-1.5">
                 {stats.completed_sessions}/{stats.total_sessions} sessions completed
               </p>
-            </div>
+            </section>
           </div>
 
-          {/* CENTER — Subject Mastery Orbit (real data: profile_subjects from user.study_profile) */}
-          <section
-            aria-labelledby="mastery-heading"
-            className="bg-white border border-neutral-200/70 rounded-2xl p-5"
-          >
-            <div className="flex items-start justify-between mb-1">
-              <div>
-                <h2
-                  id="mastery-heading"
-                  className="text-lg font-bold text-neutral-900 tracking-tight"
-                  style={{ fontFamily: displayFont }}
-                >
-                  Subject Mastery
-                </h2>
-                <p className="text-xs text-neutral-400 mt-0.5">Ability score per subject</p>
-              </div>
-              {stats.favorite_subject !== 'None yet' && (
-                <div
-                  aria-label={`Favorite subject: ${stats.favorite_subject}`}
-                  className="flex items-center gap-1 text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"
-                >
-                  <Star className="w-3 h-3" aria-hidden="true" />
-                  {stats.favorite_subject}
+          {/* CENTER — Subject Mastery Orbit & Campus Leaders */}
+          <div className="space-y-4 dash-section">
+            <section
+              aria-labelledby="mastery-heading"
+              className="bg-white border border-neutral-200/70 rounded-2xl p-5"
+            >
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <h2
+                    id="mastery-heading"
+                    className="text-lg font-bold text-neutral-900 tracking-tight"
+                    style={{ fontFamily: displayFont }}
+                  >
+                    Subject Mastery
+                  </h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">Ability score per subject</p>
                 </div>
-              )}
-            </div>
-            <div className="h-[260px] sm:h-[300px]">
-              <SubjectOrbit subjectMastery={subjectMastery} />
-            </div>
-          </section>
+                {stats.favorite_subject !== 'None yet' && (
+                  <div
+                    aria-label={`Favorite subject: ${stats.favorite_subject}`}
+                    className="flex items-center gap-1 text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"
+                  >
+                    <Star className="w-3 h-3" aria-hidden="true" />
+                    {stats.favorite_subject}
+                  </div>
+                )}
+              </div>
+              <div className="h-[260px] sm:h-[300px]">
+                <SubjectOrbit subjectMastery={subjectMastery} />
+              </div>
+            </section>
+
+            {/* Gamification Module */}
+            <CampusLeaders leaders={campusLeaders} />
+          </div>
 
           {/* RIGHT — Refactored Social Pulse Module */}
           <div className="dash-section">

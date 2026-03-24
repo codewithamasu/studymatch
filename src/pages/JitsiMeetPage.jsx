@@ -8,9 +8,10 @@ export default function JitsiMeetPage() {
   const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
 
-  const handleApiReady = () => {
-    // We can attach event listeners here if needed
-    // e.g. externalApi.addListener('videoConferenceLeft', () => navigate('/dashboard'))
+  const handleApiReady = (api) => {
+    api.addListener('videoConferenceLeft', () => {
+      navigate('/sessions')
+    })
   }
 
   const generatedRoomName = `studymatch-${roomId}`

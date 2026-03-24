@@ -263,7 +263,7 @@ export default function DiscoverPage() {
           >
             Loading candidates
           </h2>
-          <p className="mt-2 text-sm text-gray-500">Fetching study partners from Supabase.</p>
+          <p className="mt-2 text-sm text-gray-500">Fetching study partners from Database.</p>
         </div>
       </div>
     )
@@ -415,7 +415,7 @@ export default function DiscoverPage() {
               </div>
 
               <div className="pt-2">
-                <Button 
+                <Button
                   onClick={() => {
                     setCurrentIndex(0)
                     setSwiped([])
@@ -460,17 +460,17 @@ export default function DiscoverPage() {
             {mobileFiltersOpen && (
               <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
                 {/* Backdrop */}
-                <div 
+                <div
                   className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                   onClick={() => setMobileFiltersOpen(false)}
                 />
-                
+
                 {/* Content Panel */}
                 <div className="relative w-full max-w-sm bg-white h-full overflow-y-auto transform transition-transform animate-in slide-in-from-right shadow-2xl safe-p-bottom">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: displayFont }}>Refine Match</h2>
-                      <button 
+                      <button
                         onClick={() => setMobileFiltersOpen(false)}
                         className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
                       >

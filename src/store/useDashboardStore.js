@@ -5,6 +5,7 @@ import {
   fetchDashboardSnapshot,
   fetchMatchAlerts,
   fetchSocialPulse,
+  fetchCampusLeaders,
 } from '@/lib/studymatchRealtime'
 
 let realtimeChannel = null
@@ -24,6 +25,7 @@ export const useDashboardStore = create(
     upcomingSessions: [],
     matchAlerts: [],
     socialPulse: [],
+    campusLeaders: [],
     loading: true,
     error: null,
     lastFetchedUserId: null,
@@ -43,10 +45,11 @@ export const useDashboardStore = create(
       set({ loading: true, error: null })
 
       try {
-        const [snapshot, alerts, pulse] = await Promise.all([
+        const [snapshot, alerts, pulse, leaders] = await Promise.all([
           fetchDashboardSnapshot(userId),
           fetchMatchAlerts(userId),
           fetchSocialPulse(userId),
+          fetchCampusLeaders(userId),
         ])
 
         set({
@@ -55,6 +58,7 @@ export const useDashboardStore = create(
           upcomingSessions: snapshot.upcomingSessions,
           matchAlerts: alerts,
           socialPulse: pulse,
+          campusLeaders: leaders,
           loading: false,
           error: null,
           lastFetchedUserId: userId,
@@ -200,6 +204,7 @@ export const useDashboardStore = create(
         upcomingSessions: [],
         matchAlerts: [],
         socialPulse: [],
+        campusLeaders: [],
         loading: true,
         error: null,
         lastFetchedUserId: null,
