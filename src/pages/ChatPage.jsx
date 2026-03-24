@@ -390,7 +390,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div className="flex bg-[#f0f4f8] overflow-hidden" style={{ height: 'calc(100vh - 4.5rem)' }}>
+      <div className="flex bg-[#f0f4f8] overflow-hidden" style={{ height: 'calc(100dvh - 4.5rem)' }}>
 
         {/* Mobile backdrop */}
         {(sidebarOpen || rightSidebarOpen) && (
@@ -412,7 +412,7 @@ export default function ChatPage() {
             fixed top-[4.5rem] bottom-0 left-0 lg:static lg:translate-x-0
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           `}
-          style={{ height: 'calc(100vh - 4.5rem)' }}
+          style={{ height: 'calc(100dvh - 4.5rem)' }}
         >
           <div className="p-4 flex flex-col gap-4">
 
@@ -886,7 +886,7 @@ export default function ChatPage() {
             fixed top-[4.5rem] bottom-0 right-0 lg:static lg:translate-x-0
             ${rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
-          style={{ height: 'calc(100vh - 4.5rem)' }}
+          style={{ height: 'calc(100dvh - 4.5rem)' }}
         >
           <div className="p-4 flex flex-col gap-4">
 
