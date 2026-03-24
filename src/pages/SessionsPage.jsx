@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import {
@@ -12,11 +12,13 @@ import {
   Sparkles,
   Video,
 } from 'lucide-react'
-import { mockMatches, mockSessions, mockUsers } from '@/data/mockData'
+import { useAuthStore } from '@/store/useAuthStore'
+import { fetchMatchAlerts, fetchUserSessions, createNewSession, updateSessionStatus } from '@/lib/studymatchRealtime'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
-let localSessions = [...mockSessions]
+let localSessions = []
 
-const SUBJECTS = [
+const FALLBACK_SUBJECTS = [
   'Calculus',
   'Linear Algebra',
   'Data Structures',
@@ -26,6 +28,17 @@ const SUBJECTS = [
   'Web Development',
   'Machine Learning',
 ]
+
+// Helpers for date/time min values (now)
+function getTodayStr() {
+  const now = new Date()
+  return now.toISOString().split('T')[0]
+}
+
+function getNowTimeStr() {
+  const now = new Date()
+  return now.toTimeString().slice(0, 5) // "HH:MM"
+}
 
 const DURATIONS = [
   { label: '45 min', value: 45, note: 'Quick check-in' },
@@ -67,6 +80,7 @@ export default function SessionsPage() {
   const location = useLocation()
   const pageRef = useRef(null)
   const conditionalBlockRef = useRef(null)
+  const currentUser = useAuthStore((state) => state.user)
 
   const searchParams = new URLSearchParams(location.search)
   const initialPartnerId = searchParams.get('partnerId') || ''
@@ -84,7 +98,82 @@ export default function SessionsPage() {
   const [generatedLink, setGeneratedLink] = useState('')
   const [copyFeedback, setCopyFeedback] = useState('')
   const [sessions, setSessions] = useState(localSessions)
+  const [matchedPartners, setMatchedPartners] = useState([])
+  const [partnersLoading, setPartnersLoading] = useState(true)
+  const [sessionsLoading, setSessionsLoading] = useState(true)
   const appOrigin = typeof window === 'undefined' ? '' : window.location.origin
+
+  // Load matched partners from Supabase
+  useEffect(() => {
+    async function loadPartners() {
+      if (!currentUser?.id) return
+      setPartnersLoading(true)
+      try {
+        if (isSupabaseConfigured) {
+          const alerts = await fetchMatchAlerts(currentUser.id)
+          setMatchedPartners(alerts.map((a) => a.partner).filter(Boolean))
+        } else {
+          setMatchedPartners([])
+        }
+      } catch (error) {
+        console.error('Failed to load partners:', error)
+        setMatchedPartners([])
+      } finally {
+        setPartnersLoading(false)
+      }
+    }
+    loadPartners()
+  }, [currentUser?.id])
+
+  // Dynamic combined subjects from current user + selected partner (from real matched list)
+  const combinedSubjects = useMemo(() => {
+    const selectedPartnerData = matchedPartners.find(
+      (p) => p.id === sessionForm.partnerId
+    )
+
+    const mySubjects = currentUser?.study_profile?.subjects ?? []
+    const partnerSubjects = selectedPartnerData?.study_profile?.subjects ?? []
+
+    // Merge & dedupe, preserving order (my subjects first)
+    const merged = [...new Set([...mySubjects, ...partnerSubjects])]
+    return merged.length > 0 ? merged : FALLBACK_SUBJECTS
+  }, [sessionForm.partnerId, currentUser, matchedPartners])
+
+  // Load real sessions from Supabase
+  useEffect(() => {
+    async function loadSessions() {
+      if (!currentUser?.id) return
+      setSessionsLoading(true)
+      try {
+        if (isSupabaseConfigured) {
+          const realSessions = await fetchUserSessions(currentUser.id)
+          setSessions(realSessions)
+          localSessions = realSessions
+        } else {
+          setSessions([])
+          localSessions = []
+        }
+      } catch (error) {
+        console.error('Failed to load sessions:', error)
+        setSessions([])
+      } finally {
+        setSessionsLoading(false)
+      }
+    }
+    loadSessions()
+  }, [currentUser?.id])
+
+  // Reset subject if it's no longer in the combined list after partner changes
+  useEffect(() => {
+    if (sessionForm.subject && !combinedSubjects.includes(sessionForm.subject)) {
+      setSessionForm((prev) => ({ ...prev, subject: '' }))
+    }
+  }, [combinedSubjects, sessionForm.subject])
+
+  // Min date = today, min time = now (only relevant when date === today)
+  const todayStr = getTodayStr()
+  const nowTimeStr = getNowTimeStr()
+  const minTime = sessionForm.date === todayStr ? nowTimeStr : undefined
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -150,40 +239,91 @@ export default function SessionsPage() {
     }
   }
 
-  const handleCreateSession = (event) => {
+  const handleCreateSession = async (event) => {
     event.preventDefault()
 
-    const selectedPartner =
-      mockMatches.find((match) => match.partner.id === sessionForm.partnerId)?.partner || mockUsers[0]
+    const selectedPartner = matchedPartners.find((p) => p.id === sessionForm.partnerId)
+    if (!selectedPartner) return
 
     const resolvedRoomId =
       sessionForm.mode === 'online'
         ? (generatedLink.replace('/meet/', '') || createRoomId())
         : null
 
-    const newSession = {
-      id: `s_${Date.now()}`,
-      partner: selectedPartner,
-      subject: sessionForm.subject || 'Study Session',
-      scheduled_at: `${sessionForm.date || new Date().toISOString().split('T')[0]}T${sessionForm.time || '12:00'}:00Z`,
+    const baseDate = sessionForm.date || new Date().toISOString().split('T')[0]
+    const baseTime = sessionForm.time || '12:00'
+    // Gunakan object Date lokal lalu ubah ke format ISO (UTC) agar tersimpan dengan tepat sesuai zona waktu user.
+    const localDateTime = new Date(`${baseDate}T${baseTime}:00`)
+    
+    const sessionData = {
+      partnerId: sessionForm.partnerId,
+      subject: sessionForm.subject,
+      scheduled_at: localDateTime.toISOString(),
       duration_minutes: sessionForm.duration,
       mode: sessionForm.mode,
-      meeting_room_id: resolvedRoomId,
       location: sessionForm.mode === 'offline' ? sessionForm.location : '',
-      status: 'upcoming',
+      meeting_url: resolvedRoomId,
     }
 
-    localSessions = [newSession, ...localSessions]
-    setSessions(localSessions)
+    if (isSupabaseConfigured && currentUser?.id) {
+      try {
+        const savedSession = await createNewSession(currentUser.id, sessionData)
+        if (savedSession) {
+          // Add the real saved session (with DB ID) to local state
+          const newSession = {
+            ...savedSession,
+            partner: selectedPartner,
+            subject: sessionData.subject || 'Study Session',
+            scheduled_at: sessionData.scheduled_at,
+            duration_minutes: sessionData.duration_minutes,
+            mode: sessionData.mode,
+            meeting_url: resolvedRoomId,
+            location: sessionData.location,
+            status: 'upcoming'
+          }
+          localSessions = [newSession, ...localSessions]
+          setSessions(localSessions)
+        }
+      } catch (err) {
+        console.error('Failed to save session to Supabase:', err)
+      }
+    } else {
+      // Fallback for no Supabase
+      const newSession = {
+        id: `s_${Date.now()}`,
+        partner: selectedPartner,
+        subject: sessionData.subject || 'Study Session',
+        scheduled_at: sessionData.scheduled_at,
+        duration_minutes: sessionData.duration_minutes,
+        mode: sessionData.mode,
+        meeting_url: resolvedRoomId,
+        location: sessionData.location,
+        status: 'upcoming',
+      }
+      localSessions = [newSession, ...localSessions]
+      setSessions(localSessions)
+    }
+
     navigate('/sessions')
   }
 
-  const handleMarkAsDone = (id) => {
+  const handleMarkAsDone = async (id) => {
     const updated = localSessions.map((session) =>
       session.id === id ? { ...session, status: 'pending_confirmation' } : session
     )
     localSessions = updated
     setSessions(updated)
+
+    if (isSupabaseConfigured) {
+      try {
+        await updateSessionStatus(id, 'completed')
+      } catch (err) {
+        console.error('Failed to update session status in Supabase:', err)
+        alert('Maaf, update status ke database gagal: ' + err.message)
+        // Rollback if needed
+        return
+      }
+    }
 
     setTimeout(() => {
       const confirmed = localSessions.map((session) =>
@@ -191,15 +331,17 @@ export default function SessionsPage() {
       )
       localSessions = confirmed
       setSessions(confirmed)
-    }, 3000)
+    }, 1500)
   }
 
-  const upcomingSessions = sessions.filter(
-    (session) => session.status === 'upcoming' || session.status === 'pending_confirmation'
-  )
-  const completedSessions = sessions.filter((session) => session.status === 'completed')
+  const upcomingSessions = (sessions || [])
+    .filter((session) => session && (session.status === 'upcoming' || session.status === 'scheduled' || session.status === 'pending_confirmation'))
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
 
-  const selectedPartner = mockMatches.find((match) => match.partner.id === sessionForm.partnerId)?.partner
+  const completedSessions = (sessions || []).filter((session) => session && session.status === 'completed')
+
+  // selectedPartner = the partner object for the badge display (New Session form)
+  const selectedPartner = matchedPartners.find((p) => p.id === sessionForm.partnerId)
 
   return (
     <div className="min-h-screen border-t border-[#ECEDE8] bg-[#F9F9F8] text-[#1A1A1A]">
@@ -343,14 +485,15 @@ export default function SessionsPage() {
                           value={sessionForm.partnerId}
                           onChange={(event) => updateFormField('partnerId', event.target.value)}
                           required
-                          className="h-[52px] w-full appearance-none rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
+                          disabled={partnersLoading}
+                          className="h-[52px] w-full appearance-none rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           <option value="" disabled>
-                            Select a study partner
+                            {partnersLoading ? 'Loading matches…' : matchedPartners.length === 0 ? 'No matches yet — go swipe!' : 'Select a study partner'}
                           </option>
-                          {mockMatches.map((match) => (
-                            <option key={match.partner.id} value={match.partner.id}>
-                              {match.partner.full_name}
+                          {matchedPartners.map((partner) => (
+                            <option key={partner.id} value={partner.id}>
+                              {partner.full_name}
                             </option>
                           ))}
                         </select>
@@ -377,12 +520,15 @@ export default function SessionsPage() {
                         <select
                           value={sessionForm.subject}
                           onChange={(event) => updateFormField('subject', event.target.value)}
-                          className="h-[52px] w-full appearance-none rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
+                          disabled={!sessionForm.partnerId}
+                          className="h-[52px] w-full appearance-none rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <option value="" disabled>
-                            Choose the subject you want to focus on
+                            {sessionForm.partnerId
+                              ? 'Choose a shared subject'
+                              : 'Select a partner first'}
                           </option>
-                          {SUBJECTS.map((subject) => (
+                          {combinedSubjects.map((subject) => (
                             <option key={subject} value={subject}>
                               {subject}
                             </option>
@@ -390,6 +536,11 @@ export default function SessionsPage() {
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A93A0]" />
                       </div>
+                      {sessionForm.partnerId && (
+                        <p className="mt-2 text-[12px] text-[#8A93A0]">
+                          Showing subjects from you and your partner.
+                        </p>
+                      )}
                     </label>
                   </div>
                 </section>
@@ -412,6 +563,7 @@ export default function SessionsPage() {
                           <input
                             type="date"
                             value={sessionForm.date}
+                            min={todayStr}
                             onChange={(event) => updateFormField('date', event.target.value)}
                             className="h-[52px] w-full rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
                           />
@@ -425,11 +577,17 @@ export default function SessionsPage() {
                           <input
                             type="time"
                             value={sessionForm.time}
+                            min={minTime}
                             onChange={(event) => updateFormField('time', event.target.value)}
                             className="h-[52px] w-full rounded-[22px] border border-[#E9ECEF] bg-[#FCFCFB] px-5 pr-12 text-[15px] font-medium text-[#1A1A1A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none focus:border-[#136DEC]/35 focus:ring-4 focus:ring-[#136DEC]/10"
                           />
                           <Clock className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A93A0]" />
                         </div>
+                        {minTime && (
+                          <p className="mt-2 text-[12px] text-[#8A93A0]">
+                            Must be later than the current time.
+                          </p>
+                        )}
                       </label>
                     </div>
                   </div>
@@ -712,33 +870,54 @@ export default function SessionsPage() {
               </header>
 
               <section data-session-reveal className="space-y-10">
-                <div>
-                  <div className="mb-5 flex items-center gap-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">Upcoming</h2>
-                    <span className="inline-flex min-h-7 items-center rounded-full bg-[#EEF4FF] px-3 text-[11px] font-semibold text-[#136DEC]">
-                      {upcomingSessions.length}
-                    </span>
+                {sessionsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-[#8A93A0]">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#136DEC]/20 border-t-[#136DEC]" />
+                    <p className="mt-4 text-sm font-medium tracking-tight">Loading your schedule…</p>
                   </div>
-                  <div className="space-y-4">
-                    {upcomingSessions.map((session) => (
-                      <ScheduleCard key={session.id} session={session} isUpcoming onMarkAsDone={handleMarkAsDone} />
-                    ))}
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div>
+                      <div className="mb-5 flex items-center gap-3">
+                        <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">Upcoming</h2>
+                        <span className="inline-flex min-h-7 items-center rounded-full bg-[#EEF4FF] px-3 text-[11px] font-semibold text-[#136DEC]">
+                          {upcomingSessions.length}
+                        </span>
+                      </div>
+                      <div className="space-y-4">
+                        {upcomingSessions.length > 0 ? (
+                          upcomingSessions.map((session) => (
+                            <ScheduleCard key={session.id} session={session} isUpcoming onMarkAsDone={handleMarkAsDone} />
+                          ))
+                        ) : (
+                          <div className="rounded-[28px] border border-dashed border-[#E9ECEF] bg-white/40 px-6 py-10 text-center">
+                            <p className="text-sm font-medium text-[#8A93A0]">No upcoming sessions scheduled.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                <div>
-                  <div className="mb-5 flex items-center gap-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">Completed</h2>
-                    <span className="inline-flex min-h-7 items-center rounded-full bg-[#EFEFEA] px-3 text-[11px] font-semibold text-[#626B76]">
-                      {completedSessions.length}
-                    </span>
-                  </div>
-                  <div className="space-y-4">
-                    {completedSessions.map((session) => (
-                      <ScheduleCard key={session.id} session={session} isUpcoming={false} />
-                    ))}
-                  </div>
-                </div>
+                    <div>
+                      <div className="mb-5 flex items-center gap-3">
+                        <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8A93A0]">Completed</h2>
+                        <span className="inline-flex min-h-7 items-center rounded-full bg-[#EFEFEA] px-3 text-[11px] font-semibold text-[#626B76]">
+                          {completedSessions.length}
+                        </span>
+                      </div>
+                      <div className="space-y-4">
+                        {completedSessions.length > 0 ? (
+                          completedSessions.map((session) => (
+                            <ScheduleCard key={session.id} session={session} isUpcoming={false} />
+                          ))
+                        ) : (
+                          <div className="rounded-[28px] opacity-60 border border-dashed border-[#E9ECEF] bg-white/20 px-6 py-8 text-center">
+                            <p className="text-sm font-medium text-[#8A93A0]">No completed sessions yet.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </section>
             </div>
           )}
@@ -803,7 +982,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
               <Clock className="h-4 w-4 text-[#8A93A0]" />
               {formatScheduleTime(session.scheduled_at)} · {session.duration_minutes}m
             </span>
-            <span className="truncate">With {session.partner.full_name}</span>
+            <span className="truncate">With {session.partner?.full_name || 'Study Partner'}</span>
           </div>
         </div>
 
@@ -819,7 +998,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
             <>
               {session.mode === 'online' ? (
                 <button
-                  onClick={() => navigate(`/meet/${session.meeting_room_id || `study-session-${session.id}`}`)}
+                  onClick={() => navigate(`/meet/${session.meeting_url || `study-session-${session.id}`}`)}
                   className={cn(
                     'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#1F2A37] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(31,42,55,0.16)]',
                     `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#111827] active:scale-[0.98]`
