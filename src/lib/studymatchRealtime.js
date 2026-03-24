@@ -108,14 +108,19 @@ function getFavoriteSubject(sessions = [], fallbackSubject) {
   return sortedSubjects[0]?.[0] || fallbackSubject || 'None yet'
 }
 
-function formatDashboardSession(session, partnerName) {
+function formatDashboardSession(session, partnerId, partnerName) {
   return {
     id: session.id,
     subject: session.subject_name || session.title || 'Study Session',
     scheduled_at: session.scheduled_start,
     duration_minutes: session.duration_minutes,
     mode: session.study_mode === 'in_person' ? 'offline' : 'online',
+    // Hardcoded fallback since column doesn't exist yet
+    meeting_url: session.meeting_url || `study-session-${session.id}`,
+    location: session.location || 'Kampus',
+    status: session.status === 'scheduled' ? 'upcoming' : session.status,
     partner: {
+      id: partnerId,
       full_name: partnerName || 'Study Partner',
     },
   }
@@ -712,55 +717,30 @@ export async function markConversationRead(conversationId, profileId) {
   return true
 }
 
-export async function fetchDashboardSnapshot(currentUserId) {
-  const emptySnapshot = {
-    stats: {
-      total_sessions: 0,
-      completed_sessions: 0,
-      total_study_hours: 0,
-      study_streak: 0,
-      favorite_subject: 'None yet',
-      weekly_data: buildWeeklyData([]),
-    },
-    studyPartnerCount: 0,
-    upcomingSessions: [],
-  }
+export async function fetchUserSessions(currentUserId) {
+  if (!isSupabaseConfigured || !currentUserId) return []
 
-  if (!isSupabaseConfigured || !currentUserId) return emptySnapshot
+  const { data: participantRows, error: participantError } = await supabase
+    .from('session_participants')
+    .select(`
+      session_id,
+      attendance_status,
+      sessions!inner(
+        id,
+        organizer_profile_id,
+        status,
+        study_mode,
+        scheduled_start,
+        duration_minutes,
+        title,
+        match_id,
+        subject_id,
+        subjects(name)
+      )
+    `)
+    .eq('profile_id', currentUserId)
+    .neq('attendance_status', 'declined')
 
-  const [
-    { data: matchRows, error: matchError },
-    { data: participantRows, error: participantError },
-    profileRecord,
-  ] = await Promise.all([
-    supabase
-      .from('matches')
-      .select('id')
-      .eq('status', 'active')
-      .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`),
-    supabase
-      .from('session_participants')
-      .select(`
-        session_id,
-        attendance_status,
-        sessions!inner(
-          id,
-          status,
-          study_mode,
-          scheduled_start,
-          duration_minutes,
-          title,
-          match_id,
-          subject_id,
-          subjects(name)
-        )
-      `)
-      .eq('profile_id', currentUserId)
-      .neq('attendance_status', 'declined'),
-    fetchProfileRecord(currentUserId),
-  ])
-
-  if (matchError) throw matchError
   if (participantError) throw participantError
 
   const sessions = (participantRows || [])
@@ -783,36 +763,186 @@ export async function fetchDashboardSnapshot(currentUserId) {
     participantDetails = data || []
   }
 
-  const partnerIds = [...new Set(
-    participantDetails
-      .filter((row) => row.profile_id !== currentUserId)
-      .map((row) => row.profile_id)
-  )]
+  // Kumpulkan semua ID Partner yang mungkin
+  const partnerIdsSet = new Set()
+
+  participantDetails.forEach((row) => {
+    if (row.profile_id !== currentUserId) {
+      partnerIdsSet.add(row.profile_id)
+    }
+  })
+
+  sessions.forEach((session) => {
+    if (session.organizer_profile_id && session.organizer_profile_id !== currentUserId) {
+      partnerIdsSet.add(session.organizer_profile_id)
+    }
+  })
+
+  const partnerIds = [...partnerIdsSet]
 
   const partnerProfiles = await Promise.all(
     partnerIds.map(async (profileId) => {
       const record = await fetchProfileRecord(profileId)
-      return normalizeProfileRecord(record)
+      return record ? normalizeProfileRecord(record) : null
     })
   )
 
-  const partnerNameById = new Map(
-    partnerProfiles.filter(Boolean).map((profile) => [profile.id, profile.full_name])
+  const partnerById = new Map(
+    partnerProfiles.filter(Boolean).map((profile) => [profile.id, profile])
   )
 
-  const partnerNameBySessionId = new Map()
-  participantDetails.forEach((row) => {
-    if (row.profile_id === currentUserId) return
-    if (partnerNameBySessionId.has(row.session_id)) return
-    partnerNameBySessionId.set(row.session_id, partnerNameById.get(row.profile_id) || 'Study Partner')
+  const partnerBySessionId = new Map()
+  
+  sessions.forEach((session) => {
+    let pid = null
+    // Jika kita BUKAN organizernya, maka partner kita secara otomatis adalah si organizer itu sendiri
+    if (session.organizer_profile_id && session.organizer_profile_id !== currentUserId) {
+      pid = session.organizer_profile_id
+    } else {
+      // Jika kita ADALAH organizer, cari ID partnernya di array participation
+      const row = participantDetails.find((r) => r.session_id === session.id && r.profile_id !== currentUserId)
+      if (row) pid = row.profile_id
+    }
+
+    if (pid && partnerById.has(pid)) {
+      partnerBySessionId.set(session.id, partnerById.get(pid))
+    }
   })
 
+  return sessions.map((session) => {
+    const partner = partnerBySessionId.get(session.id)
+    const baseFormatted = formatDashboardSession(session, partner?.id, partner?.full_name)
+    return {
+      ...baseFormatted,
+      partner: partner || baseFormatted.partner, // Use full partner if exists, else fallback from format
+    }
+  })
+}
+
+export async function createNewSession(currentUserId, sessionData) {
+  if (!isSupabaseConfigured) return null
+
+  // 1a. Try to resolve subject_id if name matches
+  let subjectId = null
+  let matchId = null
+
+  const [subjectResult, matchResult] = await Promise.all([
+    sessionData.subject ? supabase
+      .from('subjects')
+      .select('id')
+      .eq('name', sessionData.subject)
+      .maybeSingle() : Promise.resolve({ data: null }),
+    supabase
+      .from('matches')
+      .select('id')
+      .eq('status', 'active')
+      .or(`and(profile_a_id.eq.${currentUserId},profile_b_id.eq.${sessionData.partnerId}),and(profile_a_id.eq.${sessionData.partnerId},profile_b_id.eq.${currentUserId})`)
+      .maybeSingle()
+  ])
+
+  if (subjectResult.data) subjectId = subjectResult.data.id
+  if (matchResult.data) matchId = matchResult.data.id
+
+  // 1b. Create the session
+  const { data: session, error: sessErr } = await supabase
+    .from('sessions')
+    .insert({
+      organizer_profile_id: currentUserId,
+      title: sessionData.subject || 'Study Session',
+      match_id: matchId,
+      subject_id: subjectId,
+      scheduled_start: sessionData.scheduled_at,
+      duration_minutes: sessionData.duration_minutes,
+      study_mode: sessionData.mode === 'online' ? 'online' : 'in_person',
+      meeting_url: sessionData.meeting_url,
+      location_text: sessionData.mode === 'offline' ? sessionData.location : null,
+      status: 'scheduled',
+    })
+    .select()
+    .single()
+
+  if (sessErr) throw sessErr
+
+  // 2. Add participants (me and the partner)
+  const participants = [
+    {
+      session_id: session.id,
+      profile_id: currentUserId,
+      participant_role: 'host',
+      attendance_status: 'accepted',
+    },
+    {
+      session_id: session.id,
+      profile_id: sessionData.partnerId,
+      participant_role: 'participant',
+      attendance_status: 'invited',
+    },
+  ]
+
+  const { error: partErr } = await supabase
+    .from('session_participants')
+    .insert(participants)
+
+  if (partErr) throw partErr
+
+  return session
+}
+
+export async function updateSessionStatus(sessionId, status) {
+  if (!isSupabaseConfigured) return null
+
+  if (!sessionId) throw new Error('ID Sesi tidak valid')
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .update({ status: status === 'completed' ? 'completed' : status })
+    .eq('id', sessionId)
+    .select()
+
+  if (error) throw error
+  if (!data || data.length === 0) {
+    throw new Error('Tertolak oleh Supabase. Hal ini bisa terjadi jika sesi tersebut dihapus, ID tidak valid, atau akunmu bukanlah pembuat/organizer dari sesi ini.')
+  }
+  return data[0]
+}
+
+export async function fetchDashboardSnapshot(currentUserId) {
+  const emptySnapshot = {
+    stats: {
+      total_sessions: 0,
+      completed_sessions: 0,
+      total_study_hours: 0,
+      study_streak: 0,
+      favorite_subject: 'None yet',
+      weekly_data: buildWeeklyData([]),
+    },
+    studyPartnerCount: 0,
+    upcomingSessions: [],
+  }
+
+  if (!isSupabaseConfigured || !currentUserId) return emptySnapshot
+
+  const [
+    { data: matchRows, error: matchError },
+    sessions,
+    profileRecord,
+  ] = await Promise.all([
+    supabase
+      .from('matches')
+      .select('id')
+      .eq('status', 'active')
+      .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`),
+    fetchUserSessions(currentUserId),
+    fetchProfileRecord(currentUserId),
+  ])
+
+  if (matchError) throw matchError
+
   const upcomingSessions = sessions
-    .filter((session) => session.status === 'scheduled')
-    .filter((session) => new Date(session.scheduled_start) >= new Date())
-    .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start))
+    .filter((session) => session.status === 'upcoming')
+    .filter((session) => new Date(session.scheduled_at) >= new Date())
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 2)
-    .map((session) => formatDashboardSession(session, partnerNameBySessionId.get(session.id)))
 
   const completedSessions = sessions.filter((session) => session.status === 'completed')
   const totalStudyHours = completedSessions.reduce(
@@ -826,9 +956,9 @@ export async function fetchDashboardSnapshot(currentUserId) {
       total_sessions: sessions.length,
       completed_sessions: completedSessions.length,
       total_study_hours: Number(totalStudyHours.toFixed(1)),
-      study_streak: computeStudyStreak(sessions),
-      favorite_subject: getFavoriteSubject(sessions, fallbackSubject),
-      weekly_data: buildWeeklyData(sessions),
+      study_streak: computeStudyStreak(sessions.map(s => ({ ...s, scheduled_start: s.scheduled_at }))),
+      favorite_subject: getFavoriteSubject(sessions.map(s => ({ ...s, subject_name: s.subject })), fallbackSubject),
+      weekly_data: buildWeeklyData(sessions.map(s => ({ ...s, scheduled_start: s.scheduled_at }))),
     },
     studyPartnerCount: matchRows?.length || 0,
     upcomingSessions,
