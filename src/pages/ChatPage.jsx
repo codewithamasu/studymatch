@@ -472,7 +472,7 @@ export default function ChatPage() {
                     type="button"
                     onClick={() => navigate(`/meet/${thread.conversation.id}`)}
                     aria-label="Start video call"
-                    className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left"
+                    className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left hover:cursor-pointer"
                   >
                     <div className="w-9 h-9 rounded-[9px] bg-[#eff6ff] flex items-center justify-center shrink-0 text-[#1a56db]">
                       <Video className="w-4 h-4" aria-hidden="true" />
@@ -941,7 +941,7 @@ export default function ChatPage() {
                       })
                     }}
                     aria-pressed={g.done}
-                    className="goal-check w-full flex items-center gap-3 px-3 py-3.5 rounded-[12px] text-left hover:bg-[#f8fafc] group border border-[#f1f5f9]"
+                    className="goal-check w-full flex items-center gap-3 px-3 py-3.5 rounded-[12px] text-left hover:bg-[#f8fafc] group border border-[#f1f5f9] hover:cursor-pointer"
                   >
                     <div className={`goal-check w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                       g.done ? 'bg-[#1a56db] border-[#1a56db]' : 'border-[#cbd5e1] group-hover:border-[#93c5fd]'

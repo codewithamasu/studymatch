@@ -44,6 +44,7 @@ export default function DiscoverPage() {
   const [targetSubject, setTargetSubject] = useState('')
   const [availableSubjects, setAvailableSubjects] = useState([])
   const [stats, setStats] = useState({ availableNow: 0, newToday: 0 })
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const cardRef = useRef(null)
   const matchRef = useRef(null)
@@ -60,12 +61,25 @@ export default function DiscoverPage() {
         if (mounted) {
           setAvailableSubjects(subs)
           setStats(st)
-          if (subs.length > 0) setTargetSubject(subs[0].name)
+          // Only set initial subject if nothing is selected yet
+          if (subs.length > 0 && !targetSubject) {
+            setTargetSubject(subs[0].name)
+          }
         }
       } catch (err) {
         console.error('Error loading initial data:', err)
       }
     }
+
+    loadInitialData()
+
+    return () => {
+      mounted = false
+    }
+  }, [user?.id, targetSubject]) // Run once or when user changes
+
+  useEffect(() => {
+    let mounted = true
 
     async function loadCandidates() {
       setLoading(true)
@@ -93,13 +107,20 @@ export default function DiscoverPage() {
         const realCandidates = await fetchDiscoverCandidates(user.id)
         if (!mounted) return
 
-        // Apply basic client-side filtering (server-side is better but this works for demo)
+        // Apply client-side filtering
         const filtered = realCandidates.filter(c => {
-          if (targetSubject && !c.study_profile?.subjects?.includes(targetSubject)) {
-             // If subject doesn't match, we still show but maybe lower compatibility?
-             // For now, let's keep it simple.
+          let matchesSubject = true
+          let matchesMode = true
+
+          if (targetSubject && c.study_profile?.subjects) {
+            matchesSubject = c.study_profile.subjects.includes(targetSubject)
           }
-          return true
+
+          if (studyMode && c.study_profile?.study_mode) {
+             matchesMode = c.study_profile.study_mode === studyMode || c.study_profile.study_mode === 'hybrid' || studyMode === 'hybrid'
+          }
+
+          return matchesSubject && matchesMode
         })
 
         setCandidates(
@@ -119,13 +140,17 @@ export default function DiscoverPage() {
       }
     }
 
-    loadInitialData()
-    loadCandidates()
+    // Only load candidates if we have a target subject or if it's explicitly cleared
+    // We wait for initial data to load targetSubject first to avoid fetching all candidates accidentally
+    if (targetSubject !== undefined) {
+      loadCandidates()
+    }
 
     return () => {
       mounted = false
     }
   }, [user, targetSubject, skillLevel, studyMode])
+
 
   useEffect(() => {
     setCurrentIndex(0)
@@ -328,19 +353,29 @@ export default function DiscoverPage() {
       )}
 
       {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-blue-100 rounded-full blur-[120px] opacity-40" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-100 rounded-full blur-[100px] opacity-30" />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-100 rounded-full blur-[80px] opacity-30" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#F9F9F8]">
       </div>
 
       <div className="flex-1 w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-6 xl:gap-10 px-4 pb-12 relative z-10 pt-4">
 
-        {/* ── LEFT: Filters Sidebar ── */}
-        <div className="w-full lg:w-[280px] xl:w-[300px] shrink-0">
-          <div className="bg-white rounded-[24px] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] sticky top-[100px] border border-gray-100">
-            <h3 className="text-[16px] font-bold text-[#1e293b] mb-1">Study Filters</h3>
-            <p className="text-[13px] text-[#64748b] mb-6">Refine your study matches</p>
+        {/* ── Mobile Filter Toggle Button ── */}
+        <div className="lg:hidden w-full flex justify-end mb-[-10px] z-20 relative">
+          <button
+            onClick={() => setMobileFiltersOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white rounded-full text-sm font-semibold text-[#1e293b] shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            Filters {targetSubject || studyMode !== 'online' ? '(Active)' : ''}
+          </button>
+        </div>
+
+        {/* ── Filters Content Component ── */}
+        {/* We define it here so we can reuse it between Desktop Sidebar and Mobile Drawer */}
+        {(() => {
+          const FiltersContent = () => (
+            <>
+              <h3 className="text-[16px] font-bold text-[#1e293b] mb-1">Study Filters</h3>
+              <p className="text-[13px] text-[#64748b] mb-6">Refine your study matches</p>
 
             <div className="space-y-6">
               <div>
@@ -368,6 +403,7 @@ export default function DiscoverPage() {
                 <div className="flex flex-wrap gap-2">
                   {['Beginner', 'Intermediate', 'Advanced'].map(level => (
                     <button key={level} onClick={() => setSkillLevel(level)}
+                      aria-pressed={skillLevel === level}
                       className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
                         skillLevel === level ? 'bg-[#1a56db] text-white shadow-sm' : 'bg-[#f1f5f9] text-[#64748b] hover:bg-gray-200'
                       }`}>{level}</button>
@@ -383,6 +419,7 @@ export default function DiscoverPage() {
                     { label: 'Offline', value: 'in_person' }
                   ].map(m => (
                     <button key={m.value} onClick={() => setStudyMode(m.value)}
+                      aria-pressed={studyMode === m.value}
                       className={`flex-1 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
                         studyMode === m.value ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] text-[#1a56db]' : 'text-[#64748b]'
                       }`}>{m.label}</button>
@@ -391,7 +428,15 @@ export default function DiscoverPage() {
               </div>
 
               <div className="pt-2">
-                <Button className="w-full bg-[#1a56db] hover:bg-blue-700 text-white font-semibold rounded-[16px] py-[14px] text-[14px] shadow-sm">
+                <Button 
+                  onClick={() => {
+                    setCurrentIndex(0)
+                    setSwiped([])
+                    setTargetSubject(targetSubject)
+                    setStudyMode(studyMode)
+                    setMobileFiltersOpen(false) // Close modal on submit
+                  }}
+                  className="w-full bg-[#1a56db] hover:bg-blue-700 text-white font-semibold rounded-[16px] py-[14px] text-[14px] shadow-sm">
                   Apply Filters
                 </Button>
               </div>
@@ -412,10 +457,49 @@ export default function DiscoverPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </>
+        )
 
-        {/* ── CENTER: Swipe Area ── */}
+        return (
+          <>
+            {/* Desktop Sidebar */}
+            <div className="hidden lg:block w-[280px] xl:w-[300px] shrink-0">
+              <div className="bg-white rounded-[24px] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] sticky top-[100px] border border-gray-100">
+                <FiltersContent />
+              </div>
+            </div>
+
+            {/* Mobile Filters Drawer */}
+            {mobileFiltersOpen && (
+              <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
+                {/* Backdrop */}
+                <div 
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => setMobileFiltersOpen(false)}
+                />
+                
+                {/* Content Panel */}
+                <div className="relative w-full max-w-sm bg-white h-full overflow-y-auto transform transition-transform animate-in slide-in-from-right shadow-2xl safe-p-bottom">
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: displayFont }}>Refine Match</h2>
+                      <button 
+                        onClick={() => setMobileFiltersOpen(false)}
+                        className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <FiltersContent />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )
+      })()}
+
+      {/* ── CENTER: Swipe Area ── */}
         <div className="flex-1 flex justify-center items-start">
           {currentCard && (
             <div className="w-full h-full touch-none pt-2 relative flex flex-col justify-center">
@@ -438,7 +522,7 @@ export default function DiscoverPage() {
                   <div className="p-6 relative bg-white pb-14">
                     <div className="flex items-center justify-between mb-4">
                       <h2
-                        className="text-2xl font-semibold tracking-[-0.045em] text-gray-900"
+                        className="text-[26px] font-semibold tracking-[-0.04em] text-[#1e293b]"
                         style={{ fontFamily: displayFont }}
                       >
                         {currentCard.full_name.split(' ')[0]}
@@ -449,16 +533,16 @@ export default function DiscoverPage() {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-gray-600">
-                        <BookOpen className="w-5 h-5 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-3 text-[#475569]">
+                        <BookOpen className="w-5 h-5 text-[#94a3b8] shrink-0" />
                         <span className="text-[15px]">{currentCard.study_profile?.subjects?.[0] || 'Study Partner'} • Exam Prep</span>
                       </div>
-                      <div className="flex items-center gap-3 text-gray-600">
-                        <Calendar className="w-5 h-5 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-3 text-[#475569]">
+                        <Calendar className="w-5 h-5 text-[#94a3b8] shrink-0" />
                         <span className="text-[15px]">Availability: {currentCard.study_profile?.availability?.days?.length > 0 ? currentCard.study_profile.availability.days.join(', ') : 'Flexible'}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-gray-600">
-                        <MapPin className="w-5 h-5 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-3 text-[#475569]">
+                        <MapPin className="w-5 h-5 text-[#94a3b8] shrink-0" />
                         <span className="text-[15px] capitalize">{currentCard.study_profile?.study_mode?.replace('_', ' ') || 'Any Mode'}</span>
                       </div>
                     </div>
@@ -467,22 +551,25 @@ export default function DiscoverPage() {
 
                 <div className="absolute left-0 right-0 -bottom-10 flex justify-center items-center gap-5 z-10">
                   <button onClick={handleSkip}
+                    aria-label="Skip"
                     className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-red-500 hover:scale-110 transition-transform cursor-pointer border border-gray-50">
                     <X className="w-6 h-6 stroke-[3]" />
                   </button>
                   <button onClick={handleLike}
+                    aria-label="Like"
                     className="w-20 h-20 bg-blue-600 rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_8px_30px_rgba(37,99,235,0.6)] transition-all cursor-pointer">
                     <Heart className="w-10 h-10 fill-white" />
                   </button>
                   <button onClick={handleSuperLike}
+                    aria-label="Super Like"
                     className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-blue-500 hover:scale-110 transition-transform cursor-pointer border border-gray-50">
                     <Star className="w-6 h-6 stroke-[2.5]" />
                   </button>
                 </div>
               </div>
 
-              <p className="text-center text-gray-400 text-sm mt-16">
-                Swipe left to skip, right to express interest!
+              <p className="text-center text-[#94a3b8] font-medium tracking-wide text-[13px] mt-16 uppercase">
+                Swipe left to pass, right to connect
               </p>
             </div>
           )}

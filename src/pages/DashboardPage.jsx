@@ -294,30 +294,135 @@ function AnimatedNumber({ value, suffix = '' }) {
   return <span ref={ref} aria-live="polite">{value}{suffix}</span>
 }
 
-// ─── Social Pulse Feed ───────────────────────────────────────────────────────
-function SocialPulseItem({ item }) {
+// ─── Refactored Social Pulse (Unified Module) ─────────────────────────────────
+function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, navigate }) {
+  const topSession = upcomingSessions?.[0]
+  const topMessages = socialPulse?.slice(0, 3) || []
+  const newMatches = matchAlerts?.slice(0, 3) || []
+
   return (
-    <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-neutral-50 transition-colors duration-150">
-      <img
-        src={avatar(item.avatarSeed || item.senderName, '28')}
-        alt=""
-        aria-hidden="true"
-        className="w-8 h-8 rounded-xl flex-shrink-0 border border-neutral-200"
-      />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-neutral-700 leading-snug">
-          <span className="font-semibold text-neutral-900">{item.senderName}</span>{' '}
-          {item.action}
-        </p>
-        <p className="text-[11px] text-neutral-400 mt-0.5">{item.time}</p>
+    <section
+      aria-labelledby="pulse-heading"
+      className="bg-white rounded-2xl p-6 flex flex-col gap-8 shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-neutral-100/60"
+    >
+      <div className="flex items-center justify-between">
+        <h2
+          id="pulse-heading"
+          className="text-[22px] font-bold text-neutral-900 tracking-[-0.03em]"
+          style={{ fontFamily: displayFont }}
+        >
+          Social Pulse
+        </h2>
+        <TrendingUp className="w-5 h-5 text-neutral-300" aria-hidden="true" />
       </div>
-      <span className="text-base flex-shrink-0" aria-hidden="true">{item.badge}</span>
-    </div>
+
+      {/* Primary: Upcoming Session (Only 1) */}
+      {topSession && (
+        <div className="flex flex-col gap-3 relative">
+          <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">Up Next</p>
+          <button
+            onClick={() => navigate('/sessions')}
+            className="group relative flex items-start gap-4 p-4 rounded-xl bg-neutral-50/70 hover:bg-[#F4F7FB] transition-colors duration-300 w-full text-left"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 absolute top-5 left-4" />
+            <div className="flex-1 min-w-0 pl-4">
+              <p className="font-semibold text-neutral-900 text-[15px] truncate">
+                {topSession.subject}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-neutral-500 font-medium tracking-tight">
+                  with {topSession.partner?.full_name?.split(' ')[0] || 'Partner'}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-neutral-300" />
+                <span className="text-xs text-neutral-400">
+                  {new Date(topSession.scheduled_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-blue-500 transition-colors self-center shrink-0" />
+          </button>
+        </div>
+      )}
+
+      {/* Secondary: Unread Messages (Max 3) */}
+      {topMessages.length > 0 && (
+        <div className="flex flex-col gap-3">
+           <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">Recent</p>
+           <div className="flex flex-col gap-1">
+             {topMessages.map(msg => (
+               <button
+                 key={msg.id}
+                 onClick={() => navigate('/chat')}
+                 className="group flex items-center gap-3 py-2 -mx-2 px-2 rounded-lg hover:bg-neutral-50/80 transition-all duration-300 text-left"
+                 style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+               >
+                 <img
+                   src={avatar(msg.avatarSeed || msg.senderName, '40')}
+                   alt=""
+                   className="w-10 h-10 rounded-full border border-neutral-100 object-cover shrink-0"
+                 />
+                 <div className="flex-1 min-w-0 pr-2">
+                   <p className="text-[14px] font-semibold text-neutral-900 tracking-tight leading-none mb-1 flex items-center gap-1.5">
+                     {msg.senderName}
+                     {msg.badge && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" aria-label="Unread" />}
+                   </p>
+                   <p className="text-[13px] text-neutral-500 leading-snug truncate">
+                     {msg.action}
+                   </p>
+                 </div>
+               </button>
+             ))}
+           </div>
+        </div>
+      )}
+
+      {/* Tertiary: New Matches */}
+      {newMatches.length > 0 && (
+        <div className="flex flex-col gap-3 pt-2">
+           <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">New Connections</p>
+           <div className="flex items-center gap-3">
+             {newMatches.map(match => (
+               <button
+                 key={match.matchId}
+                 onClick={() => navigate(`/chat/${match.partner?.id}`)}
+                 className="group flex flex-col items-center gap-1.5 hover:-translate-y-0.5 transition-transform duration-300"
+                 style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+               >
+                 <img
+                   src={avatar(match.partner?.full_name || 'user', '48')}
+                   alt=""
+                   className="w-12 h-12 rounded-full border border-neutral-100 object-cover"
+                 />
+                 <span className="text-[11px] font-medium text-neutral-600 tracking-tight group-hover:text-blue-600 transition-colors">
+                   {match.partner?.full_name?.split(' ')[0] || 'Partner'}
+                 </span>
+               </button>
+             ))}
+             {matchAlerts.length > 3 && (
+               <button
+                 onClick={() => navigate('/discover')}
+                 className="w-12 h-12 rounded-full border border-dashed border-neutral-300 flex items-center justify-center text-neutral-400 hover:text-blue-500 hover:border-blue-300 transition-colors mb-4"
+               >
+                 <TrendingUp className="w-4 h-4" />
+               </button>
+             )}
+           </div>
+        </div>
+      )}
+
+      {(!topSession && topMessages.length === 0 && newMatches.length === 0) && (
+        <div className="py-8 text-center text-sm text-neutral-400">
+          No recent activity to show.
+        </div>
+      )}
+    </section>
   )
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const {
     stats,
@@ -431,40 +536,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* ── Match Alerts (real data: matches + profiles) ──────────────────── */}
-        {matchAlerts.length > 0 && (
-          <section aria-labelledby="match-alerts-heading" className="dash-section">
-            <div className="flex items-center justify-between mb-3">
-              <h2
-                id="match-alerts-heading"
-                className="text-sm font-semibold text-neutral-900 flex items-center gap-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
-                Match Alerts
-                <span className="text-xs font-normal text-neutral-400">
-                  ({matchAlerts.length} partners available)
-                </span>
-              </h2>
-              <Link
-                to="/chat"
-                className="text-xs text-neutral-400 hover:text-blue-600 flex items-center gap-1 transition-colors"
-              >
-                Open Chat <ChevronRight className="w-3 h-3" aria-hidden="true" />
-              </Link>
-            </div>
-            <div
-              role="list"
-              aria-label="List of matched partners"
-              className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide"
-            >
-              {matchAlerts.map((alert, i) => (
-                <div role="listitem" key={alert.matchId}>
-                  <MatchAlertChip alert={alert} isNew={i < 3} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Removed redundant Match Alerts section - now unified in Social Pulse */}
 
         {/* ── Main Grid ─────────────────────────────────────────────────────── */}
         <div className="dash-section grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -607,93 +679,18 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* RIGHT — Social Pulse (real data: messages from partner conversations, live via Realtime) */}
-          <section
-            aria-labelledby="pulse-heading"
-            aria-live="polite"
-            aria-atomic="false"
-            className="bg-white border border-neutral-200/70 rounded-2xl p-5 flex flex-col"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2
-                id="pulse-heading"
-                className="text-lg font-bold text-neutral-900"
-                style={{ fontFamily: displayFont }}
-              >
-                Social Pulse
-              </h2>
-              <TrendingUp className="w-4 h-4 text-neutral-400" aria-hidden="true" />
-            </div>
-
-            {socialPulse.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 py-6">
-                <MessageCircle className="w-8 h-8 text-neutral-300" aria-hidden="true" />
-                <p className="text-sm text-neutral-500">
-                  No activity yet. Your partners will appear here when they send a message.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-1 flex-1">
-                {socialPulse.map((item) => (
-                  <SocialPulseItem key={item.id} item={item} />
-                ))}
-              </div>
-            )}
-
-            <div className="mt-4 pt-3 border-t border-neutral-100">
-              <Link
-                to="/chat"
-                aria-label="Open all conversations"
-                className="flex items-center justify-center gap-2 w-full text-sm font-medium text-[#1a56db] hover:bg-blue-50 py-2.5 rounded-xl border border-blue-100 transition-colors duration-200"
-              >
-                <MessageCircle className="w-4 h-4" aria-hidden="true" />
-                Open Chat
-              </Link>
-            </div>
-          </section>
+          {/* RIGHT — Refactored Social Pulse Module */}
+          <div className="dash-section">
+            <UnifiedSocialPulse
+              upcomingSessions={upcomingSessions}
+              socialPulse={socialPulse}
+              matchAlerts={matchAlerts}
+              navigate={navigate}
+            />
+          </div>
         </div>
 
-        {/* ── Upcoming Sessions (real data: sessions + session_participants from Supabase) ── */}
-        <section aria-labelledby="sessions-heading" className="dash-section">
-          <div className="flex items-center justify-between mb-3">
-            <h2
-              id="sessions-heading"
-              className="text-lg font-bold text-neutral-900 flex items-center gap-2"
-              style={{ fontFamily: displayFont }}
-            >
-              <Calendar className="w-4 h-4 text-neutral-400" aria-hidden="true" />
-              Upcoming Sessions
-            </h2>
-            <Link
-              to="/sessions"
-              className="text-xs text-neutral-400 hover:text-blue-600 flex items-center gap-1 transition-colors"
-            >
-               See all <ChevronRight className="w-3 h-3" aria-hidden="true" />
-            </Link>
-          </div>
-
-          {upcomingSessions.length === 0 ? (
-            <div className="bg-white border border-neutral-200/70 rounded-2xl p-8 text-center">
-              <Award className="w-8 h-8 text-neutral-300 mx-auto mb-3" aria-hidden="true" />
-              <p className="font-medium text-neutral-700 mb-1">No scheduled sessions yet</p>
-              <p className="text-sm text-neutral-400 mb-4">
-                Match with a partner and schedule your first session!
-              </p>
-              <Link
-                to="/discover"
-                className="inline-flex items-center gap-2 text-sm font-medium text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors duration-200"
-              >
-                <Sparkles className="w-4 h-4" aria-hidden="true" /> Start Discovering
-              </Link>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-3">
-              {upcomingSessions.slice(0, 4).map((session) => (
-                <SessionCard key={session.id} session={session} />
-              ))}
-            </div>
-          )}
-        </section>
+        {/* Removed redundant Upcoming Sessions section - now integrated as Primary in Social Pulse */}
 
       </div>
     </main>

@@ -7,6 +7,8 @@ import { useChatStore } from '@/store/useChatStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { fetchConversationSummaries, subscribeToConversations } from '@/lib/studymatchRealtime'
 
+const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
 const getAvatar = (name) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'user')}&backgroundColor=b6e3f4`
 
@@ -135,7 +137,12 @@ export default function ChatInboxPage() {
       <div className="min-h-screen bg-[#f5f6f8] flex items-center justify-center px-4 pt-20">
         <div className="text-center max-w-sm">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" aria-hidden="true" />
-          <h2 className="text-lg font-semibold text-neutral-900 mb-1">Failed to load chat</h2>
+          <h2 
+            className="text-xl font-bold text-neutral-900 mb-1"
+            style={{ fontFamily: displayFont }}
+          >
+            Failed to load chat
+          </h2>
           <p className="text-sm text-neutral-500 mb-4">{loadError}</p>
           <button
             type="button"
@@ -167,7 +174,12 @@ export default function ChatInboxPage() {
         {/* Header */}
         <div ref={headerRef} className="mb-6">
           <div className="flex items-center justify-between mb-1">
-            <h1 className="text-[28px] font-extrabold text-[#0f172a] tracking-tight">Messages</h1>
+            <h1 
+              className="text-[32px] font-bold text-[#0f172a] tracking-tight"
+              style={{ fontFamily: displayFont }}
+            >
+              Messages
+            </h1>
             {totalUnread > 0 && (
               <span className="bg-[#1a56db] text-white text-[12px] font-bold px-2.5 py-1 rounded-full" aria-live="polite">
                 {totalUnread} new
@@ -198,9 +210,15 @@ export default function ChatInboxPage() {
             { label: 'Online', value: conversations.filter((c) => c.online).length, icon: <span className="w-2 h-2 rounded-full bg-green-500 inline-block" aria-hidden="true" /> },
             { label: 'Unread', value: totalUnread, icon: <Sparkles className="w-4 h-4" aria-hidden="true" /> },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-[16px] px-4 py-3 text-center" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
+            <div key={s.label} className="bg-white rounded-[20px] px-4 py-4 text-center border border-neutral-100/50" style={{ boxShadow: '0 4px 12px rgba(0,0,0,.03)' }}>
               <div className="flex items-center justify-center gap-1.5 text-[#1a56db] mb-1">{s.icon}</div>
-              <div className="text-[20px] font-extrabold text-[#0f172a] leading-tight" aria-live="polite">{s.value}</div>
+              <div 
+                className="text-[24px] font-bold text-[#0f172a] leading-tight" 
+                style={{ fontFamily: displayFont }}
+                aria-live="polite"
+              >
+                {s.value}
+              </div>
               <div className="text-[11px] font-medium text-[#94a3b8] mt-0.5">{s.label}</div>
             </div>
           ))}
@@ -254,7 +272,12 @@ export default function ChatInboxPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[15px] font-bold text-[#0f172a] truncate">{c.user?.full_name}</span>
+                      <span 
+                        className="text-[16px] font-bold text-[#0f172a] truncate"
+                        style={{ fontFamily: displayFont }}
+                      >
+                        {c.user?.full_name}
+                      </span>
                       <span className={`text-[11px] shrink-0 ml-2 ${c.unread > 0 ? 'text-[#1a56db] font-bold' : 'text-[#94a3b8]'}`}>
                         {lastTimeFmt || c.lastTime}
                       </span>
@@ -292,7 +315,12 @@ export default function ChatInboxPage() {
             <Sparkles className="w-5 h-5 text-white" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-[13px] font-extrabold text-white mb-0.5">Keep finding study partners</p>
+            <p 
+              className="text-[16px] font-bold text-white mb-0.5"
+              style={{ fontFamily: displayFont }}
+            >
+              Keep finding study partners
+            </p>
             <p className="text-[12px] text-blue-200 leading-relaxed">
               Go to <strong className="text-white">Discover</strong> to swipe new partners, then continue the conversation here.
             </p>

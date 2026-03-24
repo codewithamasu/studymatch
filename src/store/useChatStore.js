@@ -57,7 +57,7 @@ export const useChatStore = create(
           [conversationId]: [
             ...(state.messagesByConversation[conversationId] || []),
             {
-              id: Date.now(),
+              id: `optimistic-${Date.now()}`,
               from: 'me',
               text,
               time: new Date().toLocaleTimeString([], {
@@ -67,6 +67,7 @@ export const useChatStore = create(
               read: false,
               fresh: true,
               reactions: [],
+              isOptimistic: true,
             },
           ],
         },
@@ -101,14 +102,15 @@ export const useChatStore = create(
     addRealtimeMessage: (conversationId, message, currentUserId) =>
       set((state) => {
         const existing = state.messagesByConversation[conversationId] || []
-        // Check if message already exists (by id or by body/sender if it's the one we just sent)
+        // Check if message already exists (by exact db id)
         if (existing.some((m) => m.id === message.id)) {
           return state
         }
 
+        const isMe = message.sender_profile_id === currentUserId
         const normalized = {
           id: message.id,
-          from: message.sender_profile_id === currentUserId ? 'me' : 'partner',
+          from: isMe ? 'me' : 'partner',
           text: message.body,
           time: new Intl.DateTimeFormat('en', {
             hour: '2-digit',
@@ -117,6 +119,21 @@ export const useChatStore = create(
           read: false,
           fresh: true,
           reactions: message.metadata?.reactions || [],
+        }
+
+        // If it was sent by us, check for an existing optimistic message with the same text to replace
+        if (isMe) {
+          const optIndex = existing.findIndex(m => m.isOptimistic && m.text === message.body)
+          if (optIndex !== -1) {
+            const newList = [...existing]
+            newList[optIndex] = normalized
+            return {
+              messagesByConversation: {
+                ...state.messagesByConversation,
+                [conversationId]: newList,
+              },
+            }
+          }
         }
 
         return {
