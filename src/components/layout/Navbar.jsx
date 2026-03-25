@@ -13,6 +13,7 @@ import {
   User,
   X,
 } from 'lucide-react'
+import { INTERACTION_TIMING } from '@/lib/constants'
 
 const appNavItems = [
   { path: '/discover', label: 'Discover', icon: Sparkles },
@@ -26,7 +27,7 @@ const marketingNavItems = [
   { href: '/#features', label: 'Features' },
 ]
 
-const interactionTiming = 'duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]'
+
 
 function getInitial(name) {
   return name?.trim()?.charAt(0)?.toUpperCase() || 'S'
@@ -87,7 +88,7 @@ export default function Navbar({ mode = 'app' }) {
     cn(
       'inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold tracking-tight outline-none ring-0',
       'focus-visible:ring-2 focus-visible:ring-[#136DEC]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8]',
-      `motion-safe:transition-[color,background-color,border-color,transform,box-shadow] ${interactionTiming}`,
+      `motion-safe:transition-[color,background-color,border-color,transform,box-shadow] ${INTERACTION_TIMING}`,
       active
         ? 'border border-[#136DEC]/12 bg-[#136DEC]/10 text-[#136DEC]'
         : 'text-[#5F6470] hover:bg-white/88 hover:text-[#136DEC]'
@@ -97,7 +98,7 @@ export default function Navbar({ mode = 'app' }) {
     cn(
       'flex min-h-12 items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold tracking-tight outline-none',
       'focus-visible:ring-2 focus-visible:ring-[#136DEC]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8]',
-      `motion-safe:transition-[color,background-color,border-color,transform,box-shadow] ${interactionTiming}`,
+      `motion-safe:transition-[color,background-color,border-color,transform,box-shadow] ${INTERACTION_TIMING}`,
       active
         ? 'bg-[#136DEC]/10 text-[#136DEC]'
         : 'text-[#4E5561] hover:bg-white hover:text-[#136DEC]'
@@ -115,7 +116,7 @@ export default function Navbar({ mode = 'app' }) {
             <img
               src={navbarLogo}
               alt="StudyMatch Logo"
-              className={`h-8 w-auto motion-safe:transition-transform ${interactionTiming} group-hover:scale-[1.02] sm:h-9`}
+              className={`h-8 w-auto motion-safe:transition-transform ${INTERACTION_TIMING} group-hover:scale-[1.02] sm:h-9`}
             />
           </Link>
 
@@ -155,7 +156,7 @@ export default function Navbar({ mode = 'app' }) {
                     className={cn(
                       'inline-flex min-h-11 items-center gap-3 rounded-full border border-[#E7EAEE] bg-white/88 px-3 py-2 text-left shadow-[0_10px_30px_rgba(18,31,53,0.06)] outline-none',
                       'focus-visible:ring-2 focus-visible:ring-[#136DEC]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8]',
-                      `motion-safe:transition-[transform,box-shadow,border-color,background-color] ${interactionTiming}`,
+                      `motion-safe:transition-[transform,box-shadow,border-color,background-color] ${INTERACTION_TIMING}`,
                       'hover:-translate-y-[1px] hover:border-[#D4DBE3] hover:shadow-[0_16px_36px_rgba(18,31,53,0.08)]'
                     )}
                   >
@@ -163,7 +164,7 @@ export default function Navbar({ mode = 'app' }) {
                       <img
                         src={user.avatar_url}
                         alt={`${user.full_name} avatar`}
-                        className="h-10 w-10 rounded-full border border-[#E7EAEE] object-cover"
+                        className="h-10 w-10 rounded-full border border-[#E7EAEE] object-cover "
                       />
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#136DEC] text-sm font-bold text-white">
@@ -183,7 +184,7 @@ export default function Navbar({ mode = 'app' }) {
                     <ChevronDown
                       className={cn(
                         'h-4 w-4 text-[#6B7280] motion-safe:transition-transform',
-                        interactionTiming,
+                        INTERACTION_TIMING,
                         profileOpen && 'rotate-180'
                       )}
                     />
@@ -192,7 +193,7 @@ export default function Navbar({ mode = 'app' }) {
                   <div
                     className={cn(
                       'absolute right-0 top-[calc(100%+0.75rem)] w-72 origin-top-right rounded-[24px] border border-[#E7EAEE] bg-[rgba(255,255,255,0.96)] p-3 shadow-[0_24px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl',
-                      `motion-safe:transition-[opacity,transform,visibility] ${interactionTiming}`,
+                      `motion-safe:transition-[opacity,transform,visibility] ${INTERACTION_TIMING}`,
                       profileOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0'
                     )}
                     role="menu"
@@ -231,8 +232,8 @@ export default function Navbar({ mode = 'app' }) {
                       onClick={handleSignOut}
                       className={cn(
                         'flex min-h-12 w-full items-center justify-between rounded-[18px] px-4 py-3 text-sm font-semibold tracking-tight text-[#A63C57]',
-                        `motion-safe:transition-[color,background-color] ${interactionTiming}`,
-                        'hover:bg-[#FFF1F4] hover:text-[#922E49] hover:cursor-pointer'
+                        `motion-safe:transition-[color,background-color] ${INTERACTION_TIMING}`,
+                        'hover:bg-[#FFF1F4] hover:text-[#922E49]'
                       )}
                       role="menuitem"
                     >
@@ -247,7 +248,7 @@ export default function Navbar({ mode = 'app' }) {
                   className={cn(
                     'inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#E7EAEE] bg-white/88 text-[#4E5561] shadow-[0_8px_24px_rgba(18,31,53,0.05)] outline-none md:hidden',
                     'focus-visible:ring-2 focus-visible:ring-[#136DEC]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8]',
-                    `motion-safe:transition-[color,background-color,border-color,transform] ${interactionTiming}`,
+                    `motion-safe:transition-[color,background-color,border-color,transform] ${INTERACTION_TIMING}`,
                     'hover:border-[#D4DBE3] hover:bg-white hover:text-[#136DEC]'
                   )}
                   onClick={() => setMobileOpen((open) => !open)}
@@ -266,7 +267,7 @@ export default function Navbar({ mode = 'app' }) {
                   className={cn(
                     'hidden min-h-11 items-center rounded-full px-4 py-2 text-sm font-semibold tracking-tight text-[#5F6470] outline-none sm:inline-flex',
                     'focus-visible:ring-2 focus-visible:ring-[#136DEC]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8]',
-                    `motion-safe:transition-[color,background-color] ${interactionTiming}`,
+                    `motion-safe:transition-[color,background-color] ${INTERACTION_TIMING}`,
                     'hover:bg-white/88 hover:text-[#136DEC]'
                   )}
                 >
@@ -278,7 +279,7 @@ export default function Navbar({ mode = 'app' }) {
                   className={cn(
                     'inline-flex min-h-11 items-center rounded-full bg-[#136DEC] px-5 py-2.5 text-sm font-semibold tracking-tight text-white shadow-[0_12px_32px_rgba(19,109,236,0.24)] outline-none',
                     'focus-visible:ring-2 focus-visible:ring-[#136DEC]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8]',
-                    `motion-safe:transition-[transform,background-color,box-shadow] ${interactionTiming}`,
+                    `motion-safe:transition-[transform,background-color,box-shadow] ${INTERACTION_TIMING}`,
                     'hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_18px_36px_rgba(19,109,236,0.28)]'
                   )}
                 >
@@ -289,7 +290,7 @@ export default function Navbar({ mode = 'app' }) {
                   className={cn(
                     'inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#E7EAEE] bg-white/88 text-[#4E5561] outline-none sm:hidden',
                     'focus-visible:ring-2 focus-visible:ring-[#136DEC]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8]',
-                    `motion-safe:transition-[color,background-color,border-color] ${interactionTiming}`,
+                    `motion-safe:transition-[color,background-color,border-color] ${INTERACTION_TIMING}`,
                     'hover:border-[#D4DBE3] hover:bg-white hover:text-[#136DEC]'
                   )}
                   onClick={() => setMobileOpen((open) => !open)}
@@ -309,7 +310,7 @@ export default function Navbar({ mode = 'app' }) {
         id="mobile-nav-panel"
         className={cn(
           'border-t border-[#E7EAEE] bg-[rgba(249,249,248,0.94)] px-4 pb-4 pt-3 backdrop-blur-xl md:hidden',
-          `motion-safe:transition-[opacity,transform,max-height,visibility] ${interactionTiming}`,
+          `motion-safe:transition-[opacity,transform,max-height,visibility] ${INTERACTION_TIMING}`,
           mobileOpen ? 'visible max-h-[32rem] translate-y-0 opacity-100' : 'invisible max-h-0 -translate-y-2 overflow-hidden opacity-0'
         )}
       >
@@ -384,7 +385,7 @@ export default function Navbar({ mode = 'app' }) {
                 onClick={handleSignOut}
                 className={cn(
                   'mt-3 flex min-h-12 w-full items-center justify-between rounded-[18px] px-4 py-3 text-sm font-semibold tracking-tight text-[#A63C57]',
-                  `motion-safe:transition-[color,background-color] ${interactionTiming}`,
+                  `motion-safe:transition-[color,background-color] ${INTERACTION_TIMING}`,
                   'hover:bg-[#FFF1F4] hover:text-[#922E49]'
                 )}
               >

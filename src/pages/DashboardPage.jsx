@@ -12,7 +12,6 @@ import {
   TrendingUp,
   Zap,
   BookOpen,
-  MessageCircle,
   Star,
   Award,
   Activity,
@@ -36,10 +35,10 @@ import {
 import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useDashboardStore } from '@/store/useDashboardStore'
+import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const displayFont =
-  '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+// Shared with DESIGN SYSTEM constants
 
 // ─── XP Helpers ───────────────────────────────────────────────────────────────
 function getXpForNextLevel(level) {
@@ -147,7 +146,7 @@ function SessionCard({ session }) {
         <time
           dateTime={date.toISOString()}
           className="text-lg font-bold text-neutral-900 leading-tight"
-          style={{ fontFamily: displayFont }}
+          style={{ fontFamily: DISPLAY_FONT }}
         >
           {date.getDate()}
         </time>
@@ -272,7 +271,7 @@ function CampusLeaders({ leaders }) {
           <h2
             id="leaders-heading"
             className="text-[17px] font-bold text-neutral-900 tracking-tight"
-            style={{ fontFamily: displayFont }}
+            style={{ fontFamily: DISPLAY_FONT }}
           >
             Campus Leaders
           </h2>
@@ -350,7 +349,7 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
         <h2
           id="pulse-heading"
           className="text-[22px] font-bold text-neutral-900 tracking-[-0.03em]"
-          style={{ fontFamily: displayFont }}
+          style={{ fontFamily: DISPLAY_FONT }}
         >
           Social Pulse
         </h2>
@@ -363,8 +362,8 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
           <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">Up Next</p>
           <button
             onClick={() => navigate('/sessions')}
-            className="group relative flex items-start gap-4 p-4 rounded-xl bg-neutral-50/70 hover:bg-[#F4F7FB] transition-colors duration-300 w-full text-left hover:cursor-pointer"
-            style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+            className="group relative flex items-start gap-4 p-4 rounded-xl bg-neutral-50/70 hover:bg-[#F4F7FB] transition-colors duration-300 w-full text-left"
+            style={{ transitionTimingFunction: TRANSITION_TIMING }}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 absolute top-5 left-4" />
             <div className="flex-1 min-w-0 pl-4">
@@ -390,13 +389,13 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
       {topMessages.length > 0 && (
         <div className="flex flex-col gap-3">
            <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">Recent</p>
-           <div className="flex flex-col gap-1">
+           <div className="flex flex-col gap-1" aria-live="polite">
              {topMessages.map(msg => (
                <button
                  key={msg.id}
                  onClick={() => navigate('/chat')}
-                 className="group flex items-center gap-3 py-2 -mx-2 px-2 rounded-lg hover:bg-neutral-50/80 transition-all duration-300 text-left hover:cursor-pointer"
-                 style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+                 className="group flex items-center gap-3 py-2 -mx-2 px-2 rounded-lg hover:bg-neutral-50/80 transition-all duration-300 text-left"
+                 style={{ transitionTimingFunction: TRANSITION_TIMING }}
                >
                  <img
                    src={avatar(msg.avatarSeed || msg.senderName, '40')}
@@ -422,19 +421,22 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
       {newMatches.length > 0 && (
         <div className="flex flex-col gap-3 pt-2">
            <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">New Connections</p>
-           <div className="flex items-center gap-3">
+           <div className="flex items-center gap-3" aria-live="polite">
              {newMatches.map(match => (
                <button
                  key={match.matchId}
                  onClick={() => navigate(`/chat/${match.partner?.id}`)}
-                 className="group flex flex-col items-center gap-1.5 hover:-translate-y-0.5 transition-transform duration-300 hover:cursor-pointer"
-                 style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+                 className="group flex flex-col items-center gap-1.5 hover:-translate-y-0.5 transition-transform duration-300"
+                 style={{ transitionTimingFunction: TRANSITION_TIMING }}
                >
-                 <img
-                   src={avatar(match.partner?.full_name || 'user', '48')}
-                   alt=""
-                   className="w-12 h-12 rounded-full border border-neutral-100 object-cover"
-                 />
+                  <div className="relative">
+                    <img
+                      src={avatar(match.partner?.full_name || 'user', '48')}
+                      alt=""
+                      className="w-12 h-12 rounded-full border border-neutral-100 object-cover relative z-10"
+                    />
+                    <div className="match-pulse absolute inset-0 rounded-full bg-blue-400 opacity-20 blur-sm -z-0" />
+                  </div>
                  <span className="text-[11px] font-medium text-neutral-600 tracking-tight group-hover:text-blue-600 transition-colors">
                    {match.partner?.full_name?.split(' ')[0] || 'Partner'}
                  </span>
@@ -501,6 +503,26 @@ export default function DashboardPage() {
         ease: 'power3.out',
         clearProps: 'all',
       })
+
+      // Wave emoji animation
+      gsap.to('.welcome-hand', {
+        rotation: 20,
+        duration: 0.8,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+        transformOrigin: '70% 70%'
+      })
+
+      // Pulsar for match alerts
+      gsap.to('.match-pulse', {
+        scale: 1.05,
+        opacity: 0.6,
+        duration: 1,
+        repeat: -1,
+        yoyo: true,
+        ease: 'power1.inOut'
+      })
     }, pageRef)
     return () => ctx.revert()
   }, [loading, error])
@@ -557,10 +579,11 @@ export default function DashboardPage() {
           <div>
             <h1
               className="text-2xl sm:text-3xl font-semibold tracking-[-0.045em] text-neutral-900"
-              style={{ fontFamily: displayFont }}
+              style={{ fontFamily: DISPLAY_FONT }}
             >
               Welcome,{' '}
-              <span className="text-[#1a56db]">{user?.full_name?.split(' ')[0] || 'Buddy'}</span> 👋
+              <span className="text-[#1a56db]">{user?.full_name?.split(' ')[0] || 'Buddy'}</span>{' '}
+              <span className="welcome-hand inline-block">👋</span>
             </h1>
             <p className="mt-1 text-sm text-neutral-500">
               {new Date().toLocaleDateString('en-US', {
@@ -597,7 +620,7 @@ export default function DashboardPage() {
                   </p>
                   <h2
                     className="text-2xl font-bold text-neutral-900 tracking-tight"
-                    style={{ fontFamily: displayFont }}
+                    style={{ fontFamily: DISPLAY_FONT }}
                   >
                     {TIER_ICONS[level]} {TIER_NAMES[level]}
                   </h2>
@@ -642,11 +665,11 @@ export default function DashboardPage() {
 
             {/* Quick Stats (real data: sessions + matches from Supabase) */}
             <section
-              className="grid grid-cols-2 gap-3"
               role="region"
               aria-labelledby="quick-stats-heading"
             >
               <h2 id="quick-stats-heading" className="sr-only">Study Statistics</h2>
+              <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Sessions Done', value: stats.completed_sessions, icon: Calendar, suffix: '' },
                 { label: 'Study Hours', value: stats.total_study_hours, icon: Clock, suffix: 'h' },
@@ -667,6 +690,7 @@ export default function DashboardPage() {
                   </div>
                 )
               })}
+              </div>
             </section>
 
             {/* Completion Rate (real data: completed_sessions / total_sessions) */}
@@ -711,7 +735,7 @@ export default function DashboardPage() {
                   <h2
                     id="mastery-heading"
                     className="text-lg font-bold text-neutral-900 tracking-tight"
-                    style={{ fontFamily: displayFont }}
+                    style={{ fontFamily: DISPLAY_FONT }}
                   >
                     Subject Mastery
                   </h2>

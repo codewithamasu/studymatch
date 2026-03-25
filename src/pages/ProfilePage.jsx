@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Sparkles, Save, User, MapPin, AlignLeft } from 'lucide-react'
+import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
-const transitionTiming = 'duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]'
+
 
 export default function ProfilePage() {
   const user = useAuthStore((state) => state.user)
@@ -53,7 +54,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen border-t border-[#ECEDE8] bg-[#F9F9F8] text-[#1A1A1A] pt-12 pb-24 px-4 sm:px-6">
+    <>
+      <Helmet>
+        <title>Profile - StudyMatch</title>
+        <meta name="description" content="Manage your StudyMatch profile and academic information." />
+      </Helmet>
+      <div className="min-h-[100dvh] border-t border-[#ECEDE8] bg-[#F9F9F8] text-[#1A1A1A] pt-[100px] pb-24 px-4 sm:px-6">
       <div className="max-w-[640px] mx-auto">
         <header className="mb-10 lg:mb-12">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8A93A0]">
@@ -61,7 +67,7 @@ export default function ProfilePage() {
           </p>
           <h1
             className="text-[clamp(2.35rem,5vw,3rem)] font-semibold leading-[1.1] tracking-[-0.04em] text-[#1A1A1A]"
-            style={{ fontFamily: displayFont }}
+            style={{ fontFamily: DISPLAY_FONT }}
           >
             Your Profile.
           </h1>
@@ -138,7 +144,7 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`group relative flex h-[56px] w-full sm:w-auto min-w-[180px] items-center justify-center gap-3 overflow-hidden rounded-[24px] bg-[#1A1A1A] px-8 text-[15px] font-semibold tracking-tight text-white shadow-[0_16px_32px_rgba(26,26,26,0.18)] transition-all ${transitionTiming} hover:-translate-y-px hover:bg-[#2A2A2A] hover:shadow-[0_20px_40px_rgba(26,26,26,0.22)] active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70`}
+                className={`group relative flex h-[56px] w-full sm:w-auto min-w-[180px] items-center justify-center gap-3 overflow-hidden rounded-[24px] bg-[#1A1A1A] px-8 text-[15px] font-semibold tracking-tight text-white shadow-[0_16px_32px_rgba(26,26,26,0.18)] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:bg-[#2A2A2A] hover:shadow-[0_20px_40px_rgba(26,26,26,0.22)] active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70`}
               >
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#626B76] border-t-white" />
@@ -154,6 +160,7 @@ export default function ProfilePage() {
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

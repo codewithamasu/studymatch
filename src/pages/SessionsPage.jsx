@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import {
   Calendar,
-  CheckCircle,
   ChevronDown,
   Clock,
   Link as LinkIcon,
@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from '@/store/useAuthStore'
 import { fetchMatchAlerts, fetchUserSessions, createNewSession, updateSessionStatus } from '@/lib/studymatchRealtime'
 import { isSupabaseConfigured } from '@/lib/supabase'
+import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
 let localSessions = []
 
@@ -49,8 +50,7 @@ const DURATIONS = [
 
 const LOCATION_PRESETS = ['Campus Library', 'Quiet Study Hall', 'Student Cafe']
 
-const transitionTiming = 'duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]'
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
 
 function createRoomId() {
   return `study-session-${Math.random().toString(36).slice(2, 9)}`
@@ -344,8 +344,13 @@ export default function SessionsPage() {
   const selectedPartner = matchedPartners.find((p) => p.id === sessionForm.partnerId)
 
   return (
-    <div className="min-h-screen border-t border-[#ECEDE8] bg-[#F9F9F8] text-[#1A1A1A]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] overflow-hidden">
+    <>
+      <Helmet>
+        <title>Sessions - StudyMatch</title>
+        <meta name="description" content="Manage your upcoming study sessions and view recent activity." />
+      </Helmet>
+      <div className="min-h-screen border-t border-[#ECEDE8] bg-[#F9F9F8] text-[#1A1A1A]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] overflow-hidden">
         <div className="absolute left-[8%] top-16 h-56 w-56 rounded-full bg-[#DDEBFF] blur-[86px] opacity-70" />
         <div className="absolute right-[12%] top-20 h-48 w-48 rounded-full bg-[#F5E8D8] blur-[90px] opacity-80" />
       </div>
@@ -360,7 +365,7 @@ export default function SessionsPage() {
               to="/sessions/new"
               className={cn(
                 'inline-flex min-h-12 items-center gap-2 rounded-[20px] px-5 py-3 text-sm font-semibold tracking-tight shadow-[0_16px_32px_rgba(19,109,236,0.16)]',
-                `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming}`,
+                `motion-safe:transition-[transform,background-color,box-shadow] ${TRANSITION_TIMING}`,
                 isNewSession
                   ? 'bg-[#136DEC] text-white hover:-translate-y-[1px] hover:bg-[#0F60D0]'
                   : 'bg-[#EEF4FF] text-[#136DEC] hover:-translate-y-[1px] hover:bg-[#E4EEFF]'
@@ -373,7 +378,7 @@ export default function SessionsPage() {
               to="/sessions"
               className={cn(
                 'inline-flex min-h-12 items-center gap-2 rounded-[20px] px-5 py-3 text-sm font-semibold tracking-tight',
-                `motion-safe:transition-[transform,background-color,color,box-shadow] ${transitionTiming}`,
+                `motion-safe:transition-[transform,background-color,color,box-shadow] ${TRANSITION_TIMING}`,
                 !isNewSession
                   ? 'bg-white text-[#1A1A1A] shadow-[0_14px_28px_rgba(33,43,54,0.05)] hover:-translate-y-[1px]'
                   : 'bg-[rgba(255,255,255,0.8)] text-[#626B76] hover:-translate-y-[1px] hover:bg-white'
@@ -393,7 +398,7 @@ export default function SessionsPage() {
               </p>
               <h2
                 className="text-[1.55rem] font-semibold tracking-[-0.04em] text-[#1A1A1A]"
-                style={{ fontFamily: displayFont }}
+                style={{ fontFamily: DISPLAY_FONT }}
               >
                 Keep it focused.
               </h2>
@@ -407,7 +412,7 @@ export default function SessionsPage() {
                 to="/sessions/new"
                 className={cn(
                   'flex min-h-[58px] items-center gap-3 rounded-[24px] px-5 py-4 text-sm font-semibold tracking-tight',
-                  `motion-safe:transition-[transform,background-color,box-shadow,color] ${transitionTiming}`,
+                  `motion-safe:transition-[transform,background-color,box-shadow,color] ${TRANSITION_TIMING}`,
                   isNewSession
                     ? 'bg-[#136DEC] text-white shadow-[0_18px_34px_rgba(19,109,236,0.22)] hover:-translate-y-[1px] hover:bg-[#0F60D0]'
                     : 'bg-white text-[#1A1A1A] shadow-[0_16px_30px_rgba(33,43,54,0.04)] hover:-translate-y-[1px]'
@@ -421,7 +426,7 @@ export default function SessionsPage() {
                 to="/sessions"
                 className={cn(
                   'flex min-h-[56px] items-center gap-3 rounded-[24px] px-5 py-4 text-sm font-semibold tracking-tight',
-                  `motion-safe:transition-[transform,background-color,box-shadow,color] ${transitionTiming}`,
+                  `motion-safe:transition-[transform,background-color,box-shadow,color] ${TRANSITION_TIMING}`,
                   !isNewSession
                     ? 'bg-white text-[#1A1A1A] shadow-[0_16px_30px_rgba(33,43,54,0.04)] hover:-translate-y-[1px]'
                     : 'text-[#626B76] hover:-translate-y-[1px] hover:bg-white/72'
@@ -443,7 +448,7 @@ export default function SessionsPage() {
                 </p>
                 <h1
                   className="max-w-[12ch] text-[clamp(2.35rem,5vw,4.35rem)] font-semibold leading-[0.94] tracking-[-0.055em] text-[#1A1A1A]"
-                  style={{ fontFamily: displayFont }}
+                  style={{ fontFamily: DISPLAY_FONT }}
                 >
                   Schedule a session that actually feels intentional.
                 </h1>
@@ -612,7 +617,7 @@ export default function SessionsPage() {
                           onClick={() => updateFormField('duration', duration.value)}
                           className={cn(
                             'min-h-[58px] min-w-[132px] rounded-[22px] px-4 py-3 text-left shadow-[0_10px_24px_rgba(29,42,58,0.03)]',
-                            `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${transitionTiming} active:scale-[0.98]`,
+                            `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${TRANSITION_TIMING} active:scale-[0.98]`,
                             sessionForm.duration === duration.value
                               ? 'bg-[#136DEC] text-white hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_18px_30px_rgba(19,109,236,0.2)]'
                               : 'bg-[#FCFCFB] text-[#374151] ring-1 ring-[#E9ECEF] hover:-translate-y-[1px] hover:bg-white hover:shadow-[0_16px_30px_rgba(29,42,58,0.05)]'
@@ -650,7 +655,7 @@ export default function SessionsPage() {
                         onClick={() => updateFormField('mode', 'online')}
                         className={cn(
                           'rounded-[26px] px-5 py-5 text-left shadow-[0_14px_28px_rgba(29,42,58,0.03)]',
-                          `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${transitionTiming} active:scale-[0.98]`,
+                          `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${TRANSITION_TIMING} active:scale-[0.98]`,
                           sessionForm.mode === 'online'
                             ? 'bg-[#EEF4FF] text-[#1A1A1A] ring-1 ring-[#136DEC]/14 hover:-translate-y-[1px]'
                             : 'bg-[#FCFCFB] text-[#626B76] ring-1 ring-[#E9ECEF] hover:-translate-y-[1px] hover:bg-white'
@@ -679,7 +684,7 @@ export default function SessionsPage() {
                         onClick={() => updateFormField('mode', 'offline')}
                         className={cn(
                           'rounded-[26px] px-5 py-5 text-left shadow-[0_14px_28px_rgba(29,42,58,0.03)]',
-                          `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${transitionTiming} active:scale-[0.98]`,
+                          `motion-safe:transition-[transform,background-color,color,box-shadow,border-color] ${TRANSITION_TIMING} active:scale-[0.98]`,
                           sessionForm.mode === 'offline'
                             ? 'bg-[#F4F1EA] text-[#1A1A1A] ring-1 ring-[#D8C6AD] hover:-translate-y-[1px]'
                             : 'bg-[#FCFCFB] text-[#626B76] ring-1 ring-[#E9ECEF] hover:-translate-y-[1px] hover:bg-white'
@@ -743,7 +748,7 @@ export default function SessionsPage() {
                               onClick={handleGenerateLink}
                               className={cn(
                                 'inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[21px] bg-[#136DEC] px-5 py-3 text-sm font-semibold tracking-tight text-white shadow-[0_16px_32px_rgba(19,109,236,0.18)]',
-                                `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_22px_36px_rgba(19,109,236,0.22)] active:scale-[0.98]`
+                                `motion-safe:transition-[transform,background-color,box-shadow] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_22px_36px_rgba(19,109,236,0.22)] active:scale-[0.98]`
                               )}
                             >
                               <Sparkles className="h-4 w-4" />
@@ -761,7 +766,7 @@ export default function SessionsPage() {
                                   onClick={handleCopyLink}
                                   className={cn(
                                     'inline-flex min-h-11 items-center justify-center rounded-[18px] bg-[#136DEC] px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-[0_12px_24px_rgba(19,109,236,0.14)]',
-                                    `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#0F60D0] active:scale-[0.98]`
+                                    `motion-safe:transition-[transform,background-color,box-shadow] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#0F60D0] active:scale-[0.98]`
                                   )}
                                 >
                                   Copy link
@@ -771,7 +776,7 @@ export default function SessionsPage() {
                                   onClick={handleGenerateLink}
                                   className={cn(
                                     'inline-flex min-h-11 items-center justify-center rounded-[18px] bg-[#EEF4FF] px-4 py-2 text-sm font-semibold tracking-tight text-[#136DEC]',
-                                    `motion-safe:transition-[transform,background-color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#E4EEFF] active:scale-[0.98]`
+                                    `motion-safe:transition-[transform,background-color] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#E4EEFF] active:scale-[0.98]`
                                   )}
                                 >
                                   Refresh room
@@ -802,7 +807,7 @@ export default function SessionsPage() {
                               onClick={() => updateFormField('location', locationName)}
                               className={cn(
                                 'min-h-11 rounded-[18px] px-4 py-2 text-sm font-semibold tracking-tight',
-                                `motion-safe:transition-[transform,background-color,color,box-shadow] ${transitionTiming} active:scale-[0.98]`,
+                                `motion-safe:transition-[transform,background-color,color,box-shadow] ${TRANSITION_TIMING} active:scale-[0.98]`,
                                 sessionForm.location === locationName
                                   ? 'bg-[#7A5C3A] text-white shadow-[0_14px_24px_rgba(122,92,58,0.18)] hover:-translate-y-[1px]'
                                   : 'bg-white/86 text-[#5C554C] hover:-translate-y-[1px] hover:bg-white'
@@ -833,7 +838,7 @@ export default function SessionsPage() {
                     type="submit"
                     className={cn(
                       'inline-flex min-h-[54px] flex-1 items-center justify-center rounded-[23px] bg-[#136DEC] px-6 py-3 text-sm font-semibold tracking-tight text-white shadow-[0_18px_34px_rgba(19,109,236,0.18)]',
-                      `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_22px_40px_rgba(19,109,236,0.22)] active:scale-[0.98]`
+                      `motion-safe:transition-[transform,background-color,box-shadow] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#0F60D0] hover:shadow-[0_22px_40px_rgba(19,109,236,0.22)] active:scale-[0.98]`
                     )}
                   >
                     Create Session
@@ -843,7 +848,7 @@ export default function SessionsPage() {
                     onClick={() => navigate('/sessions')}
                     className={cn(
                       'inline-flex min-h-[54px] items-center justify-center rounded-[23px] bg-white/80 px-6 py-3 text-sm font-semibold tracking-tight text-[#4D5561] shadow-[0_14px_28px_rgba(29,42,58,0.04)] ring-1 ring-[#ECEEEA]',
-                      `motion-safe:transition-[transform,background-color,color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-white hover:text-[#1A1A1A] active:scale-[0.98]`
+                      `motion-safe:transition-[transform,background-color,color] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-white hover:text-[#1A1A1A] active:scale-[0.98]`
                     )}
                   >
                     Cancel
@@ -859,7 +864,7 @@ export default function SessionsPage() {
                 </p>
                 <h1
                   className="text-[clamp(2.1rem,4vw,3.35rem)] font-semibold leading-[0.95] tracking-[-0.05em] text-[#1A1A1A]"
-                  style={{ fontFamily: displayFont }}
+                  style={{ fontFamily: DISPLAY_FONT }}
                 >
                   Your next focused sessions, all in one calm place.
                 </h1>
@@ -936,7 +941,8 @@ export default function SessionsPage() {
           height: 100%;
         }
       `}</style>
-    </div>
+      </div>
+    </>
   )
 }
 
@@ -1001,7 +1007,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
                   onClick={() => navigate(`/meet/${session.meeting_url || `study-session-${session.id}`}`)}
                   className={cn(
                     'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#1F2A37] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(31,42,55,0.16)]',
-                    `motion-safe:transition-[transform,background-color,box-shadow] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#111827] active:scale-[0.98]`
+                    `motion-safe:transition-[transform,background-color,box-shadow] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#111827] active:scale-[0.98]`
                   )}
                 >
                   <Video className="h-4 w-4" />
@@ -1011,7 +1017,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
                 <button
                   className={cn(
                     'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#F4F1EA] px-4 py-2 text-sm font-semibold text-[#7A5C3A]',
-                    `motion-safe:transition-[transform,background-color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#EFE7DB] active:scale-[0.98]`
+                    `motion-safe:transition-[transform,background-color] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#EFE7DB] active:scale-[0.98]`
                   )}
                 >
                   <MapPin className="h-4 w-4" />
@@ -1023,7 +1029,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
                 onClick={() => onMarkAsDone(session.id)}
                 className={cn(
                   'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#EDF8F1] px-4 py-2 text-sm font-semibold text-[#2F7D4C]',
-                  `motion-safe:transition-[transform,background-color] ${transitionTiming} hover:-translate-y-[1px] hover:bg-[#E5F3EA] active:scale-[0.98]`
+                  `motion-safe:transition-[transform,background-color] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#E5F3EA] active:scale-[0.98]`
                 )}
               >
                 <CheckCircle className="h-4 w-4" />

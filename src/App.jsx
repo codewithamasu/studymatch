@@ -14,6 +14,8 @@ import ChatPage from '@/pages/ChatPage'
 import ChatInboxPage from '@/pages/ChatInboxPage'
 import JitsiMeetPage from '@/pages/JitsiMeetPage'
 import ProfilePage from '@/pages/ProfilePage'
+import NotFoundPage from '@/pages/NotFoundPage'
+import LoadingScreen from '@/components/ui/LoadingScreen'
 
 function ProtectedRoute({ children }) {
   const user = useAuthStore(state => state.user)
@@ -21,7 +23,7 @@ function ProtectedRoute({ children }) {
   const hasProfile = useAuthStore(state => state.hasProfile)
   const location = useLocation()
   
-  if (loading) return null
+  if (loading) return <LoadingScreen />
   if (!user) return <Navigate to="/login" replace />
   if (!hasProfile() && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
@@ -34,7 +36,7 @@ function PublicRoute({ children }) {
   const loading = useAuthStore(state => state.loading)
   const hasProfile = useAuthStore(state => state.hasProfile)
   
-  if (loading) return null
+  if (loading) return <LoadingScreen />
   if (user) return <Navigate to={hasProfile() ? '/dashboard' : '/onboarding'} replace />
   return children
 }
@@ -60,7 +62,7 @@ function AppRoutes() {
         <Route path="/meet/:roomId" element={<ProtectedRoute><JitsiMeetPage /></ProtectedRoute>} />
 
         {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   )

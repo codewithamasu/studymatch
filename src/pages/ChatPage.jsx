@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import gsap from 'gsap'
 import {
   Calendar,
@@ -7,19 +8,18 @@ import {
   Search,
   Paperclip,
   Send,
-  Check,
-  CheckCheck,
   Clock,
   ChevronLeft,
   X,
   Sparkles,
   BookOpen,
   Zap,
-  Plus,
   AlertCircle,
   RefreshCw,
-  Image,
   FileText,
+  Check,
+  CheckCheck,
+  Plus,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
@@ -33,10 +33,9 @@ import {
   fetchPartnerStats,
   fetchMatchInfo,
 } from '@/lib/studymatchRealtime'
+import { DISPLAY_FONT, TRANSITION_TIMING, INTERACTION_TIMING } from '@/lib/constants'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
 const EMPTY_MESSAGES = []
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -320,12 +319,13 @@ export default function ChatPage() {
       <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
         <div className="text-center max-w-sm">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" aria-hidden="true" />
-          <h1 className="text-lg font-semibold text-neutral-900 mb-1" style={{ fontFamily: displayFont }}>Failed to load chat</h1>
+          <h1 className="text-lg font-semibold text-neutral-900 mb-1" style={{ fontFamily: DISPLAY_FONT }}>Failed to load chat</h1>
           <p className="text-sm text-[#64748b] mb-4">{loadError}</p>
           <button
             type="button"
             onClick={loadThread}
-            className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors
+"
           >
             <RefreshCw className="w-4 h-4" />
             Try Again
@@ -339,14 +339,15 @@ export default function ChatPage() {
     return (
       <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4 pt-20">
         <div className="max-w-md rounded-[24px] bg-white p-8 text-center shadow-lg">
-          <h1 className="text-2xl font-semibold text-[#0f172a] mb-2" style={{ fontFamily: displayFont }}>
+          <h1 className="text-2xl font-semibold text-[#0f172a] mb-2" style={{ fontFamily: DISPLAY_FONT }}>
             Profile not found
           </h1>
           <p className="text-sm text-[#64748b] mb-4">This partner doesn't exist or you haven't matched with them yet.</p>
           <button
             type="button"
             onClick={() => navigate('/chat')}
-            className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium text-[#1a56db] border border-[#1a56db]/30 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#1a56db] border border-[#1a56db]/30 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors
+"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Inbox
@@ -359,6 +360,10 @@ export default function ChatPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
+      <Helmet>
+        <title>{partnerName} - Chat | StudyMatch</title>
+        <meta name="description" content={`Chat with ${partnerName} on StudyMatch.`} />
+      </Helmet>
       <style>{`
         @keyframes msgIn { from { opacity:0; transform:translateY(10px) scale(0.97); } to { opacity:1; transform:none; } }
         @keyframes typeDot { 0%,60%,100% { transform:translateY(0); opacity:.4; } 30% { transform:translateY(-5px); opacity:1; } }
@@ -368,11 +373,11 @@ export default function ChatPage() {
         .td1 { animation: typeDot 1.3s infinite; }
         .td2 { animation: typeDot 1.3s .15s infinite; }
         .td3 { animation: typeDot 1.3s .3s infinite; }
-        .reaction-pop { animation: popIn .25s cubic-bezier(.34,1.56,.64,1) both; }
+        .reaction-pop { animation: popIn .25s ${INTERACTION_TIMING} both; }
         .online-dot { animation: pulse 2.5s ease-in-out infinite; }
-        .goal-check { transition: all .22s cubic-bezier(.34,1.56,.64,1); }
+        .goal-check { transition: all .22s ${INTERACTION_TIMING}; }
         .msg-hover:hover .reaction-trigger { opacity:1 !important; }
-        .goal-bar { transition: width .5s cubic-bezier(.4,0,.2,1); }
+        .goal-bar { transition: width .5s ${TRANSITION_TIMING}; }
         .action-btn { transition: background .15s, transform .12s, color .15s; }
         .action-btn:hover { transform: scale(1.08); }
         .send-glow:not(:disabled):hover { box-shadow: 0 4px 18px rgba(26,86,219,.35); transform:scale(1.08); }
@@ -423,7 +428,7 @@ export default function ChatPage() {
                   <img src={partnerAvatar} alt={partner?.full_name} className="w-full h-full rounded-full object-cover bg-[#eff6ff]" />
                 </div>
               </div>
-              <h2 className="mb-0.5 text-[1.05rem] font-semibold tracking-[-0.04em] text-[#0f172a]" style={{ fontFamily: displayFont }}>
+              <h2 className="mb-0.5 text-[1.05rem] font-semibold tracking-[-0.04em] text-[#0f172a]" style={{ fontFamily: DISPLAY_FONT }}>
                 {partner?.full_name}
               </h2>
               <p className="text-[12px] text-[#64748b] font-medium mb-4">{partner?.university || 'Student'}</p>
@@ -455,7 +460,8 @@ export default function ChatPage() {
                   type="button"
                   onClick={() => navigate(`/sessions/new?partnerId=${partner?.id}`)}
                   aria-label="Schedule a study session"
-                  className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] bg-[#1a56db] text-white shadow-md shadow-blue-200/60 hover:bg-blue-700 text-left cursor-pointer"
+                  className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] bg-[#1a56db] text-white shadow-md shadow-blue-200/60 hover:bg-blue-700 text-left
+"
                 >
                   <div className="w-9 h-9 rounded-[9px] bg-white/20 flex items-center justify-center shrink-0">
                     <Calendar className="w-4 h-4" aria-hidden="true" />
@@ -472,7 +478,8 @@ export default function ChatPage() {
                     type="button"
                     onClick={() => navigate(`/meet/${thread.conversation.id}`)}
                     aria-label="Start video call"
-                    className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left hover:cursor-pointer"
+                    className="action-btn w-full flex items-center gap-3.5 px-4 py-4 rounded-[14px] border border-[#e2e8f0] bg-[#fafafa] text-[#334155] hover:bg-[#f1f5f9] text-left
+"
                   >
                     <div className="w-9 h-9 rounded-[9px] bg-[#eff6ff] flex items-center justify-center shrink-0 text-[#1a56db]">
                       <Video className="w-4 h-4" aria-hidden="true" />
@@ -521,7 +528,8 @@ export default function ChatPage() {
               <button
                 type="button"
                 onClick={() => setSidebarOpen((o) => !o)}
-                className="cursor-pointer lg:hidden w-9 h-9 rounded-full flex items-center justify-center text-[#64748b] hover:bg-[#f1f5f9] transition-colors shrink-0"
+                className="lg:hidden w-9 h-9 rounded-full flex items-center justify-center text-[#64748b] hover:bg-[#f1f5f9] transition-colors shrink-0
+"
                 aria-label="Toggle sidebar"
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -534,7 +542,7 @@ export default function ChatPage() {
                 </div>
               </div>
               <div>
-                <h1 className="text-[1.05rem] font-semibold tracking-[-0.04em] text-[#0f172a] leading-tight" style={{ fontFamily: displayFont }}>
+                <h1 className="text-[1.05rem] font-semibold tracking-[-0.04em] text-[#0f172a] leading-tight" style={{ fontFamily: DISPLAY_FONT }}>
                   {partnerName}
                 </h1>
                 <p className="text-[12px] text-[#94a3b8]">
@@ -549,7 +557,8 @@ export default function ChatPage() {
                   title="Video call"
                   aria-label="Start video call"
                   onClick={() => navigate(`/meet/${thread.conversation.id}`)}
-                  className="cursor-pointer action-btn w-9 h-9 rounded-full text-[#94a3b8] flex items-center justify-center hover:text-[#1a56db] hover:bg-[#eff6ff]"
+                  className="action-btn w-9 h-9 rounded-full text-[#94a3b8] flex items-center justify-center hover:text-[#1a56db] hover:bg-[#eff6ff]
+"
                 >
                   <Video className="w-5 h-5" aria-hidden="true" />
                 </button>
@@ -561,7 +570,8 @@ export default function ChatPage() {
                 aria-label={searchActive ? 'Close search' : 'Search messages'}
                 aria-pressed={searchActive}
                 onClick={() => { setSearchActive((v) => !v); setSearchQuery('') }}
-                className={`cursor-pointer action-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                className={`action-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors
+ ${
                   searchActive ? 'text-[#1a56db] bg-[#eff6ff]' : 'text-[#94a3b8] hover:text-[#1a56db] hover:bg-[#eff6ff]'
                 }`}
               >
@@ -573,7 +583,8 @@ export default function ChatPage() {
                 title="Conversation info"
                 aria-label="Conversation info"
                 onClick={() => setRightSidebarOpen((v) => !v)}
-                className={`cursor-pointer lg:hidden action-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                className={`lg:hidden action-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors
+ ${
                   rightSidebarOpen ? 'text-[#1a56db] bg-[#eff6ff]' : 'text-[#94a3b8] hover:text-[#1a56db] hover:bg-[#eff6ff]'
                 }`}
               >
@@ -633,7 +644,7 @@ export default function ChatPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="mb-3 mt-4 text-[1.7rem] font-semibold tracking-[-0.05em] text-[#1a56db]" style={{ fontFamily: displayFont }}>
+                  <p className="mb-3 mt-4 text-[1.7rem] font-semibold tracking-[-0.05em] text-[#1a56db]" style={{ fontFamily: DISPLAY_FONT }}>
                     Study Match! 🎉
                   </p>
                   <p className="text-[13px] text-[#475569] leading-relaxed mb-5">
@@ -661,8 +672,42 @@ export default function ChatPage() {
 
             {/* Messages */}
             {visibleMessages.length === 0 && (
-              <div className="text-center py-8 text-[#94a3b8] text-sm">
-                {searchActive && searchQuery ? 'No messages match your search.' : 'No messages yet. Say hello! 👋'}
+              <div className="flex flex-col items-center justify-center py-8 px-6">
+                {!searchActive && (
+                  <div className="max-w-[400px] w-full bg-white/60 backdrop-blur-sm rounded-[32px] p-8 border border-white shadow-sm text-center">
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <Sparkles className="w-8 h-8 text-blue-500" />
+                    </div>
+                    <h3 className="text-lg font-bold text-neutral-900 mb-2" style={{ fontFamily: DISPLAY_FONT }}>
+                      Break the ice!
+                    </h3>
+                    <p className="text-sm text-neutral-500 mb-8 leading-relaxed">
+                      Don't be shy! {partnerName} is also looking for a study partner. Start with one of these:
+                    </p>
+                    <div className="grid gap-3">
+                      {[
+                        `Hey! Ready to crush some ${(partner?.study_profile?.subjects?.[0] || 'studying')}?`,
+                        `Hi ${partnerName}! I saw you're interested in ${partner?.study_profile?.subjects?.[0] || 'our shared subjects'}. Want to plan a session?`,
+                        `Hello! What's the biggest challenge you're facing with your studies right now?`
+                      ].map((text, i) => (
+                        <button
+                          key={i}
+                          onClick={(e) => sendMsg(e, text)}
+                          className="w-full text-left px-5 py-4 bg-white hover:bg-blue-50 border border-neutral-100 hover:border-blue-200 rounded-2xl text-[13.5px] font-medium text-neutral-700 transition-all duration-200 active:scale-[0.98] group flex items-center gap-3
+"
+                        >
+                          <span className="flex-1">{text}</span>
+                          <Send className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {searchActive && searchQuery && (
+                  <div className="text-center py-8 text-[#94a3b8] text-sm">
+                    No messages match your search.
+                  </div>
+                )}
               </div>
             )}
 
@@ -735,7 +780,8 @@ export default function ChatPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Download file: ${fileMatch[1]}`}
-                            className={`flex items-center gap-3 px-4 py-3.5 rounded-[22px] text-[14px] shadow-sm cursor-pointer no-underline ${
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-[22px] text-[14px] shadow-sm no-underline
+ ${
                               isMe
                                 ? 'bg-[#1a56db] text-white rounded-br-[4px]'
                                 : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#f1f5f9]'

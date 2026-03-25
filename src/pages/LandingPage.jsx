@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import girl from '../assets/front-view-smiley-student-with-coffee-cup.jpg'
 import Navbar from '@/components/layout/Navbar';
+import { DISPLAY_FONT } from '@/lib/constants';
 
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif';
+
 
 gsap.registerPlugin(ScrollTrigger);
 export default function LandingPage() {
@@ -102,8 +104,13 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-[#64748B] font-sans selection:bg-[#136DEC]/10 selection:text-[#136DEC]">
-      <Navbar mode="marketing" />
+    <>
+      <Helmet>
+        <title>StudyMatch - Find Your Perfect Study Partner</title>
+        <meta name="description" content="Connect with students who share your goals, schedule, and learning style." />
+      </Helmet>
+      <div className="min-h-screen bg-white text-[#64748B] font-sans selection:bg-[#136DEC]/10 selection:text-[#136DEC]">
+        <Navbar mode="marketing" />
 
       <main className="pt-[4.5rem]">
 
@@ -124,7 +131,7 @@ export default function LandingPage() {
                 <h1
                   id="hero-heading"
                   className="hero-anim mb-6 max-w-[10ch] text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.065em] text-[#1A1A1A] sm:text-6xl lg:text-[4.85rem]"
-                  style={{ fontFamily: displayFont }}
+                  style={{ fontFamily: DISPLAY_FONT }}
                 >
                   Find Your Perfect{' '}
                   <span className="relative inline-block whitespace-nowrap text-[#136DEC]">
@@ -141,7 +148,7 @@ export default function LandingPage() {
                 {/* CTA Buttons */}
                 <div className="hero-anim flex w-full sm:w-auto items-center">
                   <Link to="/register" className="w-full sm:w-auto">
-                    <button className="w-full sm:w-auto rounded-full bg-[#136DEC] px-10 py-4 text-base font-bold text-white hover:bg-[#136DEC]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC] hover:cursor-pointer">
+                    <button className="w-full sm:w-auto rounded-full bg-[#136DEC] px-10 py-4 text-base font-bold text-white hover:bg-[#136DEC]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC]">
                       Get Started
                     </button>
                   </Link>
@@ -184,7 +191,7 @@ export default function LandingPage() {
                         <div>
                           <h3
                             className="text-3xl font-semibold tracking-[-0.05em] text-[#136DEC]"
-                            style={{ fontFamily: displayFont }}
+                            style={{ fontFamily: DISPLAY_FONT }}
                           >
                             Olivia, 21
                           </h3>
@@ -245,7 +252,7 @@ export default function LandingPage() {
             <header className="mb-14 text-center">
               <h2
                 className="mb-4 text-3xl font-semibold tracking-[-0.05em] text-[#136DEC]"
-                style={{ fontFamily: displayFont }}
+                style={{ fontFamily: DISPLAY_FONT }}
               >
                 How it works
               </h2>
@@ -264,7 +271,7 @@ export default function LandingPage() {
                   </div>
                   <h3
                     className="mb-3 text-xl font-semibold tracking-[-0.04em] text-[#136DEC]"
-                    style={{ fontFamily: displayFont }}
+                    style={{ fontFamily: DISPLAY_FONT }}
                   >
                     {step.title}
                   </h3>
@@ -284,7 +291,7 @@ export default function LandingPage() {
               <div>
                 <h2
                   className="mb-12 text-3xl font-semibold tracking-[-0.05em] text-[#136DEC]"
-                  style={{ fontFamily: displayFont }}
+                  style={{ fontFamily: DISPLAY_FONT }}
                 >
                   Built for academic focus.
                 </h2>
@@ -297,7 +304,7 @@ export default function LandingPage() {
                     <div>
                       <h3
                         className="mb-2 text-lg font-semibold tracking-[-0.04em] text-[#136DEC]"
-                        style={{ fontFamily: displayFont }}
+                        style={{ fontFamily: DISPLAY_FONT }}
                       >
                         Smart Compatibility
                       </h3>
@@ -312,7 +319,7 @@ export default function LandingPage() {
                     <div>
                       <h3
                         className="mb-2 text-lg font-semibold tracking-[-0.04em] text-[#136DEC]"
-                        style={{ fontFamily: displayFont }}
+                        style={{ fontFamily: DISPLAY_FONT }}
                       >
                         Progress Tracking
                       </h3>
@@ -327,7 +334,7 @@ export default function LandingPage() {
                     <div>
                       <h3
                         className="mb-2 text-lg font-semibold tracking-[-0.04em] text-[#136DEC]"
-                        style={{ fontFamily: displayFont }}
+                        style={{ fontFamily: DISPLAY_FONT }}
                       >
                         Seamless Scheduling
                       </h3>
@@ -342,7 +349,7 @@ export default function LandingPage() {
                  <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 shadow-sm">
                     <h4
                       className="mb-6 text-lg font-semibold tracking-[-0.04em] text-[#136DEC]"
-                      style={{ fontFamily: displayFont }}
+                      style={{ fontFamily: DISPLAY_FONT }}
                     >
                       Upcoming Session
                     </h4>
@@ -364,7 +371,7 @@ export default function LandingPage() {
                         <span className="text-xs font-medium text-[#10B981]">Confirmed</span>
                       </div>
                     </div>
-                    <button className="w-full rounded bg-[#136DEC]/10 py-2.5 text-sm font-medium text-[#136DEC] hover:bg-[#136DEC]/20 transition-colors hover:cursor-pointer">
+                    <button className="w-full rounded bg-[#136DEC]/10 py-2.5 text-sm font-medium text-[#136DEC] hover:bg-[#136DEC]/20 transition-colors">
                       Join Audio Room
                     </button>
                  </div>
@@ -378,13 +385,13 @@ export default function LandingPage() {
           <div className="mx-auto max-w-3xl px-6">
             <h2
               className="mb-6 text-3xl font-semibold tracking-[-0.05em] text-[#136DEC]"
-              style={{ fontFamily: displayFont }}
+              style={{ fontFamily: DISPLAY_FONT }}
             >
               Start learning better today.
             </h2>
             <p className="mb-10 text-lg text-[#64748B]">Create your profile, meet the right partner, and make your next study session count.</p>
             <Link to="/register">
-              <button className="rounded bg-[#136DEC] px-10 py-4 text-base font-bold text-white hover:bg-[#136DEC]/90 transition-colors shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC] hover:cursor-pointer">
+              <button className="rounded bg-[#136DEC] px-10 py-4 text-base font-bold text-white hover:bg-[#136DEC]/90 transition-colors shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC]">
                 Create Free Profile
               </button>
             </Link>
@@ -403,6 +410,7 @@ export default function LandingPage() {
           <p className="text-[#94A3B8]">Designed to help students find the right partner and show up prepared.</p>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }

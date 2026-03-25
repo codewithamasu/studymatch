@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { Search, MessageCircle, CheckCheck, Sparkles, Users, RefreshCw, AlertCircle } from 'lucide-react'
 import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { fetchConversationSummaries, subscribeToConversations } from '@/lib/studymatchRealtime'
+import { DISPLAY_FONT } from '@/lib/constants'
 
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
 
 const getAvatar = (name) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'user')}&backgroundColor=b6e3f4`
@@ -139,7 +141,7 @@ export default function ChatInboxPage() {
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" aria-hidden="true" />
           <h2 
             className="text-xl font-bold text-neutral-900 mb-1"
-            style={{ fontFamily: displayFont }}
+            style={{ fontFamily: DISPLAY_FONT }}
           >
             Failed to load chat
           </h2>
@@ -158,7 +160,12 @@ export default function ChatInboxPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8]">
+    <>
+      <Helmet>
+        <title>Messages - StudyMatch</title>
+        <meta name="description" content="View your active study partner conversations and messages." />
+      </Helmet>
+      <div className="min-h-screen bg-[#f5f6f8]">
       <style>{`
         .conv-item:hover { background: #f8fafc; }
         .conv-item { transition: background .15s; }
@@ -176,7 +183,7 @@ export default function ChatInboxPage() {
           <div className="flex items-center justify-between mb-1">
             <h1 
               className="text-[32px] font-bold text-[#0f172a] tracking-tight"
-              style={{ fontFamily: displayFont }}
+              style={{ fontFamily: DISPLAY_FONT }}
             >
               Messages
             </h1>
@@ -214,7 +221,7 @@ export default function ChatInboxPage() {
               <div className="flex items-center justify-center gap-1.5 text-[#1a56db] mb-1">{s.icon}</div>
               <div 
                 className="text-[24px] font-bold text-[#0f172a] leading-tight" 
-                style={{ fontFamily: displayFont }}
+                style={{ fontFamily: DISPLAY_FONT }}
                 aria-live="polite"
               >
                 {s.value}
@@ -234,6 +241,7 @@ export default function ChatInboxPage() {
           className="bg-white rounded-[20px] overflow-hidden"
           role="list"
           aria-label="Conversation list"
+          aria-live="polite"
           style={{ boxShadow: '0 1px 8px rgba(0,0,0,.07)' }}
         >
           {conversations.length === 0 ? (
@@ -257,7 +265,7 @@ export default function ChatInboxPage() {
                   type="button"
                   onClick={() => navigate(`/chat/${c.userId}`)}
                   aria-label={`Open chat with ${c.user?.full_name}`}
-                  className={`conv-item w-full flex items-center gap-4 px-5 py-4 text-left cursor-pointer ${
+                  className={`conv-item w-full flex items-center gap-4 px-5 py-4 text-left ${
                     i < filtered.length - 1 ? 'border-b border-[#f1f5f9]' : ''
                   }`}
                 >
@@ -274,7 +282,7 @@ export default function ChatInboxPage() {
                     <div className="flex items-center justify-between mb-0.5">
                       <span 
                         className="text-[16px] font-bold text-[#0f172a] truncate"
-                        style={{ fontFamily: displayFont }}
+                        style={{ fontFamily: DISPLAY_FONT }}
                       >
                         {c.user?.full_name}
                       </span>
@@ -317,7 +325,7 @@ export default function ChatInboxPage() {
           <div>
             <p 
               className="text-[16px] font-bold text-white mb-0.5"
-              style={{ fontFamily: displayFont }}
+              style={{ fontFamily: DISPLAY_FONT }}
             >
               Keep finding study partners
             </p>
@@ -329,5 +337,6 @@ export default function ChatInboxPage() {
 
       </div>
     </div>
+    </>
   )
 }

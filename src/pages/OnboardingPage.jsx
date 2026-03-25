@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import navbarLogo from '../assets/navbar-logo.svg';
-import { Clock, CheckCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
+import { CheckCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOnboardingStore } from '@/store/useOnboardingStore'
+import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -220,7 +222,12 @@ export default function OnboardingPage() {
   const progressPct = Math.round(((step + 1) / 3) * 100)
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
+    <>
+      <Helmet>
+        <title>Onboarding - StudyMatch</title>
+        <meta name="description" content="Set up your learning profile to find the best study partners." />
+      </Helmet>
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header
@@ -264,7 +271,7 @@ export default function OnboardingPage() {
             <div className="mb-10">
               <h1
                 className="text-3xl sm:text-4xl md:text-5xl font-black leading-[1.1] text-slate-900 tracking-tight mb-3"
-                style={{ fontFamily: "'Instrument Serif', 'Cormorant', Georgia, serif", letterSpacing: '-0.03em' }}
+                style={{ fontFamily: DISPLAY_FONT, letterSpacing: '-0.03em' }}
               >
                 {STEP_TITLES[step].heading}
               </h1>
@@ -373,7 +380,7 @@ export default function OnboardingPage() {
                         <button
                           key={subject.label}
                           onClick={() => handleSubjectToggle(subject.label)}
-                          className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer group ${
+                          className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 group ${
                             isSelected
                               ? 'border-[#136DEC] bg-[#136DEC]/[0.06]'
                               : 'border-black/[0.08] bg-white hover:border-black/20 hover:bg-slate-50/80'
@@ -513,7 +520,7 @@ export default function OnboardingPage() {
                       <h3 className="text-base font-bold text-slate-900">Study Mode</h3>
                     </div>
                     {/* Segmented control */}
-                    <div className="flex bg-slate-100 p-1.5 rounded-xl border border-black/[0.06] gap-1">
+                    <div className="flex bg-slate-100 p-1.5 rounded-xl border border-black/[0.06] gap-1 ">
                       {[{ value: 'online', label: 'Online' }, { value: 'in-person', label: 'In-Person' }].map(mode => (
                         <button
                           key={mode.value}
@@ -539,7 +546,7 @@ export default function OnboardingPage() {
                     <select
                       value={profile.language}
                       onChange={e => setProfile({ ...profile, language: e.target.value })}
-                      className="w-full h-11 bg-slate-50 border border-black/[0.08] rounded-xl text-slate-900 text-sm font-medium px-3 focus:outline-none focus:border-[#136DEC] focus:ring-4 focus:ring-[#136DEC]/15 transition-all duration-300 cursor-pointer appearance-none"
+                      className="w-full h-11 bg-slate-50 border border-black/[0.08] rounded-xl text-slate-900 text-sm font-medium px-3 focus:outline-none focus:border-[#136DEC] focus:ring-4 focus:ring-[#136DEC]/15 transition-all duration-300 appearance-none"
                       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                     >
                       {LANGUAGES.map(lang => (
@@ -564,7 +571,7 @@ export default function OnboardingPage() {
                         <button
                           key={day.value}
                           onClick={() => toggleDay(day.value)}
-                          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 ${
                             isActive
                               ? 'border-[#136DEC] bg-[#136DEC]/[0.05]'
                               : 'border-black/[0.06] bg-slate-50 hover:border-black/15 hover:bg-white'
@@ -592,11 +599,12 @@ export default function OnboardingPage() {
                           <button
                             key={slot.value}
                             onClick={() => togglePreferredTime(slot.value)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-semibold transition-all duration-200 ${
-                              isActive
-                                ? 'border-[#136DEC] bg-[#136DEC] text-white'
-                                : 'border-black/[0.08] bg-white text-slate-600 hover:border-[#136DEC]/40 hover:text-[#136DEC]'
-                            }`}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-semibold transition-all duration-200
+                             ${
+                               isActive
+                                 ? 'border-[#136DEC] bg-[#136DEC] text-white'
+                                 : 'border-black/[0.08] bg-white text-slate-600 hover:border-[#136DEC]/40 hover:text-[#136DEC]'
+                             }`}
                           >
                             <span>{slot.label}</span>
                             <span className="text-[11px] opacity-75 font-medium">{slot.sub}</span>
@@ -640,7 +648,8 @@ export default function OnboardingPage() {
             <button
               onClick={() => { setStep(step - 1); setErrorMessage('') }}
               disabled={step === 0 || saving}
-              className={`px-5 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200 flex items-center gap-2 ${
+              className={`px-5 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700
+              transition-all duration-200 flex items-center gap-2 ${
                 step === 0 ? 'invisible' : ''
               }`}
             >
@@ -668,6 +677,7 @@ export default function OnboardingPage() {
         </div>
       </main>
 
-    </div>
+      </div>
+    </>
   )
 }

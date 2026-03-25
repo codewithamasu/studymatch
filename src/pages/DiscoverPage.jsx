@@ -1,17 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { Button } from '@/components/ui/Button'
 import {
   Heart,
   X,
-  Target,
   Calendar,
   BookOpen,
   Zap,
   RotateCcw,
-  Users,
   MapPin,
-  BrainCircuit,
   Sparkles,
   ChevronDown,
   Star,
@@ -23,8 +21,9 @@ import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { fetchDiscoverCandidates, saveSwipe, fetchSubjects, fetchMatchStats, clearSwipes } from '@/lib/studymatchRealtime'
+import { DISPLAY_FONT } from '@/lib/constants'
 
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
 
 export default function DiscoverPage() {
   const user = useAuthStore((state) => state.user)
@@ -259,7 +258,7 @@ export default function DiscoverPage() {
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#dbeafe] border-t-[#1a56db]" />
           <h2
             className="text-xl font-semibold tracking-[-0.04em] text-gray-900"
-            style={{ fontFamily: displayFont }}
+            style={{ fontFamily: DISPLAY_FONT }}
           >
             Loading candidates
           </h2>
@@ -275,7 +274,7 @@ export default function DiscoverPage() {
         <div className="text-center max-w-sm">
           <h2
             className="text-xl font-semibold tracking-[-0.04em] text-gray-900"
-            style={{ fontFamily: displayFont }}
+            style={{ fontFamily: DISPLAY_FONT }}
           >
             Failed to load Discover
           </h2>
@@ -292,7 +291,7 @@ export default function DiscoverPage() {
                 <div className="w-20 h-20 bg-[#f0f9ff] rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-10 h-10 text-blue-500" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3" style={{ fontFamily: displayFont }}>All profiles viewed</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3" style={{ fontFamily: DISPLAY_FONT }}>All profiles viewed</h2>
                 <p className="text-gray-500 mb-8 leading-relaxed">Try changing filters or wait for new partners to join in your area!</p>
                 <div className="space-y-3">
                   <Button
@@ -323,8 +322,13 @@ export default function DiscoverPage() {
 
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col pt-[80px]">
-      <style>{`
+    <>
+      <Helmet>
+        <title>Discover - StudyMatch</title>
+        <meta name="description" content="Find the perfect study partner tailored to your academic goals and subjects." />
+      </Helmet>
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col pt-[80px]">
+        <style>{`
         @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
         @keyframes floatUpSlow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
         @keyframes pulseGreen { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)} 70%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
@@ -343,7 +347,7 @@ export default function DiscoverPage() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#F9F9F8]">
       </div>
 
-      <div className="flex-1 w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-6 xl:gap-10 px-4 pb-12 relative z-10 pt-4">
+      <div className="flex-1 w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-10 px-4 pb-4 lg:pb-12 relative z-10 pt-2 lg:pt-4">
 
         {/* ── Mobile Filter Toggle Button ── */}
         <div className="lg:hidden w-full flex justify-end mb-[-10px] z-20 relative">
@@ -469,7 +473,7 @@ export default function DiscoverPage() {
                 <div className="relative w-full max-w-sm bg-white h-full overflow-y-auto transform transition-transform animate-in slide-in-from-right shadow-2xl safe-p-bottom">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: displayFont }}>Refine Match</h2>
+                      <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: DISPLAY_FONT }}>Refine Match</h2>
                       <button
                         onClick={() => setMobileFiltersOpen(false)}
                         className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
@@ -493,9 +497,9 @@ export default function DiscoverPage() {
 
               <div ref={cardRef} className="relative z-10 w-full h-full flex flex-col justify-center max-w-4xl mx-auto">
                 <div className="bg-white rounded-[24px] shadow-[0px_12px_40px_rgba(0,0,0,0.08)] overflow-hidden">
-                  <div className="h-[calc(100vh-400px)] min-h-[300px] w-full relative bg-[#2a4365] flex items-center justify-center pt-8">
+                  <div className="h-[calc(100dvh-510px)] min-h-[180px] lg:h-[calc(100vh-480px)] lg:min-h-[220px] w-full relative bg-[#2a4365] flex items-center justify-center pt-4 lg:pt-8 overflow-hidden rounded-b-[18px]">
                     <img src={getAvatarUrl(currentCard.full_name)} alt={currentCard.full_name}
-                      className="h-full w-auto max-w-full object-contain drop-shadow-2xl" />
+                      className="h-full w-auto max-w-full object-cover lg:object-contain drop-shadow-2xl" />
                     <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-md">
                       <Zap className="w-4 h-4 fill-white" />
                       {currentCard.compatibility.total}% Match
@@ -506,11 +510,11 @@ export default function DiscoverPage() {
                     </div>
                   </div>
 
-                  <div className="p-6 relative bg-white pb-14">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="p-4 sm:p-6 relative bg-white pb-6 sm:pb-8">
+                    <div className="flex items-center justify-between mb-3">
                       <h2
                         className="text-[26px] font-semibold tracking-[-0.04em] text-[#1e293b]"
-                        style={{ fontFamily: displayFont }}
+                        style={{ fontFamily: DISPLAY_FONT }}
                       >
                         {currentCard.full_name.split(' ')[0]}
                       </h2>
@@ -519,50 +523,49 @@ export default function DiscoverPage() {
                         Verified
                       </div>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center gap-3 text-[#475569]">
-                        <BookOpen className="w-5 h-5 text-[#94a3b8] shrink-0" />
-                        <span className="text-[15px]">{currentCard.study_profile?.subjects?.[0] || 'Study Partner'} • Exam Prep</span>
+                        <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-[#94a3b8] shrink-0" />
+                        <span className="text-[14px] sm:text-[15px]">{currentCard.study_profile?.subjects?.[0] || 'Study Partner'} • Exam Prep</span>
                       </div>
                       <div className="flex items-center gap-3 text-[#475569]">
-                        <Calendar className="w-5 h-5 text-[#94a3b8] shrink-0" />
-                        <span className="text-[15px]">Availability: {currentCard.study_profile?.availability?.days?.length > 0 ? currentCard.study_profile.availability.days.join(', ') : 'Flexible'}</span>
+                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#94a3b8] shrink-0" />
+                        <span className="text-[14px] sm:text-[15px]">Availability: {currentCard.study_profile?.availability?.days?.length > 0 ? currentCard.study_profile.availability.days.join(', ') : 'Flexible'}</span>
                       </div>
                       <div className="flex items-center gap-3 text-[#475569]">
-                        <MapPin className="w-5 h-5 text-[#94a3b8] shrink-0" />
-                        <span className="text-[15px] capitalize">{currentCard.study_profile?.study_mode?.replace('_', ' ') || 'Any Mode'}</span>
+                        <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#94a3b8] shrink-0" />
+                        <span className="text-[14px] sm:text-[15px] capitalize">{currentCard.study_profile?.study_mode?.replace('_', ' ') || 'Any Mode'}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="absolute left-0 right-0 -bottom-10 flex justify-center items-center gap-5 z-10">
+                {/* Swipe Action Buttons */}
+                <div className="mt-4 sm:mt-8 flex justify-center items-center gap-4 sm:gap-5 z-10">
                   <button onClick={handleSkip}
                     aria-label="Skip"
-                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-red-500 hover:scale-110 transition-transform cursor-pointer border border-gray-50">
+                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-red-500 hover:scale-110 transition-transform border border-gray-50">
                     <X className="w-6 h-6 stroke-[3]" />
-                  </button>
-                  <button onClick={handleLike}
-                    aria-label="Like"
-                    className="w-20 h-20 bg-blue-600 rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_8px_30px_rgba(37,99,235,0.6)] transition-all cursor-pointer">
-                    <Heart className="w-10 h-10 fill-white" />
                   </button>
                   <button onClick={handleSuperLike}
                     aria-label="Super Like"
-                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-blue-500 hover:scale-110 transition-transform cursor-pointer border border-gray-50">
+                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-blue-500 hover:scale-110 transition-transform border border-gray-50">
                     <Star className="w-6 h-6 stroke-[2.5]" />
+                  </button>
+                  <button onClick={handleLike}
+                    aria-label="Like"
+                    className="w-20 h-20 bg-blue-600 rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_8px_30px_rgba(37,99,235,0.6)] transition-all">
+                    <Heart className="w-10 h-10 fill-white" />
                   </button>
                 </div>
               </div>
 
-              <p className="text-center text-[#94a3b8] font-medium tracking-wide text-[13px] mt-16 uppercase">
+              <p className="hidden sm:block text-center text-[#94a3b8] font-medium tracking-wide text-[13px] mt-6 uppercase pb-8">
                 Swipe left to pass, right to connect
               </p>
             </div>
           )}
         </div>
-
-
 
       </div>
 
@@ -574,7 +577,7 @@ export default function DiscoverPage() {
               <div className="text-6xl mb-4 animate-bounce shrink-0">🎉</div>
               <h2
                 className="mb-2 text-3xl font-semibold tracking-[-0.05em] text-gray-900"
-                style={{ fontFamily: displayFont }}
+                style={{ fontFamily: DISPLAY_FONT }}
               >
                  It's a Study Match!
               </h2>
@@ -617,6 +620,7 @@ export default function DiscoverPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

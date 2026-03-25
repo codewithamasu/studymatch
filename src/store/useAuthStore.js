@@ -214,8 +214,7 @@ export const useAuthStore = create(
         },
 
         hasProfile: () => {
-          const user = get().user
-          return Boolean(user?.has_profile || user?.study_profile)
+          return Boolean(get().user?.has_profile)
         },
       }),
       {

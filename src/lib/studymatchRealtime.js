@@ -128,13 +128,18 @@ function formatDashboardSession(session, partnerId, partnerName) {
 
 export async function fetchSubjects() {
   if (!isSupabaseConfigured) return []
-  const { data, error } = await supabase
-    .from('subjects')
-    .select('id, slug, name, category')
-    .eq('is_active', true)
-    .order('name')
-  if (error) throw error
-  return data || []
+  try {
+    const { data, error } = await supabase
+      .from('subjects')
+      .select('id, slug, name, category')
+      .eq('is_active', true)
+      .order('name')
+    if (error) throw error
+    return data || []
+  } catch (err) {
+    console.error('Error fetching subjects:', err)
+    return []
+  }
 }
 
 export async function fetchMatchStats(currentUserId) {
@@ -142,136 +147,159 @@ export async function fetchMatchStats(currentUserId) {
     return { availableNow: 0, newToday: 0 }
   }
 
-  // Demo logic for now, could be replaced with real analytics
-  const { count: availableCount } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .not('onboarding_completed_at', 'is', null)
+  try {
+    const { count: availableCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .not('onboarding_completed_at', 'is', null)
 
-  const { count: newCount } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+    const { count: newCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 
-  return {
-    availableNow: Math.max(0, (availableCount || 0) - 1), // Exclude self
-    newToday: newCount || 0,
+    return {
+      availableNow: Math.max(0, (availableCount || 0) - 1), // Exclude self
+      newToday: newCount || 0,
+    }
+  } catch (err) {
+    console.error('Error fetching match stats:', err)
+    return { availableNow: 0, newToday: 0 }
   }
 }
 
 export async function fetchProfileGoals(profileId) {
   if (!isSupabaseConfigured || !profileId) return []
-  const { data, error } = await supabase
-    .from('profile_goals')
-    .select(`
-      study_goals (
-        code,
-        label,
-        description
-      )
-    `)
-    .eq('profile_id', profileId)
+  try {
+    const { data, error } = await supabase
+      .from('profile_goals')
+      .select(`
+        study_goals (
+          code,
+          label,
+          description
+        )
+      `)
+      .eq('profile_id', profileId)
 
-  if (error) throw error
-  return (data || []).map(row => row.study_goals).filter(Boolean)
+    if (error) throw error
+    return (data || []).map(row => row.study_goals).filter(Boolean)
+  } catch (err) {
+    console.error('Error fetching profile goals:', err)
+    return []
+  }
 }
 
 export async function fetchMatchAlerts(currentUserId) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
-  const { data: matchRows, error } = await supabase
-    .from('matches')
-    .select(`
-      id,
-      matched_at,
-      profile_a_id,
-      profile_b_id
-    `)
-    .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`)
-    .eq('status', 'active')
-    .order('matched_at', { ascending: false })
-    .limit(8)
+  try {
+    const { data: matchRows, error } = await supabase
+      .from('matches')
+      .select(`
+        id,
+        matched_at,
+        profile_a_id,
+        profile_b_id
+      `)
+      .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`)
+      .eq('status', 'active')
+      .order('matched_at', { ascending: false })
+      .limit(8)
 
-  if (error) throw error
+    if (error) throw error
 
-  const partnerIds = (matchRows || []).map((row) =>
-    row.profile_a_id === currentUserId ? row.profile_b_id : row.profile_a_id
-  )
+    const partnerIds = (matchRows || []).map((row) =>
+      row.profile_a_id === currentUserId ? row.profile_b_id : row.profile_a_id
+    )
 
-  const profiles = await Promise.all(
-    partnerIds.map(async (id) => {
-      const record = await fetchProfileRecord(id)
-      return record ? normalizeProfileRecord(record) : null
-    })
-  )
+    const profiles = await Promise.all(
+      partnerIds.map(async (id) => {
+        const record = await fetchProfileRecord(id)
+        return record ? normalizeProfileRecord(record) : null
+      })
+    )
 
-  return (matchRows || []).map((row, i) => ({
-    matchId: row.id,
-    matchedAt: row.matched_at,
-    partner: profiles[i],
-  })).filter((item) => item.partner !== null)
+    return (matchRows || []).map((row, i) => ({
+      matchId: row.id,
+      matchedAt: row.matched_at,
+      partner: profiles[i],
+    })).filter((item) => item.partner !== null)
+  } catch (err) {
+    console.error('Error fetching match alerts:', err)
+    return []
+  }
 }
 
 export async function fetchSocialPulse(currentUserId, limit = 6) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
-  // Fetch recent messages sent by match partners (not the current user)
-  const { data: matchRows, error: matchErr } = await supabase
-    .from('matches')
-    .select('id, profile_a_id, profile_b_id')
-    .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`)
-    .eq('status', 'active')
+  try {
+    // Fetch recent messages sent by match partners (not the current user)
+    const { data: matchRows, error: matchErr } = await supabase
+      .from('matches')
+      .select('id, profile_a_id, profile_b_id')
+      .or(`profile_a_id.eq.${currentUserId},profile_b_id.eq.${currentUserId}`)
+      .eq('status', 'active')
 
-  if (matchErr || !matchRows?.length) return []
+    if (matchErr || !matchRows?.length) return []
 
-  const conversationIds = []
-  for (const match of matchRows) {
-    const { data: conv } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('match_id', match.id)
-      .single()
-    if (conv?.id) conversationIds.push(conv.id)
-  }
-
-  if (!conversationIds.length) return []
-
-  const { data: messages, error: msgErr } = await supabase
-    .from('messages')
-    .select('id, body, sent_at, sender_profile_id, conversation_id')
-    .in('conversation_id', conversationIds)
-    .neq('sender_profile_id', currentUserId)
-    .is('deleted_at', null)
-    .order('sent_at', { ascending: false })
-    .limit(limit)
-
-  if (msgErr || !messages?.length) return []
-
-  const senderIds = [...new Set(messages.map((m) => m.sender_profile_id))]
-  const senderProfiles = await Promise.all(
-    senderIds.map(async (id) => {
-      const rec = await fetchProfileRecord(id)
-      return rec ? normalizeProfileRecord(rec) : null
-    })
-  )
-  const profileMap = new Map(
-    senderProfiles.filter(Boolean).map((p) => [p.id, p])
-  )
-
-  return messages.map((msg) => {
-    const sender = profileMap.get(msg.sender_profile_id)
-    const bodyPreview = (msg.body || '').slice(0, 50)
-    const ago = formatRelativeTime(msg.sent_at)
-    return {
-      id: msg.id,
-      senderId: msg.sender_profile_id,
-      senderName: sender?.full_name || 'Partner',
-      avatarSeed: sender?.full_name || 'user',
-      action: `sent a message: "${bodyPreview}${msg.body?.length > 50 ? '…' : ''}"`,
-      time: ago,
-      badge: '💬',
+    const conversationIds = []
+    for (const match of matchRows) {
+      const { data: conv, error: convError } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('match_id', match.id)
+        .single()
+      if (convError) {
+        console.warn(`Error fetching conversation for match ${match.id}:`, convError)
+        continue // Skip this match but continue with others
+      }
+      if (conv?.id) conversationIds.push(conv.id)
     }
-  })
+
+    if (!conversationIds.length) return []
+
+    const { data: messages, error: msgErr } = await supabase
+      .from('messages')
+      .select('id, body, sent_at, sender_profile_id, conversation_id')
+      .in('conversation_id', conversationIds)
+      .neq('sender_profile_id', currentUserId)
+      .is('deleted_at', null)
+      .order('sent_at', { ascending: false })
+      .limit(limit)
+
+    if (msgErr || !messages?.length) return []
+
+    const senderIds = [...new Set(messages.map((m) => m.sender_profile_id))]
+    const senderProfiles = await Promise.all(
+      senderIds.map(async (id) => {
+        const rec = await fetchProfileRecord(id)
+        return rec ? normalizeProfileRecord(rec) : null
+      })
+    )
+    const profileMap = new Map(
+      senderProfiles.filter(Boolean).map((p) => [p.id, p])
+    )
+
+    return messages.map((msg) => {
+      const sender = profileMap.get(msg.sender_profile_id)
+      const bodyPreview = (msg.body || '').slice(0, 50)
+      const ago = formatRelativeTime(msg.sent_at)
+      return {
+        id: msg.id,
+        senderId: msg.sender_profile_id,
+        senderName: sender?.full_name || 'Partner',
+        avatarSeed: sender?.full_name || 'user',
+        action: `sent a message: "${bodyPreview}${msg.body?.length > 50 ? '…' : ''}"`,
+        time: ago,
+        badge: '💬',
+      }
+    })
+  } catch (err) {
+    console.error('Error fetching social pulse:', err)
+    return []
+  }
 }
 
 function formatRelativeTime(isoString) {
@@ -314,59 +342,64 @@ export function getLevel(xp) {
 export async function fetchCampusLeaders(currentUserId) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
-  // 1. Fetch some active profiles who finished onboarding
-  const { data: profiles, error: profileErr } = await supabase
-    .from('profiles')
-    .select('id, full_name, avatar_url')
-    .neq('id', currentUserId)
-    .not('onboarding_completed_at', 'is', null)
-    .limit(10)
+  try {
+    // 1. Fetch some active profiles who finished onboarding
+    const { data: profiles, error: profileErr } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .neq('id', currentUserId)
+      .not('onboarding_completed_at', 'is', null)
+      .limit(10)
 
-  if (profileErr) return []
+    if (profileErr) return []
 
-  // 2. Fetch completed sessions info for these users
-  const profileIds = profiles.map(p => p.id)
-  const { data: sessRows, error: sessErr } = await supabase
-    .from('session_participants')
-    .select(`
-      profile_id,
-      sessions!inner(status, duration_minutes)
-    `)
-    .in('profile_id', profileIds)
-    .eq('sessions.status', 'completed')
+    // 2. Fetch completed sessions info for these users
+    const profileIds = profiles.map(p => p.id)
+    const { data: sessRows, error: sessErr } = await supabase
+      .from('session_participants')
+      .select(`
+        profile_id,
+        sessions!inner(status, duration_minutes)
+      `)
+      .in('profile_id', profileIds)
+      .eq('sessions.status', 'completed')
 
-  if (sessErr) return []
+    if (sessErr) return []
 
-  // 3. Aggregate stats per profile
-  const statsByProfile = {}
-  profileIds.forEach(id => {
-    statsByProfile[id] = { completed_sessions: 0, total_study_hours: 0 }
-  })
+    // 3. Aggregate stats per profile
+    const statsByProfile = {}
+    profileIds.forEach(id => {
+      statsByProfile[id] = { completed_sessions: 0, total_study_hours: 0 }
+    })
 
-  sessRows.forEach(row => {
-    const s = row.sessions
-    const pid = row.profile_id
-    if (statsByProfile[pid]) {
-      statsByProfile[pid].completed_sessions += 1
-      statsByProfile[pid].total_study_hours += (s.duration_minutes || 0) / 60
-    }
-  })
+    sessRows.forEach(row => {
+      const s = row.sessions
+      const pid = row.profile_id
+      if (statsByProfile[pid]) {
+        statsByProfile[pid].completed_sessions += 1
+        statsByProfile[pid].total_study_hours += (s.duration_minutes || 0) / 60
+      }
+    })
 
-  // 4. Calculate XP and sort
-  return profiles.map((p) => {
-    const stats = statsByProfile[p.id]
-    const xp = calculateXp(stats)
-    const level = getLevel(xp)
-    return {
-      id: p.id,
-      name: p.full_name,
-      xp: xp,
-      badge: TIER_ICONS[level] || '🏃',
-      tier: TIER_NAMES[level],
-    }
-  })
-  .sort((a, b) => b.xp - a.xp)
-  .slice(0, 3)
+    // 4. Calculate XP and sort
+    return profiles.map((p) => {
+      const stats = statsByProfile[p.id]
+      const xp = calculateXp(stats)
+      const level = getLevel(xp)
+      return {
+        id: p.id,
+        name: p.full_name,
+        xp: xp,
+        badge: TIER_ICONS[level] || '🏃',
+        tier: TIER_NAMES[level],
+      }
+    })
+    .sort((a, b) => b.xp - a.xp)
+    .slice(0, 3)
+  } catch (err) {
+    console.error('Error fetching campus leaders:', err)
+    return []
+  }
 }
 
 export async function fetchDiscoverCandidates(currentUserId, filters = {}) {

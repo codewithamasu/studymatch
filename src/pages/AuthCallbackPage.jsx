@@ -2,8 +2,9 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
+import { DISPLAY_FONT } from '@/lib/constants'
 
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+
 
 export default function AuthCallbackPage() {
   const user = useAuthStore(state => state.user)
@@ -34,7 +35,7 @@ export default function AuthCallbackPage() {
           </p>
           <h1
             className="text-[2.35rem] font-semibold leading-[0.95] tracking-[-0.045em] text-[#171717] sm:text-[2.65rem]"
-            style={{ fontFamily: displayFont }}
+            style={{ fontFamily: DISPLAY_FONT }}
           >
             Finishing your sign in
           </h1>

@@ -95,6 +95,15 @@ export function buildStudyProfileFromRecord(profileRecord) {
 async function ensureProfileRecord(authUser) {
   if (!isSupabaseConfigured || !authUser) return null
 
+  // Check if profile already exists to avoid overwriting updated data with stale metadata
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id, onboarding_completed_at')
+    .eq('id', authUser.id)
+    .single()
+
+  if (existing) return existing
+
   const metadata = authUser.user_metadata ?? {}
   const payload = {
     id: authUser.id,
@@ -191,7 +200,8 @@ export async function hydrateAppUser(authUser) {
     avatar_url: profileRecord?.avatar_url || metadata.avatar_url || metadata.picture || null,
     bio: profileRecord?.bio || metadata.bio || '',
     study_profile: studyProfile,
-    has_profile: Boolean(profileRecord?.onboarding_completed_at || metadata.has_profile || studyProfile),
+    // CRITICAL: Prioritize database record for has_profile status
+    has_profile: Boolean(profileRecord?.onboarding_completed_at),
   }
 }
 
@@ -354,10 +364,13 @@ export async function saveStudyProfile(userId, profileData) {
     if (error) throw error
   }
 
-  // Keep auth metadata in sync while the rest of the app still transitions off legacy flags.
+  // Keep auth metadata in sync.
+  // We update full_name and university so that getDisplayName and other metadata-based helpers stay current.
   const { error: authError } = await supabase.auth.updateUser({
     data: {
       has_profile: true,
+      full_name: profileData.full_name || profileData.full_name, // redundant but safe
+      university: profileData.university_name || profileData.university,
     },
   })
 

@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import gsap from 'gsap'
 import navbarLogo from '../assets/navbar-logo.svg'
 import { useAuthStore } from '@/store/useAuthStore'
 import { formatAuthError } from '@/lib/auth'
+import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
-const displayFont = '"Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
-const transitionTiming = 'duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]'
+
 
 export default function RegisterPage() {
   const signUp = useAuthStore(state => state.signUp)
@@ -112,10 +113,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <div
-      ref={pageRef}
-      className="min-h-screen bg-[#F7F6F3] px-4 py-20 sm:px-6 sm:py-14 lg:px-8"
-    >
+    <>
+      <Helmet>
+        <title>Create Account - StudyMatch</title>
+        <meta name="description" content="Join StudyMatch and find your perfect study partner." />
+      </Helmet>
+      <div
+        ref={pageRef}
+        className="min-h-screen bg-[#F7F6F3] px-4 py-20 sm:px-6 sm:py-14 lg:px-8"
+      >
       <div className="absolute left-6 top-6 lg:hidden">
         <Link to="/" className="group flex items-center rounded outline-none">
           <img src={navbarLogo} alt="StudyMatch Logo" className="h-8 w-auto transition-transform group-hover:scale-105" />
@@ -135,7 +141,7 @@ export default function RegisterPage() {
               </p>
               <h1
                 className="text-[clamp(3rem,5vw,4.8rem)] font-semibold leading-[0.96] tracking-[-0.045em] text-[#171717]"
-                style={{ fontFamily: displayFont }}
+                style={{ fontFamily: DISPLAY_FONT }}
               >
                 Build a better study routine from day one.
               </h1>
@@ -152,7 +158,7 @@ export default function RegisterPage() {
                 <div>
                   <p
                     className="text-[1.35rem] font-medium leading-none tracking-[-0.03em] text-[#171717]"
-                    style={{ fontFamily: displayFont }}
+                    style={{ fontFamily: DISPLAY_FONT }}
                   >
                     Fast, thoughtful setup
                   </p>
@@ -169,7 +175,7 @@ export default function RegisterPage() {
                 <div>
                   <p
                     className="text-[1.35rem] font-medium leading-none tracking-[-0.03em] text-[#171717]"
-                    style={{ fontFamily: displayFont }}
+                    style={{ fontFamily: DISPLAY_FONT }}
                   >
                     Matching with context
                   </p>
@@ -192,7 +198,7 @@ export default function RegisterPage() {
                 </p>
                 <h2
                   className="text-[2.45rem] font-semibold leading-[0.95] tracking-[-0.045em] text-[#171717] sm:text-[2.8rem]"
-                  style={{ fontFamily: displayFont }}
+                  style={{ fontFamily: DISPLAY_FONT }}
                 >
                   Create an account
                 </h2>
@@ -220,7 +226,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={googleLoading || submitting || anonLoading}
-                  className={`flex h-12 items-center justify-center gap-2 rounded-xl border border-[#E7E1D6] bg-white px-5 text-[13px] font-bold text-[#4D5968] shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 hover:cursor-pointer`}
+                  className={`flex h-12 items-center justify-center gap-2 rounded-xl border border-[#E7E1D6] bg-white px-5 text-[13px] font-bold text-[#4D5968] shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50`}
                 >
                   {googleLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
@@ -248,7 +254,7 @@ export default function RegisterPage() {
                       value={form.fullName}
                       onChange={event => handleChange('fullName', event.target.value)}
                       required
-                      className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${transitionTiming} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
+                      className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${TRANSITION_TIMING} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
                     />
                   </div>
 
@@ -265,7 +271,7 @@ export default function RegisterPage() {
                         value={form.email}
                         onChange={event => handleChange('email', event.target.value)}
                         required
-                        className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${transitionTiming} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
+                        className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${TRANSITION_TIMING} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
                       />
                     </div>
 
@@ -280,7 +286,7 @@ export default function RegisterPage() {
                         placeholder="Your campus name"
                         value={form.university}
                         onChange={event => handleChange('university', event.target.value)}
-                        className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${transitionTiming} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
+                        className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${TRANSITION_TIMING} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
                       />
                     </div>
                   </div>
@@ -298,12 +304,12 @@ export default function RegisterPage() {
                         value={form.password}
                         onChange={event => handleChange('password', event.target.value)}
                         required
-                        className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 pr-12 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${transitionTiming} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
+                        className={`h-12 w-full rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 pr-12 text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] placeholder:text-[#9AA1AA] transition-all ${TRANSITION_TIMING} focus:border-[#5E8FE8] focus:outline-none focus:ring-4 focus:ring-[#5E8FE8]/12`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(prev => !prev)}
-                        className={`absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-[18px] text-[#9AA1AA] outline-none transition-colors ${transitionTiming} hover:text-[#647182] focus-visible:ring-2 focus-visible:ring-[#5E8FE8] hover:cursor-pointer`}
+                        className={`absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-[18px] text-[#9AA1AA] outline-none transition-colors ${TRANSITION_TIMING} hover:text-[#647182] focus-visible:ring-2 focus-visible:ring-[#5E8FE8]`}
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -314,7 +320,7 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     disabled={submitting || anonLoading || googleLoading}
-                    className={`group relative mt-4 flex h-12 w-full items-center justify-center overflow-hidden rounded-[20px] bg-[#1a56db] px-4 text-base font-semibold text-white shadow-[0_18px_34px_rgba(26,86,219,0.18)] transition-all ${transitionTiming} hover:-translate-y-px hover:shadow-[0_22px_44px_rgba(26,86,219,0.22)] active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 hover:cursor-pointer`}
+                    className={`group relative mt-4 flex h-12 w-full items-center justify-center overflow-hidden rounded-[20px] bg-[#1a56db] px-4 text-base font-semibold text-white shadow-[0_18px_34px_rgba(26,86,219,0.18)] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:shadow-[0_22px_44px_rgba(26,86,219,0.22)] active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0`}
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Register Now'}
                     <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
@@ -326,7 +332,7 @@ export default function RegisterPage() {
                 </div>
                 <p className="mt-8 text-center text-sm text-[#8A919A]">
                   Already have an account?{' '}
-                  <Link to="/login" className={`font-medium text-[#677588] transition-colors ${transitionTiming} hover:text-[#1a56db]`}>
+                  <Link to="/login" className={`font-medium text-[#677588] transition-colors ${TRANSITION_TIMING} hover:text-[#1a56db]`}>
                     Login here
                   </Link>
                 </p>
@@ -335,7 +341,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleAnonSignIn}
                   disabled={anonLoading || submitting || googleLoading}
-                  className={`mt-6 flex h-10 w-full items-center justify-center rounded-[18px] border border-dashed border-[#D8D0C4] bg-transparent px-4 text-xs font-medium text-[#8A919A] transition-all ${transitionTiming} hover:-translate-y-px hover:border-[#C9BFAF] hover:text-[#677588] active:scale-[0.98] disabled:opacity-50`}
+                  className={`mt-6 flex h-10 w-full items-center justify-center rounded-[18px] border border-dashed border-[#D8D0C4] bg-transparent px-4 text-xs font-medium text-[#8A919A] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:border-[#C9BFAF] hover:text-[#677588] active:scale-[0.98] disabled:opacity-50`}
                 >
                   {anonLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🚀 Try Demo (No Account)'}
                 </button>
@@ -344,6 +350,7 @@ export default function RegisterPage() {
           </section>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
