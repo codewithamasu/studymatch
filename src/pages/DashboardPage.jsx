@@ -236,7 +236,7 @@ function SubjectOrbit({ subjectMastery }) {
   }))
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
       <RadarChart data={radarData} outerRadius="75%">
         <PolarGrid stroke="#e5e7eb" strokeDasharray="4 4" />
         <PolarAngleAxis

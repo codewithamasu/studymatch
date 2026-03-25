@@ -11,7 +11,7 @@ import {
   PlusCircle,
   Sparkles,
   Video,
-  CheckCircle
+  CircleCheck
 } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { fetchMatchAlerts, fetchUserSessions, createNewSession, updateSessionStatus } from '@/lib/studymatchRealtime'
@@ -1033,7 +1033,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
                   `motion-safe:transition-[transform,background-color] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#E5F3EA] active:scale-[0.98]`
                 )}
               >
-                <CheckCircle className="h-4 w-4" />
+                <CircleCheck className="h-4 w-4" />
                 Mark Done
               </button>
             </>
@@ -1041,7 +1041,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
 
           {session.status === 'completed' && (
             <div className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#F3F4F5] px-4 py-2 text-sm font-semibold text-[#7A828D]">
-              <CheckCircle className="h-4 w-4" />
+              <CircleCheck className="h-4 w-4" />
               Completed
             </div>
           )}
