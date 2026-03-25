@@ -11,6 +11,7 @@ import {
   PlusCircle,
   Sparkles,
   Video,
+  CheckCircle
 } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { fetchMatchAlerts, fetchUserSessions, createNewSession, updateSessionStatus } from '@/lib/studymatchRealtime'
@@ -254,7 +255,7 @@ export default function SessionsPage() {
     const baseTime = sessionForm.time || '12:00'
     // Gunakan object Date lokal lalu ubah ke format ISO (UTC) agar tersimpan dengan tepat sesuai zona waktu user.
     const localDateTime = new Date(`${baseDate}T${baseTime}:00`)
-    
+
     const sessionData = {
       partnerId: sessionForm.partnerId,
       subject: sessionForm.subject,
