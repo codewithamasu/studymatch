@@ -20,4 +20,18 @@ export default defineConfig({
     strictPort: false,
     allowedHosts: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate large third-party libs into their own chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-charts': ['recharts'],
+          'vendor-gsap': ['gsap'],
+          'vendor-ui': ['zustand', 'lucide-react', 'react-helmet-async'],
+        },
+      },
+    },
+  },
 })
