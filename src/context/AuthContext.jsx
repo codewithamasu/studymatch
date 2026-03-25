@@ -15,7 +15,6 @@ export function useAuth() {
     updateProfile: state.updateProfile,
     hasProfile: state.hasProfile,
     signInWithGoogle: state.signInWithGoogle,
-    signInAnonymously: state.signInAnonymously,
     init: state.init,
   }))
 }
