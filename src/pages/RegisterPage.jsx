@@ -313,6 +313,11 @@ export default function RegisterPage() {
                 <div className="mt-8 text-center text-[0.92rem] leading-6 text-[#71717A]">
                   One step closer to matching!
                 </div>
+                <p className="mt-8 text-center text-sm text-[#8A919A]">
+                  Already have an account?{' '}
+                  <Link to="/login" className={`font-medium text-[#677588] transition-colors ${TRANSITION_TIMING} hover:text-[#1a56db]`}>
+                    Login here
+                  </Link>
                 </p>
               </div>
             </div>
