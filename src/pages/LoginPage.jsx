@@ -12,7 +12,6 @@ import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
 export default function LoginPage() {
   const signIn = useAuthStore(state => state.signIn)
-  const signInAnonymously = useAuthStore(state => state.signInAnonymously)
   const signInWithGoogle = useAuthStore(state => state.signInWithGoogle)
   const navigate = useNavigate()
 
@@ -22,7 +21,6 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [anonLoading, setAnonLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
@@ -64,20 +62,6 @@ export default function LoginPage() {
     navigate(user?.has_profile ? '/dashboard' : '/onboarding')
   }
 
-  const handleAnonSignIn = async () => {
-    setAnonLoading(true)
-    setMessage('')
-
-    const { error } = await signInAnonymously()
-
-    if (error) {
-       setAnonLoading(false)
-       setMessage(formatAuthError(error))
-       return
-    }
-
-    navigate('/onboarding')
-  }
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
@@ -199,7 +183,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              disabled={googleLoading || submitting || anonLoading}
+              disabled={googleLoading || submitting}
               className={`flex h-12 w-full items-center justify-center gap-3 rounded-[18px] border border-[#E7E1D6] bg-[#FCFBF8] px-4 text-sm font-semibold text-[#4D5968] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:border-[#D9D1C2] hover:bg-[#FEFDFC] hover:shadow-[0_12px_24px_rgba(15,23,42,0.04)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {googleLoading ? (
@@ -276,7 +260,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={submitting || anonLoading || googleLoading}
+                disabled={submitting || googleLoading}
                 className={`group relative mt-2 flex h-12 w-full items-center justify-center overflow-hidden rounded-[20px] bg-[#145FCB] px-4 text-base font-semibold text-white shadow-[0_18px_34px_rgba(20,95,203,0.18)] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:shadow-[0_22px_44px_rgba(20,95,203,0.22)] active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0`}
               >
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Log In'}
@@ -290,15 +274,6 @@ export default function LoginPage() {
                 Sign up for free
               </Link>
             </p>
-
-            <button
-              type="button"
-              onClick={handleAnonSignIn}
-              disabled={submitting || anonLoading || googleLoading}
-              className={`mt-6 flex h-10 w-full items-center justify-center rounded-[18px] border border-dashed border-[#D8D0C4] bg-transparent px-4 text-xs font-medium text-[#8A919A] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:border-[#C9BFAF] hover:text-[#677588] active:scale-[0.98] disabled:opacity-50`}
-            >
-              {anonLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🚀 Try Demo (No Account)'}
-            </button>
           </div>
           </div>
         </section>

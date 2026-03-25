@@ -12,7 +12,6 @@ import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
 export default function RegisterPage() {
   const signUp = useAuthStore(state => state.signUp)
-  const signInAnonymously = useAuthStore(state => state.signInAnonymously)
   const signInWithGoogle = useAuthStore(state => state.signInWithGoogle)
   const navigate = useNavigate()
 
@@ -22,7 +21,6 @@ export default function RegisterPage() {
 
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [anonLoading, setAnonLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState('')
@@ -83,21 +81,6 @@ export default function RegisterPage() {
     navigate('/onboarding')
   }
 
-  const handleAnonSignIn = async () => {
-    setAnonLoading(true)
-    setMessage('')
-    setSuccess('')
-
-    const { error } = await signInAnonymously()
-
-    if (error) {
-      setAnonLoading(false)
-      setMessage(formatAuthError(error))
-      return
-    }
-
-    navigate('/onboarding')
-  }
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
@@ -225,7 +208,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={handleGoogleSignIn}
-                  disabled={googleLoading || submitting || anonLoading}
+                  disabled={googleLoading || submitting}
                   className={`flex h-12 items-center justify-center gap-2 rounded-xl border border-[#E7E1D6] bg-white px-5 text-[13px] font-bold text-[#4D5968] shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50`}
                 >
                   {googleLoading ? (
@@ -319,7 +302,7 @@ export default function RegisterPage() {
 
                   <button
                     type="submit"
-                    disabled={submitting || anonLoading || googleLoading}
+                    disabled={submitting || googleLoading}
                     className={`group relative mt-4 flex h-12 w-full items-center justify-center overflow-hidden rounded-[20px] bg-[#1a56db] px-4 text-base font-semibold text-white shadow-[0_18px_34px_rgba(26,86,219,0.18)] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:shadow-[0_22px_44px_rgba(26,86,219,0.22)] active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0`}
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Register Now'}
@@ -330,21 +313,7 @@ export default function RegisterPage() {
                 <div className="mt-8 text-center text-[0.92rem] leading-6 text-[#71717A]">
                   One step closer to matching!
                 </div>
-                <p className="mt-8 text-center text-sm text-[#8A919A]">
-                  Already have an account?{' '}
-                  <Link to="/login" className={`font-medium text-[#677588] transition-colors ${TRANSITION_TIMING} hover:text-[#1a56db]`}>
-                    Login here
-                  </Link>
                 </p>
-
-                <button
-                  type="button"
-                  onClick={handleAnonSignIn}
-                  disabled={anonLoading || submitting || googleLoading}
-                  className={`mt-6 flex h-10 w-full items-center justify-center rounded-[18px] border border-dashed border-[#D8D0C4] bg-transparent px-4 text-xs font-medium text-[#8A919A] transition-all ${TRANSITION_TIMING} hover:-translate-y-px hover:border-[#C9BFAF] hover:text-[#677588] active:scale-[0.98] disabled:opacity-50`}
-                >
-                  {anonLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🚀 Try Demo (No Account)'}
-                </button>
               </div>
             </div>
           </section>

@@ -148,21 +148,6 @@ export const useAuthStore = create(
           return { error: error ?? null }
         },
 
-        signInAnonymously: async () => {
-          if (!isSupabaseConfigured) {
-            return { user: null, error: getConfigError() }
-          }
-
-          const { data, error } = await supabase.auth.signInAnonymously()
-
-          if (error) {
-            return { user: null, error }
-          }
-
-          const hydratedUser = await get().refreshUser(data.user)
-          return { user: hydratedUser, error: null }
-        },
-
         signOut: async () => {
           if (!isSupabaseConfigured) {
             set({ user: null })
