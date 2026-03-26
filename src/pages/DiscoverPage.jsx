@@ -14,7 +14,6 @@ import {
   Star,
   CheckCircle2,
   MessageCircle,
-  Layers,
   RefreshCcw,
   Loader2
 } from 'lucide-react'
@@ -298,9 +297,9 @@ export default function DiscoverPage() {
   if (currentIndex >= candidates.length) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-[100px] lg:pt-[120px]">
-        <div className="max-w-md w-full bg-white/60 backdrop-blur-md rounded-[32px] p-10 text-center shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-white/50">
-          <div className="w-20 h-20 bg-[#F1F5F9]/50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Layers className="w-10 h-10 text-[#94A3B8] opacity-80" strokeWidth={1.5} />
+        <div className="max-w-md w-full bg-white rounded-[32px] p-10 text-center shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100">
+          <div className="w-20 h-20 bg-[#f0f9ff] rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="w-10 h-10 text-blue-500" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-3" style={{ fontFamily: DISPLAY_FONT }}>You've reached the end of the stack!</h2>
           <p className="text-gray-500 mb-8 leading-relaxed">Want to take another look at potential study partners?</p>
@@ -308,7 +307,7 @@ export default function DiscoverPage() {
             <Button
               onClick={handleRefreshStack}
               disabled={isRefreshing}
-              className="w-full bg-[#1A1A1A] hover:bg-black text-white rounded-xl py-6 font-semibold shadow-xl shadow-black/5 flex items-center justify-center"
+              className="w-full bg-[#1a56db] hover:bg-blue-700 text-white rounded-xl py-6 font-semibold shadow-lg shadow-blue-200 flex items-center justify-center"
             >
               {isRefreshing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <RefreshCcw className="w-5 h-5 mr-2" />}
               Refresh Discovery
