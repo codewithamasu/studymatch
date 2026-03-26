@@ -146,7 +146,7 @@ export default function DiscoverPage() {
         await clearSwipes(user.id)
         setCurrentIndex(0)
         setSwiped([])
-        
+
         // Reload candidates directly
         const realCandidates = await fetchDiscoverCandidates(user.id, {
           targetSubject,
@@ -508,17 +508,17 @@ export default function DiscoverPage() {
                 <div className="mt-4 sm:mt-8 flex justify-center items-center gap-4 sm:gap-5 z-10">
                   <button onClick={handleSkip}
                     aria-label="Skip"
-                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-red-500 hover:scale-110 transition-transform border border-gray-50">
+                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-red-500 hover:scale-110 transition-transform border border-gray-50 hover:cursor-pointer">
                     <X className="w-6 h-6 stroke-[3]" />
                   </button>
                   <button onClick={handleSuperLike}
                     aria-label="Super Like"
-                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-blue-500 hover:scale-110 transition-transform border border-gray-50">
+                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-blue-500 hover:scale-110 transition-transform border border-gray-50 hover:cursor-pointer">
                     <Star className="w-6 h-6 stroke-[2.5]" />
                   </button>
                   <button onClick={handleLike}
                     aria-label="Like"
-                    className="w-20 h-20 bg-blue-600 rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_8px_30px_rgba(37,99,235,0.6)] transition-all">
+                    className="w-20 h-20 bg-blue-600 rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_8px_30px_rgba(37,99,235,0.6)] transition-all hover:cursor-pointer">
                     <Heart className="w-10 h-10 fill-white" />
                   </button>
                 </div>
