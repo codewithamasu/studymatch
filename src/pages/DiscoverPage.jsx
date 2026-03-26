@@ -48,6 +48,7 @@ export default function DiscoverPage() {
 
   const cardRef = useRef(null)
   const matchRef = useRef(null)
+  const isSwipingRef = useRef(false)
 
   useEffect(() => {
     let mounted = true
@@ -184,6 +185,8 @@ export default function DiscoverPage() {
     if (!cardRef.current) return
     const targetCard = currentCard
     if (!targetCard) return
+    if (isSwipingRef.current) return  // prevent double-swipe
+    isSwipingRef.current = true
     setSwipeError('')
 
     const xTarget = direction === 'right' ? 500 : direction === 'left' ? -500 : 0
@@ -199,6 +202,7 @@ export default function DiscoverPage() {
       ease: 'power2.in',
       onComplete: async () => {
         const didSave = await handleSwipeComplete(direction, targetCard)
+        isSwipingRef.current = false  // unlock after complete
         gsap.set(cardRef.current, { x: 0, y: 0, rotation: 0, opacity: 1 })
         if (!didSave) return
         gsap.from(cardRef.current, {
