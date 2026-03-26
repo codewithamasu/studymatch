@@ -8,7 +8,6 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useOnboardingStore } from '@/store/useOnboardingStore'
 import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const POPULAR_SUBJECTS = [
   { label: 'Mathematics',      icon: 'functions',       count: '1.2k study partners' },
@@ -90,7 +89,6 @@ function normalizeSubjectInput(value) {
   return value.trim().replace(/\s+/g, ' ')
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
   const user = useAuthStore((state) => state.user)
@@ -119,7 +117,6 @@ export default function OnboardingPage() {
   const footerRef  = useRef(null)
   const hydratedUserIdRef = useRef(null)
 
-  // ── GSAP: Page entrance ──────────────────────────────────────────────────────
   useEffect(() => {
     const tl = gsap.timeline()
     tl.fromTo(
@@ -141,7 +138,6 @@ export default function OnboardingPage() {
     )
   }, [])
 
-  // ── GSAP: Step transition ────────────────────────────────────────────────────
   useEffect(() => {
     gsap.fromTo(
       contentRef.current,
@@ -163,7 +159,6 @@ export default function OnboardingPage() {
     hydrateProfile(user.study_profile)
   }, [hydrateProfile, resetOnboarding, user])
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleSubjectToggle = (subject) => {
     const normalizedSubject = normalizeSubjectInput(subject)
@@ -178,7 +173,6 @@ export default function OnboardingPage() {
     setSearchQuery('')
   }
 
-  // helpers
   const getMasteryLabel = (val) => MASTERY_LABELS.find(m => val <= m.max) ?? MASTERY_LABELS[MASTERY_LABELS.length - 1]
 
   const handleComplete = async () => {
@@ -203,7 +197,6 @@ export default function OnboardingPage() {
     }
   }
 
-  // ── Filtered subjects for search ─────────────────────────────────────────────
   const filteredPopular = POPULAR_SUBJECTS.filter(s =>
     s.label.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -229,7 +222,6 @@ export default function OnboardingPage() {
       </Helmet>
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header
         ref={headerRef}
         className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 opacity-0"
@@ -244,11 +236,9 @@ export default function OnboardingPage() {
         </div>
       </header>
 
-      {/* ── Main ───────────────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 sm:py-10">
         <div className="w-full max-w-[900px]">
 
-          {/* Progress */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#136DEC]">
@@ -264,10 +254,8 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          {/* ── Step Content ─────────────────────────────────────────────────── */}
           <div ref={contentRef} className="opacity-0">
 
-            {/* Hero Title */}
             <div className="mb-10">
               <h1
                 className="text-3xl sm:text-4xl md:text-5xl font-black leading-[1.1] text-slate-900 tracking-tight mb-3"
@@ -280,7 +268,6 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            {/* Error banner */}
             {errorMessage && (
               <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 flex items-start gap-3" role="alert">
                 <span className="material-symbols-outlined text-[18px] shrink-0 translate-y-[1px]">error</span>
@@ -288,11 +275,9 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* ── Step 0: Subjects ──────────────────────────────────────────── */}
             {step === 0 && (
               <div className="space-y-10">
 
-                {/* Search Bar */}
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400 transition-colors duration-200 group-focus-within:text-[#136DEC]">
                     <span className="material-symbols-outlined">search</span>
@@ -310,7 +295,6 @@ export default function OnboardingPage() {
                     placeholder="Search subjects (e.g. Calculus, Data Structures, Psychology...)"
                     className="block w-full h-14 pl-12 pr-4 text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#136DEC] focus:ring-4 focus:ring-[#136DEC]/15 placeholder:text-slate-400 transition-all duration-300 text-sm font-medium shadow-sm"
                   />
-                  {/* Search results dropdown */}
                   {(searchResults.length > 0 || canCreateCustomSubject) && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden">
                       {canCreateCustomSubject && (
@@ -338,7 +322,6 @@ export default function OnboardingPage() {
                   )}
                 </div>
 
-                {/* Your Selection */}
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400 mb-4">Your Selection</h3>
                   <div className={`flex flex-wrap gap-2 min-h-[52px] px-4 py-3 rounded-xl transition-all duration-300 ${
@@ -367,7 +350,6 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Popular Subjects Grid */}
                 <div>
                   <h3 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[#136DEC] text-[20px]">trending_up</span>
@@ -408,11 +390,9 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* ── Step 1: Mastery Sliders + Study Goals ────────────────────── */}
             {step === 1 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
-                {/* ── Left: Per-subject mastery sliders ── */}
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-[#136DEC] text-[20px]">bar_chart</span>
@@ -432,7 +412,6 @@ export default function OnboardingPage() {
                               <span className="text-sm font-semibold text-slate-800">{subject}</span>
                               <span className="text-sm font-bold text-[#136DEC]">{val}%</span>
                             </div>
-                            {/* Slider */}
                             <div className="relative">
                               <input
                                 type="range"
@@ -458,7 +437,6 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* ── Right: Study Goals checkboxes ── */}
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-[#136DEC] text-[20px]">target</span>
@@ -479,7 +457,6 @@ export default function OnboardingPage() {
                           }`}
                           style={{ transitionTimingFunction: 'cubic-bezier(0.25, 1, 0.5, 1)' }}
                         >
-                          {/* Custom checkbox */}
                           <div
                             className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                               isChecked
@@ -506,20 +483,16 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* ── Step 2: Preferences & Availability ────────────────────────── */}
             {step === 2 && (
               <div className="space-y-8">
 
-                {/* Row 1: Study Mode + Language */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                  {/* Study Mode Toggle */}
                   <div className="p-6 bg-white rounded-xl border border-black/[0.08] flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-[#136DEC] text-[20px]">distance</span>
                       <h3 className="text-base font-bold text-slate-900">Study Mode</h3>
                     </div>
-                    {/* Segmented control */}
                     <div className="flex bg-slate-100 p-1.5 rounded-xl border border-black/[0.06] gap-1 ">
                       {[{ value: 'online', label: 'Online' }, { value: 'in-person', label: 'In-Person' }].map(mode => (
                         <button
@@ -537,7 +510,6 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  {/* Language */}
                   <div className="p-6 bg-white rounded-xl border border-black/[0.08] flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-[#136DEC] text-[20px]">translate</span>
@@ -556,14 +528,12 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Weekly Availability */}
                 <div className="p-6 bg-white rounded-xl border border-black/[0.08]">
                   <div className="flex items-center gap-2 mb-6">
                     <span className="material-symbols-outlined text-[#136DEC] text-[20px]">calendar_month</span>
                     <h3 className="text-base font-bold text-slate-900">Weekly Availability</h3>
                   </div>
 
-                  {/* Day cards */}
                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-2.5">
                     {DAYS.map(day => {
                       const isActive = profile.availability.days.includes(day.value)
@@ -589,7 +559,6 @@ export default function OnboardingPage() {
                     })}
                   </div>
 
-                  {/* Preferred Times */}
                   <div className="mt-8">
                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-[0.14em] mb-4">Preferred Study Times</h4>
                     <div className="flex flex-wrap gap-2.5">
@@ -615,7 +584,6 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Profile Summary Card */}
                 <div className="rounded-xl border border-black/[0.07] bg-white p-5">
                   <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -640,7 +608,6 @@ export default function OnboardingPage() {
             )}
           </div>
 
-          {/* ── Footer ───────────────────────────────────────────────────────── */}
           <div
             ref={footerRef}
             className="mt-12 pt-8 border-t border-slate-200 flex items-center justify-between opacity-0"

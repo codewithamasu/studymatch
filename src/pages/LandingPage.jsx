@@ -18,7 +18,6 @@ export default function LandingPage() {
   const cardRef = useRef(null);
 
   useEffect(() => {
-    // 1. Hero Animations (Clean, Distilled Entrance)
     const heroElements = heroRef.current.querySelectorAll('.hero-anim');
     gsap.fromTo(
       heroElements,
@@ -33,7 +32,6 @@ export default function LandingPage() {
       }
     );
 
-    // Hero preview: keep the motion subtle so the card feels premium, not gimmicky.
     if (cardRef.current) {
       gsap.to(cardRef.current, {
         y: -10,
@@ -46,7 +44,6 @@ export default function LandingPage() {
       });
     }
 
-    // 2. How it Works (Simple scroll reveal)
     const stepCards = howItWorksRef.current.querySelectorAll('.step-card');
     gsap.fromTo(
       stepCards,
@@ -64,7 +61,6 @@ export default function LandingPage() {
       }
     );
 
-    // 3. Features (ScrollTrigger)
     const featureGroups = featuresRef.current.querySelectorAll('.feat-group');
     gsap.fromTo(
       featureGroups,
@@ -82,7 +78,6 @@ export default function LandingPage() {
       }
     );
 
-    // 4. CTA Scale-in
     gsap.fromTo(
       ctaRef.current,
       { opacity: 0, scale: 0.98 },
@@ -114,20 +109,16 @@ export default function LandingPage() {
 
       <main className="pt-[4.5rem]">
 
-        {/* ─── HERO SECTION ─── */}
         <section ref={heroRef} className="bg-[#F8FAFC] py-16 sm:py-22 lg:py-28" aria-labelledby="hero-heading">
           <div className="mx-auto max-w-6xl px-6">
             <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2 lg:gap-16">
 
-              {/* Left: Text Content (Bolder Structure with Oxford Blue Colors) */}
               <div className="flex flex-col items-start max-w-xl">
-                {/* Badge */}
                 <div className="hero-anim mb-8 inline-flex items-center gap-3 rounded-full border border-[#DDE6F2] bg-white/92 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5E6A78] shadow-[0_10px_26px_rgba(20,32,54,0.05)]">
                   <span className="h-2 w-2 rounded-full bg-[#136DEC]" />
                   Now supporting study groups
                 </div>
 
-                {/* Heading */}
                 <h1
                   id="hero-heading"
                   className="hero-anim mb-6 max-w-[10ch] text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.065em] text-[#1A1A1A] sm:text-6xl lg:text-[4.85rem]"
@@ -140,12 +131,10 @@ export default function LandingPage() {
                   </span>
                 </h1>
 
-                {/* Subheading */}
                 <p className="hero-anim mb-10 max-w-lg text-lg font-medium leading-relaxed text-[#64748B]">
                   Connect with students who share your goals, schedule, and learning style so every session feels easier to start and worth showing up for.
                 </p>
 
-                {/* CTA Buttons */}
                 <div className="hero-anim flex w-full sm:w-auto items-center">
                   <Link to="/register" className="w-full sm:w-auto">
                     <button className="w-full sm:w-auto rounded-full bg-[#136DEC] px-10 py-4 text-base font-bold text-white hover:bg-[#136DEC]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#136DEC]">
@@ -154,7 +143,6 @@ export default function LandingPage() {
                   </Link>
                 </div>
 
-                {/* Social Proof */}
                 <div className="hero-anim mt-12 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                   <div className="flex -space-x-2">
                     {[
@@ -172,7 +160,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Right: Mock product preview */}
               <div className="hero-anim relative hidden lg:block">
                 <div ref={cardRef} className="relative mx-auto w-full max-w-[360px] translate-x-4" aria-label="Interactive mock study match card">
                   <div className="absolute -left-10 top-10 h-28 w-28 rounded-full bg-[#DDEBFF] blur-[56px] opacity-80" />
@@ -246,7 +233,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ─── HOW IT WORKS (Distilled) ─── */}
         <section ref={howItWorksRef} id="how-it-works" className="bg-white py-20 sm:py-22">
           <div className="mx-auto max-w-6xl px-6">
             <header className="mb-14 text-center">
@@ -282,12 +268,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ─── FEATURES (Clean & Focused) ─── */}
         <section ref={featuresRef} id="features" className="bg-[#F8FAFC] py-20 sm:py-22">
            <div className="mx-auto max-w-6xl px-6">
             <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2 lg:gap-16">
 
-              {/* Text Focus */}
               <div>
                 <h2
                   className="mb-12 text-3xl font-semibold tracking-[-0.05em] text-[#136DEC]"
@@ -344,7 +328,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Minimalist Visual Representation */}
                <div className="feat-group lg:ml-auto w-full max-w-sm">
                  <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 shadow-sm">
                     <h4
@@ -380,7 +363,6 @@ export default function LandingPage() {
            </div>
         </section>
 
-        {/* ─── CTA ─── */}
         <section ref={ctaRef} className="bg-white py-20 text-center sm:py-22">
           <div className="mx-auto max-w-3xl px-6">
             <h2
@@ -400,7 +382,6 @@ export default function LandingPage() {
 
       </main>
 
-      {/* ─── FOOTER (Simplified) ─── */}
       <footer className="border-t border-[#E2E8F0] bg-white py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-center text-sm font-medium text-[#94A3B8] md:flex-row md:text-left">
           <div className="flex items-center gap-2">

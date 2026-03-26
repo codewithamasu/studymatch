@@ -115,7 +115,6 @@ function formatDashboardSession(session, partnerId, partnerName) {
     scheduled_at: session.scheduled_start,
     duration_minutes: session.duration_minutes,
     mode: session.study_mode === 'in_person' ? 'offline' : 'online',
-    // Hardcoded fallback since column doesn't exist yet
     meeting_url: session.meeting_url || `study-session-${session.id}`,
     location: session.location || 'Kampus',
     status: session.status === 'scheduled' ? 'upcoming' : session.status,
@@ -235,7 +234,6 @@ export async function fetchSocialPulse(currentUserId, limit = 6) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
   try {
-    // Fetch recent messages sent by match partners (not the current user)
     const { data: matchRows, error: matchErr } = await supabase
       .from('matches')
       .select('id, profile_a_id, profile_b_id')
@@ -312,7 +310,6 @@ function formatRelativeTime(isoString) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-// ─── Gamification & XP ──────────────────────────────────────────────────────
 export const XP_PER_HOUR = 40
 export const XP_PER_SESSION = 60
 
@@ -324,7 +321,6 @@ export const TIER_NAMES = [
 ]
 export const TIER_ICONS = ['🌱', '🔍', '⚡', '📚', '🏆', '🧙', '⚙️', '📊', '🔬', '🎓', '👑']
 
-/** Calculate XP based on hours and sessions */
 export function calculateXp(stats) {
   return (stats.total_study_hours || 0) * XP_PER_HOUR +
     (stats.completed_sessions || 0) * XP_PER_SESSION
@@ -343,7 +339,6 @@ export async function fetchCampusLeaders(currentUserId) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
   try {
-    // 1. Fetch some active profiles who finished onboarding
     const { data: profiles, error: profileErr } = await supabase
       .from('profiles')
       .select('id, full_name, avatar_url')
@@ -353,7 +348,6 @@ export async function fetchCampusLeaders(currentUserId) {
 
     if (profileErr) return []
 
-    // 2. Fetch completed sessions info for these users
     const profileIds = profiles.map(p => p.id)
     const { data: sessRows, error: sessErr } = await supabase
       .from('session_participants')
@@ -366,7 +360,6 @@ export async function fetchCampusLeaders(currentUserId) {
 
     if (sessErr) return []
 
-    // 3. Aggregate stats per profile
     const statsByProfile = {}
     profileIds.forEach(id => {
       statsByProfile[id] = { completed_sessions: 0, total_study_hours: 0 }
@@ -381,7 +374,6 @@ export async function fetchCampusLeaders(currentUserId) {
       }
     })
 
-    // 4. Calculate XP and sort
     return profiles.map((p) => {
       const stats = statsByProfile[p.id]
       const xp = calculateXp(stats)
@@ -407,7 +399,6 @@ export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
 
   const { targetSubject, studyMode } = filters
 
-  // 1. Ambil ID yang harus dikecualikan (sudah di-swipe atau sudah match)
   const [
     { data: swipeRows, error: swipeError },
     { data: matchRows, error: matchError }
@@ -426,9 +417,6 @@ export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
   }
   excludedIds.add(currentUserId)
 
-  // 2. Bangun query dasar
-  // Kita melakukan inner join pada profile_subjects dan subjects jika ada targetSubject
-  // Supabase query notation: profile_subjects!inner(subjects!inner(name))
   let query = supabase
     .from('profiles')
     .select(`
@@ -469,15 +457,11 @@ export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
     .not('id', 'in', `(${Array.from(excludedIds).join(',')})`)
     .limit(50)
 
-  // 3. Terapkan filter metadata di server-side
   if (targetSubject) {
-    // Filter berdasarkan nama subjek di tabel subjects (melalui inner join)
     query = query.eq('profile_subjects.subjects.name', targetSubject)
   }
 
   if (studyMode && studyMode !== 'hybrid') {
-    // Jika user mencari 'online', tampilkan yang online ATAU hybrid
-    // Jika user mencari 'in-person', tampilkan yang in_person ATAU hybrid
     const dbMode = studyMode === 'in-person' ? 'in_person' : studyMode
     query = query.or(`preferred_study_mode.eq.${dbMode},preferred_study_mode.eq.hybrid`)
   }
@@ -485,11 +469,8 @@ export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
   const { data: profileRows, error: profileError } = await query
 
   if (profileError) {
-    // Jika error karena 'in' list kosong atau masalah join, handle gracefully
     console.error('Error in fetchDiscoverCandidates query:', profileError)
-    // Fallback ke query tanpa 'in' jika excludedIds hanya berisi diri sendiri (new user)
     if (excludedIds.size === 1) {
-       // retry without the 'in' filter if it was just the self ID in a weird format
     }
     throw profileError
   }
@@ -745,7 +726,6 @@ export async function sendConversationMessage(conversationId, senderProfileId, b
   return data
 }
 
-/** Fetch real stats for THIS user's completed sessions with a specific partner */
 export async function fetchPartnerStats(currentUserId, partnerProfileId) {
   if (!isSupabaseConfigured || !currentUserId || !partnerProfileId) {
     return { sessions: 0, studiedHours: 0 }
@@ -783,7 +763,6 @@ export async function fetchPartnerStats(currentUserId, partnerProfileId) {
   }
 }
 
-/** Fetch match info (matched_at) between currentUser and partner */
 export async function fetchMatchInfo(currentUserId, partnerProfileId) {
   if (!isSupabaseConfigured || !currentUserId || !partnerProfileId) return null
 
@@ -800,7 +779,6 @@ export async function fetchMatchInfo(currentUserId, partnerProfileId) {
   return data || null
 }
 
-/** Subscribe to new messages across all user conversations for live inbox updates */
 export function subscribeToConversations(userId, conversationIds, onNewMessage) {
   if (!isSupabaseConfigured || !userId || !conversationIds.length) {
     return { unsubscribe: () => {} }
@@ -909,7 +887,6 @@ export async function fetchUserSessions(currentUserId) {
     participantDetails = data || []
   }
 
-  // Kumpulkan semua ID Partner yang mungkin
   const partnerIdsSet = new Set()
 
   participantDetails.forEach((row) => {
@@ -941,11 +918,9 @@ export async function fetchUserSessions(currentUserId) {
   
   sessions.forEach((session) => {
     let pid = null
-    // Jika kita BUKAN organizernya, maka partner kita secara otomatis adalah si organizer itu sendiri
     if (session.organizer_profile_id && session.organizer_profile_id !== currentUserId) {
       pid = session.organizer_profile_id
     } else {
-      // Jika kita ADALAH organizer, cari ID partnernya di array participation
       const row = participantDetails.find((r) => r.session_id === session.id && r.profile_id !== currentUserId)
       if (row) pid = row.profile_id
     }
@@ -968,7 +943,6 @@ export async function fetchUserSessions(currentUserId) {
 export async function createNewSession(currentUserId, sessionData) {
   if (!isSupabaseConfigured) return null
 
-  // 1a. Try to resolve subject_id if name matches
   let subjectId = null
   let matchId = null
 
@@ -989,7 +963,6 @@ export async function createNewSession(currentUserId, sessionData) {
   if (subjectResult.data) subjectId = subjectResult.data.id
   if (matchResult.data) matchId = matchResult.data.id
 
-  // 1b. Create the session
   const { data: session, error: sessErr } = await supabase
     .from('sessions')
     .insert({
@@ -1009,7 +982,6 @@ export async function createNewSession(currentUserId, sessionData) {
 
   if (sessErr) throw sessErr
 
-  // 2. Add participants (me and the partner)
   const participants = [
     {
       session_id: session.id,

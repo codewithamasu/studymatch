@@ -102,7 +102,6 @@ export const useChatStore = create(
     addRealtimeMessage: (conversationId, message, currentUserId) =>
       set((state) => {
         const existing = state.messagesByConversation[conversationId] || []
-        // Check if message already exists (by exact db id)
         if (existing.some((m) => m.id === message.id)) {
           return state
         }
@@ -121,7 +120,6 @@ export const useChatStore = create(
           reactions: message.metadata?.reactions || [],
         }
 
-        // If it was sent by us, check for an existing optimistic message with the same text to replace
         if (isMe) {
           const optIndex = existing.findIndex(m => m.isOptimistic && m.text === message.body)
           if (optIndex !== -1) {

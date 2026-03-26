@@ -16,7 +16,6 @@ const getAvatar = (name) =>
 
 function formatLastTime(rawValue) {
   if (!rawValue) return ''
-  // If the value is already a human-readable string (e.g. "03:45 AM"), return as-is
   const asDate = new Date(rawValue)
   if (isNaN(asDate.getTime())) return rawValue
   const diffMs = Date.now() - asDate.getTime()
@@ -27,7 +26,6 @@ function formatLastTime(rawValue) {
   return asDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ className = '' }) {
   return <div className={`bg-neutral-200/70 rounded-lg animate-pulse ${className}`} aria-hidden="true" />
 }
@@ -58,7 +56,6 @@ function InboxSkeleton() {
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ChatInboxPage() {
   const user = useAuthStore((state) => state.user)
   const conversations = useChatStore((state) => state.conversations)
@@ -92,7 +89,6 @@ export default function ChatInboxPage() {
     loadConversations()
   }, [loadConversations])
 
-  // Realtime: refresh conversation list whenever a new message arrives in any of our conversations
   const conversationIds = useMemo(
     () => conversations.map((c) => c.conversationId).filter(Boolean),
     [conversations]
@@ -102,7 +98,6 @@ export default function ChatInboxPage() {
     if (!user?.id || !isSupabaseConfigured || !conversationIds.length) return
 
     const sub = subscribeToConversations(user.id, conversationIds, () => {
-      // Re-fetch summaries so unread counts and lastMessage stay fresh
       fetchConversationSummaries(user.id)
         .then((data) => setConversations(data))
         .catch(() => {})
@@ -111,7 +106,6 @@ export default function ChatInboxPage() {
     return () => sub.unsubscribe()
   }, [user?.id, conversationIds, setConversations])
 
-  // GSAP entrance once data is ready
   useEffect(() => {
     if (loading || !conversations.length) return
     const ctx = gsap.context(() => {
@@ -178,7 +172,6 @@ export default function ChatInboxPage() {
 
       <div className="max-w-2xl mx-auto pt-[88px] pb-12 px-4">
 
-        {/* Header */}
         <div ref={headerRef} className="mb-6">
           <div className="flex items-center justify-between mb-1">
             <h1 
@@ -196,7 +189,6 @@ export default function ChatInboxPage() {
           <p className="text-[14px] text-[#64748b]">Your active study partner conversations</p>
         </div>
 
-        {/* Search */}
         <div className="relative mb-5">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8] pointer-events-none" aria-hidden="true" />
           <input
@@ -210,7 +202,6 @@ export default function ChatInboxPage() {
           />
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-6" role="region" aria-label="Chat Statistics">
           {[
             { label: 'Active Chats', value: conversations.length, icon: <MessageCircle className="w-4 h-4" aria-hidden="true" /> },
@@ -231,12 +222,10 @@ export default function ChatInboxPage() {
           ))}
         </div>
 
-        {/* Label */}
         <p className="text-[11px] font-bold tracking-widest uppercase text-[#94a3b8] mb-3 px-1">
           Study Partners
         </p>
 
-        {/* Conversation List */}
         <div
           className="bg-white rounded-[20px] overflow-hidden"
           role="list"
@@ -314,7 +303,6 @@ export default function ChatInboxPage() {
           )}
         </div>
 
-        {/* Discover tip */}
         <div
           className="mt-6 bg-gradient-to-br from-[#1a56db] to-[#2563eb] rounded-[20px] p-5 text-white flex items-start gap-4"
           style={{ boxShadow: '0 6px 24px rgba(26,86,219,.2)' }}

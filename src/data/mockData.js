@@ -1,5 +1,3 @@
-// Mock data for StudyMatch MVP demo
-// This will be replaced with Supabase data later
 
 export const mockUsers = [
   {
@@ -117,25 +115,19 @@ export const mockCurrentUser = {
   },
 }
 
-// Removed mockMatches, mockSessions, and mockStats completely
 
-// Compatibility calculation helper
 export function calculateCompatibility(userA, userB) {
   const profileA = userA.study_profile
   const profileB = userB.study_profile
 
-  // Subject match
   const commonSubjects = profileA.subjects.filter(s => profileB.subjects.includes(s))
   const subjectScore = (commonSubjects.length / Math.max(profileA.subjects.length, profileB.subjects.length)) * 100
 
-  // Schedule overlap
   const commonDays = profileA.availability.days.filter(d => profileB.availability.days.includes(d))
   const scheduleScore = (commonDays.length / Math.max(profileA.availability.days.length, profileB.availability.days.length)) * 100
 
-  // Goal alignment
   const goalScore = profileA.study_goal === profileB.study_goal ? 100 : 50
 
-  // Skill proximity
   const levels = { beginner: 1, intermediate: 2, advanced: 3 }
   const skillDiff = Math.abs(levels[profileA.skill_level] - levels[profileB.skill_level])
   const skillScore = skillDiff === 0 ? 100 : skillDiff === 1 ? 70 : 40

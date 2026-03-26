@@ -37,19 +37,14 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useDashboardStore } from '@/store/useDashboardStore'
 import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-// Shared with DESIGN SYSTEM constants
 
-// ─── XP Helpers ───────────────────────────────────────────────────────────────
 function getXpForNextLevel(level) {
   return LEVEL_THRESHOLDS[Math.min(level + 1, LEVEL_THRESHOLDS.length - 1)]
 }
 
-// ─── Avatar Helper ────────────────────────────────────────────────────────────
 const avatar = (seed, size = '32') =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4&radius=50&size=${size}`
 
-// ─── Countdown Hook ───────────────────────────────────────────────────────────
 function useCountdown(targetDate) {
   const difMs = new Date(targetDate) - Date.now()
   const totalMins = Math.max(0, Math.floor(difMs / 60000))
@@ -59,7 +54,6 @@ function useCountdown(targetDate) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
-// ─── Skeleton Components ──────────────────────────────────────────────────────
 function Skeleton({ className = '' }) {
   return (
     <div
@@ -73,7 +67,6 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-[#F9F9F8] pt-20 pb-12 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Welcome skeleton */}
         <div className="flex items-end justify-between gap-4">
           <div className="space-y-2">
             <Skeleton className="h-8 w-64" />
@@ -82,7 +75,6 @@ function DashboardSkeleton() {
           <Skeleton className="h-9 w-28 rounded-xl" />
         </div>
 
-        {/* Match alerts skeleton */}
         <div className="flex gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center gap-1.5">
@@ -92,9 +84,7 @@ function DashboardSkeleton() {
           ))}
         </div>
 
-        {/* Main grid skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Left */}
           <div className="space-y-4">
             <Skeleton className="h-36 rounded-2xl" />
             <div className="grid grid-cols-2 gap-3">
@@ -104,13 +94,10 @@ function DashboardSkeleton() {
             </div>
             <Skeleton className="h-20 rounded-xl" />
           </div>
-          {/* Center */}
           <Skeleton className="h-80 rounded-2xl" />
-          {/* Right */}
           <Skeleton className="h-80 rounded-2xl" />
         </div>
 
-        {/* Sessions skeleton */}
         <div className="space-y-3">
           <Skeleton className="h-6 w-44" />
           <div className="grid sm:grid-cols-2 gap-3">
@@ -124,7 +111,6 @@ function DashboardSkeleton() {
   )
 }
 
-// ─── Session Card ─────────────────────────────────────────────────────────────
 function SessionCard({ session }) {
   const countdown = useCountdown(session.scheduled_at)
   const date = new Date(session.scheduled_at)
@@ -186,7 +172,6 @@ function SessionCard({ session }) {
   )
 }
 
-// ─── Match Alert Chip ─────────────────────────────────────────────────────────
 function MatchAlertChip({ alert, isNew }) {
   const navigate = useNavigate()
   return (
@@ -217,7 +202,6 @@ function MatchAlertChip({ alert, isNew }) {
   )
 }
 
-// ─── Subject Mastery Radar ────────────────────────────────────────────────────
 function SubjectOrbit({ subjectMastery }) {
   const entries = Object.entries(subjectMastery || {}).slice(0, 6)
 
@@ -257,7 +241,6 @@ function SubjectOrbit({ subjectMastery }) {
   )
 }
 
-// ─── Campus Leaders (Gamification) ────────────────────────────────────────────
 function CampusLeaders({ leaders }) {
   if (!leaders || leaders.length === 0) return null
 
@@ -313,7 +296,6 @@ function CampusLeaders({ leaders }) {
   )
 }
 
-// ─── Animated Counter ─────────────────────────────────────────────────────────
 function AnimatedNumber({ value, suffix = '' }) {
   const ref = useRef(null)
   const prev = useRef(0)
@@ -334,7 +316,6 @@ function AnimatedNumber({ value, suffix = '' }) {
   return <span ref={ref} aria-live="polite">{value}{suffix}</span>
 }
 
-// ─── Refactored Social Pulse (Unified Module) ─────────────────────────────────
 function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, navigate }) {
   const topSession = upcomingSessions?.[0]
   const topMessages = socialPulse?.slice(0, 3) || []
@@ -356,7 +337,6 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
         <TrendingUp className="w-5 h-5 text-neutral-300" aria-hidden="true" />
       </div>
 
-      {/* Primary: Upcoming Session (Only 1) */}
       {topSession && (
         <div className="flex flex-col gap-3 relative">
           <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">Up Next</p>
@@ -385,7 +365,6 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
         </div>
       )}
 
-      {/* Secondary: Unread Messages (Max 3) */}
       {topMessages.length > 0 && (
         <div className="flex flex-col gap-3">
            <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">Recent</p>
@@ -417,7 +396,6 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
         </div>
       )}
 
-      {/* Tertiary: New Matches */}
       {newMatches.length > 0 && (
         <div className="flex flex-col gap-3 pt-2">
            <p className="text-[11px] font-bold tracking-widest uppercase text-neutral-400">New Connections</p>
@@ -463,7 +441,6 @@ function UnifiedSocialPulse({ upcomingSessions, socialPulse, matchAlerts, naviga
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
@@ -483,7 +460,6 @@ export default function DashboardPage() {
 
   const pageRef = useRef(null)
 
-  // ── Data Fetch + Realtime Subscribe ─────────────────────────────────────
   useEffect(() => {
     if (!user?.id) return
     loadDashboard(user.id)
@@ -491,7 +467,6 @@ export default function DashboardPage() {
     return () => unsubscribeRealtime()
   }, [user?.id, loadDashboard, subscribeRealtime, unsubscribeRealtime])
 
-  // ── GSAP Entrance ────────────────────────────────────────────────────────
   useEffect(() => {
     if (loading || error) return
     const ctx = gsap.context(() => {
@@ -504,7 +479,6 @@ export default function DashboardPage() {
         clearProps: 'all',
       })
 
-      // Wave emoji animation
       gsap.to('.welcome-hand', {
         rotation: 20,
         duration: 0.8,
@@ -514,7 +488,6 @@ export default function DashboardPage() {
         transformOrigin: '70% 70%'
       })
 
-      // Pulsar for match alerts
       gsap.to('.match-pulse', {
         scale: 1.05,
         opacity: 0.6,
@@ -527,7 +500,6 @@ export default function DashboardPage() {
     return () => ctx.revert()
   }, [loading, error])
 
-  // ── Derived XP / Level ───────────────────────────────────────────────────
   const xp = calculateXp(stats)
   const level = getLevel(xp)
   const nextLevelXp = getXpForNextLevel(level)
@@ -541,10 +513,8 @@ export default function DashboardPage() {
     ? Math.round((stats.completed_sessions / stats.total_sessions) * 100)
     : 0
 
-  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) return <DashboardSkeleton />
 
-  // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
       <div className="min-h-screen bg-[#F9F9F8] flex items-center justify-center pt-16 px-4">
@@ -565,7 +535,6 @@ export default function DashboardPage() {
     )
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <main
       ref={pageRef}
@@ -574,7 +543,6 @@ export default function DashboardPage() {
     >
       <div className="max-w-6xl mx-auto space-y-6">
 
-        {/* ── Welcome Row ──────────────────────────────────────────────────── */}
         <div className="dash-section flex items-end justify-between gap-4">
           <div>
             <h1
@@ -601,12 +569,9 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Removed redundant Match Alerts section - now unified in Social Pulse */}
 
-        {/* ── Main Grid ─────────────────────────────────────────────────────── */}
         <div className="dash-section grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-          {/* LEFT — Rank / XP (derived from sessions + study hours) */}
           <div className="space-y-4">
             <section
               className="bg-white border border-neutral-200/70 rounded-2xl p-5"
@@ -663,7 +628,6 @@ export default function DashboardPage() {
               </p>
             </section>
 
-            {/* Quick Stats (real data: sessions + matches from Supabase) */}
             <section
               role="region"
               aria-labelledby="quick-stats-heading"
@@ -693,7 +657,6 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Completion Rate (real data: completed_sessions / total_sessions) */}
             <section
               className="bg-white border border-neutral-200/70 rounded-xl p-4"
               role="region"
@@ -724,7 +687,6 @@ export default function DashboardPage() {
             </section>
           </div>
 
-          {/* CENTER — Subject Mastery Orbit & Campus Leaders */}
           <div className="space-y-4 dash-section">
             <section
               aria-labelledby="mastery-heading"
@@ -756,11 +718,9 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Gamification Module */}
             <CampusLeaders leaders={campusLeaders} />
           </div>
 
-          {/* RIGHT — Refactored Social Pulse Module */}
           <div className="dash-section">
             <UnifiedSocialPulse
               upcomingSessions={upcomingSessions}
@@ -771,7 +731,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Removed redundant Upcoming Sessions section - now integrated as Primary in Social Pulse */}
 
       </div>
     </main>

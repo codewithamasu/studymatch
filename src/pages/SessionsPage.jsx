@@ -31,7 +31,6 @@ const FALLBACK_SUBJECTS = [
   'Machine Learning',
 ]
 
-// Helpers for date/time min values (now)
 function getTodayStr() {
   const now = new Date()
   return now.toISOString().split('T')[0]
@@ -105,7 +104,6 @@ export default function SessionsPage() {
   const [selectedLocationSession, setSelectedLocationSession] = useState(null)
   const appOrigin = typeof window === 'undefined' ? '' : window.location.origin
 
-  // Load matched partners from Supabase
   useEffect(() => {
     async function loadPartners() {
       if (!currentUser?.id) return
@@ -127,7 +125,6 @@ export default function SessionsPage() {
     loadPartners()
   }, [currentUser?.id])
 
-  // Dynamic combined subjects from current user + selected partner (from real matched list)
   const combinedSubjects = useMemo(() => {
     const selectedPartnerData = matchedPartners.find(
       (p) => p.id === sessionForm.partnerId
@@ -136,12 +133,10 @@ export default function SessionsPage() {
     const mySubjects = currentUser?.study_profile?.subjects ?? []
     const partnerSubjects = selectedPartnerData?.study_profile?.subjects ?? []
 
-    // Merge & dedupe, preserving order (my subjects first)
     const merged = [...new Set([...mySubjects, ...partnerSubjects])]
     return merged.length > 0 ? merged : FALLBACK_SUBJECTS
   }, [sessionForm.partnerId, currentUser, matchedPartners])
 
-  // Load real sessions from Supabase
   useEffect(() => {
     async function loadSessions() {
       if (!currentUser?.id) return
@@ -165,14 +160,12 @@ export default function SessionsPage() {
     loadSessions()
   }, [currentUser?.id])
 
-  // Reset subject if it's no longer in the combined list after partner changes
   useEffect(() => {
     if (sessionForm.subject && !combinedSubjects.includes(sessionForm.subject)) {
       setSessionForm((prev) => ({ ...prev, subject: '' }))
     }
   }, [combinedSubjects, sessionForm.subject])
 
-  // Min date = today, min time = now (only relevant when date === today)
   const todayStr = getTodayStr()
   const nowTimeStr = getNowTimeStr()
   const minTime = sessionForm.date === todayStr ? nowTimeStr : undefined
@@ -254,7 +247,6 @@ export default function SessionsPage() {
 
     const baseDate = sessionForm.date || new Date().toISOString().split('T')[0]
     const baseTime = sessionForm.time || '12:00'
-    // Gunakan object Date lokal lalu ubah ke format ISO (UTC) agar tersimpan dengan tepat sesuai zona waktu user.
     const localDateTime = new Date(`${baseDate}T${baseTime}:00`)
 
     const sessionData = {
@@ -271,7 +263,6 @@ export default function SessionsPage() {
       try {
         const savedSession = await createNewSession(currentUser.id, sessionData)
         if (savedSession) {
-          // Add the real saved session (with DB ID) to local state
           const newSession = {
             ...savedSession,
             partner: selectedPartner,
@@ -290,7 +281,6 @@ export default function SessionsPage() {
         console.error('Failed to save session to Supabase:', err)
       }
     } else {
-      // Fallback for no Supabase
       const newSession = {
         id: `s_${Date.now()}`,
         partner: selectedPartner,
@@ -322,7 +312,6 @@ export default function SessionsPage() {
       } catch (err) {
         console.error('Failed to update session status in Supabase:', err)
         alert('Maaf, update status ke database gagal: ' + err.message)
-        // Rollback if needed
         return
       }
     }
@@ -342,7 +331,6 @@ export default function SessionsPage() {
 
   const completedSessions = (sessions || []).filter((session) => session && session.status === 'completed')
 
-  // selectedPartner = the partner object for the badge display (New Session form)
   const selectedPartner = matchedPartners.find((p) => p.id === sessionForm.partnerId)
 
   return (

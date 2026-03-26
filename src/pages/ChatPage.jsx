@@ -38,7 +38,6 @@ import { DISPLAY_FONT, TRANSITION_TIMING, INTERACTION_TIMING } from '@/lib/const
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥']
 const EMPTY_MESSAGES = []
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatMessageTime(value) {
   if (!value) return ''
   return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
@@ -52,7 +51,6 @@ function formatMatchedAt(isoString) {
   }) + ' at ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
-/** Upload a file to Supabase Storage and return its public URL */
 async function uploadChatMedia(conversationId, file) {
   const ext = file.name.split('.').pop()
   const path = `${conversationId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
@@ -83,7 +81,6 @@ function normalizeConversationMessages(messages = [], currentUserId) {
 const getAvatar = (name) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'user')}&backgroundColor=b6e3f4`
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ className = '' }) {
   return <div className={`bg-neutral-200/70 rounded-lg animate-pulse ${className}`} aria-hidden="true" />
 }
@@ -116,7 +113,6 @@ function ChatSkeleton() {
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ChatPage() {
   const { userId = '' } = useParams()
   const user = useAuthStore((state) => state.user)
@@ -166,7 +162,6 @@ export default function ChatPage() {
   const myAvatar = getAvatar(user?.full_name || 'User')
   const partnerAvatar = getAvatar(partner?.full_name || 'Study Partner')
 
-  // ── Load Thread ───────────────────────────────────────────────────────────
   const loadThread = useCallback(async () => {
     if (!user?.id) return
     setLoading(true)
@@ -186,7 +181,6 @@ export default function ChatPage() {
         hydrateConversation(threadData.conversation.id, normalizedMessages)
       }
 
-      // Goals from partner's study objectives
       const storageKey = `study_goals_${user.id}_${userId}`
       const savedGoals = localStorage.getItem(storageKey)
 
@@ -218,7 +212,6 @@ export default function ChatPage() {
     loadThread()
   }, [loadThread])
 
-  // ── Realtime Messages ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured || !thread?.conversation?.id) return
     const sub = subscribeToMessages(thread.conversation.id, (newMessage) => {
@@ -227,7 +220,6 @@ export default function ChatPage() {
     return () => sub.unsubscribe()
   }, [thread?.conversation?.id, addRealtimeMessage, user?.id])
 
-  // ── GSAP Entrance ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (loading) return
     const ctx = gsap.context(() => {
@@ -242,18 +234,15 @@ export default function ChatPage() {
     return () => ctx.revert()
   }, [loading])
 
-  // ── Auto-scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  // ── Mark Read ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!thread?.conversation?.id || !user?.id || !isSupabaseConfigured) return
     markConversationRead(thread.conversation.id, user.id).catch(() => {})
   }, [thread?.conversation?.id, user?.id])
 
-  // ── Send Msg ──────────────────────────────────────────────────────────────
   const sendMsg = async (e, override) => {
     e?.preventDefault()
     const txt = override ?? draft
@@ -274,7 +263,6 @@ export default function ChatPage() {
     }
   }
 
-  // ── File Upload Handler ───────────────────────────────────────────────────
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file || !threadId || !thread?.conversation?.id) return
@@ -284,7 +272,6 @@ export default function ChatPage() {
     try {
       const media = await uploadChatMedia(thread.conversation.id, file)
       const isImage = media.type.startsWith('image/')
-      // Send as a structured message body containing the URL
       const body = isImage
         ? `[image]${media.url}[/image]`
         : `[file name="${media.name}"]${media.url}[/file]`
@@ -306,12 +293,10 @@ export default function ChatPage() {
   const completedGoals = goals.filter((g) => g.done).length
   const progressPct = goals.length > 0 ? Math.round((completedGoals / goals.length) * 100) : 0
 
-  // Client-side message search filter
   const visibleMessages = searchActive && searchQuery.trim()
     ? messages.filter((m) => m.text?.toLowerCase().includes(searchQuery.toLowerCase()))
     : messages
 
-  // ── Loading / Error ───────────────────────────────────────────────────────
   if (loading) return <ChatSkeleton />
 
   if (loadError) {
@@ -357,7 +342,6 @@ export default function ChatPage() {
     )
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       <Helmet>
@@ -397,7 +381,6 @@ export default function ChatPage() {
 
       <div className="flex bg-[#f0f4f8] overflow-hidden" style={{ height: 'calc(100dvh - 4.5rem)' }}>
 
-        {/* Mobile backdrop */}
         {(sidebarOpen || rightSidebarOpen) && (
           <div
             className="fixed inset-0 bg-black/30 z-30 lg:hidden"
@@ -409,7 +392,6 @@ export default function ChatPage() {
           />
         )}
 
-        {/* ══ LEFT SIDEBAR ══ */}
         <aside
           ref={leftSidebarRef}
           aria-label="Info partner"
@@ -421,7 +403,6 @@ export default function ChatPage() {
         >
           <div className="p-4 flex flex-col gap-4">
 
-            {/* Profile Card */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 pt-8 pb-7 text-center" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
               <div className="relative inline-block mb-4">
                 <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe]">
@@ -433,7 +414,6 @@ export default function ChatPage() {
               </h2>
               <p className="text-[12px] text-[#64748b] font-medium mb-4">{partner?.university || 'Student'}</p>
 
-              {/* Subjects tags */}
               <div className="flex justify-center gap-2 flex-wrap">
                 {(partner?.study_profile?.subjects || []).slice(0, 3).map((t) => (
                   <span key={t} className="px-3 py-1 bg-[#eff6ff] text-[#1a56db] text-[11px] font-bold rounded-full border border-[#bfdbfe]/60">
@@ -442,7 +422,6 @@ export default function ChatPage() {
                 ))}
               </div>
 
-              {/* Shared sessions badge */}
               {partnerStats.sessions > 0 && (
                 <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-green-600 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
                   <BookOpen className="w-3 h-3" aria-hidden="true" />
@@ -451,11 +430,9 @@ export default function ChatPage() {
               )}
             </div>
 
-            {/* Quick Actions Card */}
             <div className="sidebar-card bg-white rounded-[20px] px-5 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
               <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-3 px-1">Quick Actions</p>
               <div className="space-y-2">
-                {/* Schedule Session — functional: navigates to sessions/new */}
                 <button
                   type="button"
                   onClick={() => navigate(`/sessions/new?partnerId=${partner?.id}`)}
@@ -472,7 +449,6 @@ export default function ChatPage() {
                   </div>
                 </button>
 
-                {/* Video Call — real Jitsi integration */}
                 {thread?.conversation?.id && (
                   <button
                     type="button"
@@ -493,7 +469,6 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {/* Mutual Subjects — real from profile */}
             {(partner?.study_profile?.subjects || []).length > 0 && (
               <div className="sidebar-card bg-white rounded-[20px] px-5 py-7 flex-1" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
                 <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-3 px-1">Shared Subjects</p>
@@ -515,16 +490,13 @@ export default function ChatPage() {
           </div>
         </aside>
 
-        {/* ══ MAIN CHAT ══ */}
         <main className="flex-1 min-w-0 flex flex-col relative" aria-label="Chat room">
 
-          {/* Chat Header */}
           <header
             ref={chatHeaderRef}
             className="h-[68px] flex items-center justify-between px-4 md:px-8 bg-white border-b border-[#f1f5f9] shrink-0 sticky top-0 z-20"
           >
             <div className="flex items-center gap-3">
-              {/* Mobile back / hamburger */}
               <button
                 type="button"
                 onClick={() => setSidebarOpen((o) => !o)}
@@ -563,7 +535,6 @@ export default function ChatPage() {
                   <Video className="w-5 h-5" aria-hidden="true" />
                 </button>
               )}
-              {/* Search toggle — functional: filters visible messages */}
               <button
                 type="button"
                 title={searchActive ? 'Close search' : 'Search messages'}
@@ -577,7 +548,6 @@ export default function ChatPage() {
               >
                 {searchActive ? <X className="w-[18px] h-[18px]" aria-hidden="true" /> : <Search className="w-[18px] h-[18px]" aria-hidden="true" />}
               </button>
-              {/* Info toggle — mobile only */}
               <button
                 type="button"
                 title="Conversation info"
@@ -593,7 +563,6 @@ export default function ChatPage() {
             </div>
           </header>
 
-          {/* Collapsible Search Bar */}
           {searchActive && (
             <div className="px-4 md:px-8 py-2.5 bg-white border-b border-[#f1f5f9] flex items-center gap-3">
               <Search className="w-4 h-4 text-[#94a3b8] shrink-0" aria-hidden="true" />
@@ -614,7 +583,6 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Messages Area */}
           <section
             ref={chatBodyRef}
             className="flex-1 overflow-y-auto px-4 md:px-10 py-8 space-y-1 bg-[#fafbfc]"
@@ -623,7 +591,6 @@ export default function ChatPage() {
             aria-live="polite"
             aria-atomic="false"
           >
-            {/* Match Intro Card — real match timestamp */}
             <div className="flex justify-center mb-10">
               <div
                 className="relative bg-white rounded-[28px] px-8 py-8 text-center max-w-[460px] w-full overflow-hidden"
@@ -663,14 +630,12 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {/* Date Divider */}
             <div className="flex items-center gap-3 mb-5" aria-hidden="true">
               <div className="flex-1 h-px bg-[#f1f5f9]" />
               <span className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] bg-[#fafbfc] px-2">Today</span>
               <div className="flex-1 h-px bg-[#f1f5f9]" />
             </div>
 
-            {/* Messages */}
             {visibleMessages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 px-6">
                 {!searchActive && (
@@ -727,7 +692,6 @@ export default function ChatPage() {
                   )}
 
                   <div className={`relative flex flex-col max-w-[400px] ${isMe ? 'items-end' : 'items-start'}`}>
-                    {/* Reaction trigger */}
                     <button
                       type="button"
                       aria-label="Tambah reaksi"
@@ -738,7 +702,6 @@ export default function ChatPage() {
                       <span aria-hidden="true">😊</span>
                     </button>
 
-                    {/* Reaction picker */}
                     {showReactor && (
                       <div className={`reaction-pop absolute z-30 bottom-full mb-2 flex gap-1 bg-white rounded-full shadow-xl border border-[#f1f5f9] px-2 py-1.5 ${isMe ? 'right-0' : 'left-0'}`}>
                         {EMOJI_REACTIONS.map((e) => (
@@ -755,7 +718,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* Bubble — renders plain text or media (image/file) */}
                     {(() => {
                       const imageMatch = msg.text?.match(/^\[image\](.+?)\[\/image\]$/)
                       const fileMatch = msg.text?.match(/^\[file name="([^"]+)"\](.+?)\[\/file\]$/)
@@ -803,7 +765,6 @@ export default function ChatPage() {
                       )
                     })()}
 
-                    {/* Reactions */}
                     {msg.reactions.length > 0 && (
                       <div className={`flex gap-1 mt-1 ${isMe ? 'justify-end' : ''}`}>
                         {msg.reactions.map((r) => (
@@ -820,7 +781,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* Time + read status */}
                     <div className={`flex items-center gap-1.5 mt-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
                       <time className="text-[11px] text-[#94a3b8] font-medium">{msg.time}</time>
                       {isMe && (
@@ -836,7 +796,6 @@ export default function ChatPage() {
               )
             })}
 
-            {/* Typing indicator */}
             {isTyping && (
               <div className="flex gap-3 mb-2 fresh" aria-live="polite">
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-[#e0f2fe] shrink-0">
@@ -852,15 +811,12 @@ export default function ChatPage() {
             <div ref={messagesEnd} />
           </section>
 
-          {/* Input Bar */}
           <div className={`px-4 md:px-8 pt-3 pb-5 bg-white border-t transition-colors ${inputFocused ? 'border-[#1a56db]/20' : 'border-[#f1f5f9]'}`}>
-            {/* Upload error toast */}
             {uploadError && (
               <div role="alert" className="mb-2 text-[12px] text-rose-600 font-medium flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />{uploadError}
               </div>
             )}
-            {/* Hidden file input */}
             <input
               ref={fileInputRef}
               type="file"
@@ -875,7 +831,6 @@ export default function ChatPage() {
                 inputFocused ? 'border-[#1a56db] ring-4 ring-[#1a56db]/10 bg-white' : 'border-[#e2e8f0]'
               }`}
             >
-              {/* Paperclip — triggers file picker */}
               <button
                 type="button"
                 aria-label="Attach file"
@@ -924,7 +879,6 @@ export default function ChatPage() {
           </div>
         </main>
 
-        {/* ══ RIGHT SIDEBAR ══ */}
         <aside
           ref={rightSidebarRef}
           aria-label="Informasi sesi dan tujuan"
@@ -936,7 +890,6 @@ export default function ChatPage() {
         >
           <div className="p-4 flex flex-col gap-4">
 
-            {/* Schedule Session CTA */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
               <div
                 role="button"
@@ -956,7 +909,6 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {/* Study Goals — state from partner's real goals */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8]">Study Goals</p>
@@ -1002,7 +954,6 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {/* Session Stats — real from Supabase */}
             <div className="sidebar-card bg-white rounded-[20px] px-6 py-7" style={{ boxShadow: '0 1px 6px rgba(0,0,0,.06)' }}>
               <p className="text-[10px] font-bold tracking-widest uppercase text-[#94a3b8] mb-4">Shared Sessions</p>
               <div className="grid grid-cols-2 gap-3">
@@ -1019,7 +970,6 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {/* Study Tip */}
             <div
               className="sidebar-card relative bg-gradient-to-br from-[#1a56db] to-[#1d4ed8] rounded-[20px] overflow-hidden px-6 py-7 text-white"
               style={{ boxShadow: '0 6px 24px rgba(26,86,219,.25)' }}
