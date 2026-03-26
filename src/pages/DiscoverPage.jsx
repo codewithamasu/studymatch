@@ -430,7 +430,7 @@ export default function DiscoverPage() {
                   </div>
 
                   <div className="p-4 sm:p-6 relative bg-white pb-6 sm:pb-8">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-1.5">
                       <h2
                         className="text-[26px] font-semibold tracking-[-0.04em] text-[#1e293b]"
                         style={{ fontFamily: DISPLAY_FONT }}
@@ -442,6 +442,12 @@ export default function DiscoverPage() {
                         Verified
                       </div>
                     </div>
+                    {currentCard.bio && (
+                      <p className="text-[14px] leading-relaxed text-[#64748b] mb-4 line-clamp-2 italic">
+                        "{currentCard.bio}"
+                      </p>
+                    )}
+
                     <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center gap-3 text-[#475569]">
                         <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-[#94a3b8] shrink-0" />
