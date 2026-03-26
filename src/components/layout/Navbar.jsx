@@ -311,7 +311,9 @@ export default function Navbar({ mode = 'app' }) {
         className={cn(
           'border-t border-[#E7EAEE] bg-[rgba(249,249,248,0.94)] px-4 pb-4 pt-3 backdrop-blur-xl md:hidden',
           `motion-safe:transition-[opacity,transform,max-height,visibility] ${INTERACTION_TIMING}`,
-          mobileOpen ? 'visible max-h-[32rem] translate-y-0 opacity-100' : 'invisible max-h-0 -translate-y-2 overflow-hidden opacity-0'
+          mobileOpen 
+            ? 'block visible max-h-[32rem] translate-y-0 opacity-100' 
+            : 'hidden invisible max-h-0 -translate-y-2 overflow-hidden opacity-0'
         )}
       >
         <div className="space-y-2">

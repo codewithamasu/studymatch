@@ -302,12 +302,16 @@ function AnimatedNumber({ value, suffix = '' }) {
   useEffect(() => {
     if (!ref.current) return
     const obj = { val: prev.current }
+    const isDecimal = value % 1 !== 0
     const tween = gsap.to(obj, {
       val: value,
       duration: 1.2,
       ease: 'power3.out',
       onUpdate() {
-        if (ref.current) ref.current.textContent = Math.round(obj.val) + suffix
+        if (!ref.current) return
+        const val = obj.val
+        const formatted = isDecimal ? val.toFixed(2) : Math.round(val)
+        ref.current.textContent = formatted + suffix
       },
     })
     prev.current = value
