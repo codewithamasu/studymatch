@@ -54,6 +54,31 @@ create policy "Users can view conversation participants" on public.conversation_
     or profile_id = auth.uid()
   );
 
+-- 7. REBUILD POLICIES FOR SESSIONS (Allow both users to Mark as Done)
+create or replace function public.is_session_participant(p_session_id uuid, p_profile_id uuid)
+returns boolean language plpgsql stable security definer set search_path = public as $$
+begin
+  return exists (
+    select 1 from public.sessions s
+    where s.id = p_session_id
+      and (
+        s.organizer_profile_id = p_profile_id 
+        or exists (
+          select 1 from public.session_participants sp 
+          where sp.session_id = p_session_id and sp.profile_id = p_profile_id
+        )
+      )
+  );
+end; $$;
+
+drop policy if exists "Participants can update their sessions" on public.sessions;
+create policy "Participants can update their sessions" on public.sessions
+  for update using (public.is_session_participant(id, auth.uid()));
+
+drop policy if exists "Users can view their own sessions" on public.sessions;
+create policy "Users can view their own sessions" on public.sessions
+  for select using (public.is_session_participant(id, auth.uid()));
+
 -- ============================================================
--- DONE: RLS Rekursi telah diperbaiki.
+-- DONE: RLS Rekursi & Sesi telah diperbaiki (Verified Schema).
 -- ============================================================
