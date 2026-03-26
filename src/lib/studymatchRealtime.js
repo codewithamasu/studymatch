@@ -757,7 +757,7 @@ export async function fetchPartnerStats(currentUserId, partnerProfileId) {
 
   return {
     sessions: completed.length,
-    studiedHours: Math.round((studiedMinutes / 60) * 10) / 10,
+    studiedHours: Number((studiedMinutes / 60).toFixed(2)),
   }
 }
 
@@ -1071,7 +1071,7 @@ export async function fetchDashboardSnapshot(currentUserId) {
     stats: {
       total_sessions: sessions.length,
       completed_sessions: completedSessions.length,
-      total_study_hours: Number(totalStudyHours.toFixed(1)),
+      total_study_hours: Number(totalStudyHours.toFixed(2)),
       study_streak: computeStudyStreak(sessions.map(s => ({ ...s, scheduled_start: s.scheduled_at }))),
       favorite_subject: getFavoriteSubject(sessions.map(s => ({ ...s, subject_name: s.subject })), fallbackSubject),
       weekly_data: buildWeeklyData(sessions.map(s => ({ ...s, scheduled_start: s.scheduled_at }))),

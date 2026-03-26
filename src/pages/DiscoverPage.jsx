@@ -414,7 +414,7 @@ export default function DiscoverPage() {
         <title>Discover - StudyMatch</title>
         <meta name="description" content="Find the perfect study partner tailored to your academic goals and subjects." />
       </Helmet>
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col pt-[100px] lg:pt-[120px]">
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
         <style>{`
         @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
         @keyframes floatUpSlow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
