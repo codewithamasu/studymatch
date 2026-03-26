@@ -427,10 +427,10 @@ export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
       avatar_url,
       onboarding_completed_at,
       preferred_study_mode,
-      profile_subjects!inner (
+      profile_subjects (
         mastery_score,
         is_primary,
-        subjects!inner (
+        subjects (
           id,
           slug,
           name
@@ -470,8 +470,6 @@ export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
 
   if (profileError) {
     console.error('Error in fetchDiscoverCandidates query:', profileError)
-    if (excludedIds.size === 1) {
-    }
     throw profileError
   }
 

@@ -127,6 +127,10 @@ export default function DiscoverPage() {
     }
 
     if (targetSubject !== undefined) {
+      setCurrentIndex(0)
+      setSwiped([])
+      setShowMatch(false)
+      setMatchPartner(null)
       loadCandidates()
     }
 
@@ -173,13 +177,6 @@ export default function DiscoverPage() {
     }
   }
 
-
-  useEffect(() => {
-    setCurrentIndex(0)
-    setSwiped([])
-    setShowMatch(false)
-    setMatchPartner(null)
-  }, [candidates])
 
   const currentCard = candidates[currentIndex]
 
