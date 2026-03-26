@@ -480,6 +480,16 @@ export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
 
 export async function clearSwipes(actorProfileId) {
   if (!isSupabaseConfigured || !actorProfileId) return null
+  
+  // 1. Delete matches where this user is a participant
+  // (Conversations and messages will cascade delete if schema is correct, 
+  // but matches table has its own RLS/logic)
+  await supabase
+    .from('matches')
+    .delete()
+    .or(`profile_a_id.eq.${actorProfileId},profile_b_id.eq.${actorProfileId}`)
+
+  // 2. Delete swipes from this user
   const { error } = await supabase
     .from('swipes')
     .delete()
