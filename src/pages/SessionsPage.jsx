@@ -18,7 +18,6 @@ import { fetchMatchAlerts, fetchUserSessions, createNewSession, updateSessionSta
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { DISPLAY_FONT, TRANSITION_TIMING } from '@/lib/constants'
 
-let localSessions = []
 
 const FALLBACK_SUBJECTS = [
   'Calculus',
@@ -97,7 +96,7 @@ export default function SessionsPage() {
   })
   const [generatedLink, setGeneratedLink] = useState('')
   const [copyFeedback, setCopyFeedback] = useState('')
-  const [sessions, setSessions] = useState(localSessions)
+  const [sessions, setSessions] = useState([])
   const [matchedPartners, setMatchedPartners] = useState([])
   const [partnersLoading, setPartnersLoading] = useState(true)
   const [sessionsLoading, setSessionsLoading] = useState(true)
@@ -145,10 +144,9 @@ export default function SessionsPage() {
         if (isSupabaseConfigured) {
           const realSessions = await fetchUserSessions(currentUser.id)
           setSessions(realSessions)
-          localSessions = realSessions
         } else {
           setSessions([])
-          localSessions = []
+          setSessions([])
         }
       } catch (error) {
         console.error('Failed to load sessions:', error)
@@ -274,8 +272,7 @@ export default function SessionsPage() {
             location: sessionData.location,
             status: 'upcoming'
           }
-          localSessions = [newSession, ...localSessions]
-          setSessions(localSessions)
+          setSessions(prev => [newSession, ...prev])
         }
       } catch (err) {
         console.error('Failed to save session to Supabase:', err)
@@ -292,41 +289,36 @@ export default function SessionsPage() {
         location: sessionData.location,
         status: 'upcoming',
       }
-      localSessions = [newSession, ...localSessions]
-      setSessions(localSessions)
+      setSessions(prev => [newSession, ...prev])
     }
 
     navigate('/sessions')
   }
 
   const handleMarkAsDone = async (id) => {
-    const updated = localSessions.map((session) =>
-      session.id === id ? { ...session, status: 'pending_confirmation' } : session
+    // Optimistic update: set to pending_confirmation
+    setSessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status: 'pending_confirmation' } : s))
     )
-    localSessions = updated
-    setSessions(updated)
 
     if (isSupabaseConfigured) {
       try {
         await updateSessionStatus(id, 'completed')
       } catch (err) {
         console.error('Failed to update session status in Supabase:', err)
-        // Rollback optimistic update — revert to 'upcoming'
-        const reverted = localSessions.map((session) =>
-          session.id === id ? { ...session, status: 'upcoming' } : session
+        // Rollback: revert to upcoming/scheduled (assume scheduled as safest default)
+        setSessions((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, status: 'scheduled' } : s))
         )
-        localSessions = reverted
-        setSessions(reverted)
         return
       }
     }
 
+    // Final state transition after the "Waiting" effect
     setTimeout(() => {
-      const confirmed = localSessions.map((session) =>
-        session.id === id ? { ...session, status: 'completed' } : session
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, status: 'completed' } : s))
       )
-      localSessions = confirmed
-      setSessions(confirmed)
     }, 1500)
   }
 
@@ -1070,7 +1062,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone, onViewSpot }) {
             </div>
           )}
 
-          {session.status === 'upcoming' && (
+          {(session.status === 'upcoming' || session.status === 'scheduled') && (
             <>
               {session.mode === 'online' ? (
                 <button
