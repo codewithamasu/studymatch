@@ -880,7 +880,8 @@ export async function fetchUserSessions(currentUserId) {
         title,
         match_id,
         subject_id,
-        subjects(name)
+        subjects(name),
+        location
       )
     `)
     .eq('profile_id', currentUserId)
@@ -1000,7 +1001,7 @@ export async function createNewSession(currentUserId, sessionData) {
       duration_minutes: sessionData.duration_minutes,
       study_mode: sessionData.mode === 'online' ? 'online' : 'in_person',
       meeting_url: sessionData.meeting_url,
-      location_text: sessionData.mode === 'offline' ? sessionData.location : null,
+      location: sessionData.mode === 'offline' ? sessionData.location : null,
       status: 'scheduled',
     })
     .select()
