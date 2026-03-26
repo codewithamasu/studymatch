@@ -61,7 +61,6 @@ function AppRoutes() {
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/meet/:roomId" element={<ProtectedRoute><JitsiMeetPage /></ProtectedRoute>} />
 
-        {/* Catch all */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -36,7 +36,6 @@ export default function DiscoverPage() {
   const [matchPartner, setMatchPartner] = useState(null)
   const [swiped, setSwiped] = useState([])
 
-  // Filter states
   const [skillLevel, setSkillLevel] = useState('Intermediate')
   const [studyMode, setStudyMode] = useState('online')
   const [targetSubject, setTargetSubject] = useState('')
@@ -59,7 +58,6 @@ export default function DiscoverPage() {
         if (mounted) {
           setAvailableSubjects(subs)
           setStats(st)
-          // Only set initial subject if nothing is selected yet
           if (subs.length > 0 && !targetSubject) {
             setTargetSubject(subs[0].name)
           }
@@ -125,8 +123,6 @@ export default function DiscoverPage() {
       }
     }
 
-    // Only load candidates if we have a target subject or if it's explicitly cleared
-    // We wait for initial data to load targetSubject first to avoid fetching all candidates accidentally
     if (targetSubject !== undefined) {
       loadCandidates()
     }
@@ -165,10 +161,8 @@ export default function DiscoverPage() {
       ease: 'power2.in',
       onComplete: async () => {
         const didSave = await handleSwipeComplete(direction, targetCard)
-        // Reset card position
         gsap.set(cardRef.current, { x: 0, y: 0, rotation: 0, opacity: 1 })
         if (!didSave) return
-        // Animate in new card
         gsap.from(cardRef.current, {
           scale: 0.9,
           opacity: 0,
@@ -281,7 +275,6 @@ export default function DiscoverPage() {
     )
   }
 
-  // Temporary function to generate deterministic avatar
   const getAvatarUrl = (name) => {
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=2a4365&clothing=shirtCrewNeck`
   }
@@ -356,7 +349,6 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Mini Stats */}
       <div className="mt-6 pt-5 border-t border-gray-100 grid grid-cols-2 gap-3">
         {[
           { label: 'Available Now', value: stats.availableNow.toString(), icon: '🟢' },
@@ -398,13 +390,11 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#F9F9F8]">
       </div>
 
       <div className="flex-1 w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-10 px-4 pb-4 lg:pb-12 relative z-10 pt-2 lg:pt-4">
 
-        {/* ── Mobile Filter Toggle Button ── */}
         <div className="lg:hidden w-full flex justify-end mb-[-10px] z-20 relative">
           <button
             onClick={() => setMobileFiltersOpen(true)}
@@ -415,14 +405,12 @@ export default function DiscoverPage() {
           </button>
         </div>
 
-        {/* Desktop Sidebar */}
         <div className="hidden lg:block w-[280px] xl:w-[300px] shrink-0">
           <div className="bg-white rounded-[24px] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] sticky top-[120px] max-h-[calc(100vh-140px)] overflow-y-auto border border-gray-100">
             <FiltersContent />
           </div>
         </div>
 
-      {/* ── CENTER: Swipe Area ── */}
         <div className="flex-1 flex justify-center items-start">
           {currentCard && (
             <div className="w-full h-full touch-none pt-2 relative flex flex-col justify-center">
@@ -436,7 +424,6 @@ export default function DiscoverPage() {
                       <Zap className="w-4 h-4 fill-white" />
                       {currentCard.compatibility.total}% Match
                     </div>
-                    {/* Card number indicator */}
                     <div className="absolute top-4 left-4 bg-black/30 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[12px] font-semibold">
                       {currentIndex + 1} / {candidates.length}
                     </div>
@@ -472,7 +459,6 @@ export default function DiscoverPage() {
                   </div>
                 </div>
 
-                {/* Swipe Action Buttons */}
                 <div className="mt-4 sm:mt-8 flex justify-center items-center gap-4 sm:gap-5 z-10">
                   <button onClick={handleSkip}
                     aria-label="Skip"
@@ -501,16 +487,13 @@ export default function DiscoverPage() {
 
       </div>
 
-      {/* Mobile Filters Drawer */}
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden flex justify-end">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setMobileFiltersOpen(false)}
           />
 
-          {/* Content Panel */}
           <div className="relative w-full max-w-sm bg-white h-full overflow-y-auto transform transition-transform animate-in slide-in-from-right shadow-2xl safe-p-bottom">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
@@ -528,7 +511,6 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {/* Match Overlay */}
       {showMatch && matchPartner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm px-4">
           <div ref={matchRef} className="w-full max-w-sm text-center bg-white rounded-3xl overflow-hidden shadow-2xl relative">

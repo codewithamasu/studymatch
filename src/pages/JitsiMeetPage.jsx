@@ -19,7 +19,6 @@ export default function JitsiMeetPage() {
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#0F172A]">
-      {/* Header bar */}
       <div className="h-16 shrink-0 bg-[#1e293b]/90 backdrop-blur-md flex items-center px-4 md:px-6 justify-between border-b border-slate-700 shadow-sm">
         <div className="flex items-center gap-4">
           <button
@@ -35,7 +34,6 @@ export default function JitsiMeetPage() {
         </div>
       </div>
 
-      {/* Jitsi SDK wrapper */}
       <div className="relative flex-1 w-full overflow-hidden bg-[#0F172A]">
         <JitsiMeeting
           domain={jitsiDomain}

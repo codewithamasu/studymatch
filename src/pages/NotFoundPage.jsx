@@ -12,7 +12,6 @@ export default function NotFoundPage() {
         <title>404 - Page Ghosted | StudyMatch</title>
       </Helmet>
 
-      {/* Background Flourish */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/40 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100/30 rounded-full blur-[120px] pointer-events-none" />
 
@@ -51,7 +50,6 @@ export default function NotFoundPage() {
         </div>
       </div>
 
-      {/* Friendly Bottom Text */}
       <p className="absolute bottom-8 left-0 right-0 text-center text-[11px] font-bold tracking-widest uppercase text-neutral-400">
         StudyMatch &bull; Smart Study Partners
       </p>

@@ -9,7 +9,6 @@ export default function LoadingScreen() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Gentle pulse for the container
       gsap.to(logoRef.current, {
         scale: 1.1,
         duration: 1.2,
@@ -18,7 +17,6 @@ export default function LoadingScreen() {
         ease: 'power1.inOut'
       })
 
-      // Staggered text reveal if needed, or just a simple fade
       gsap.fromTo(textRef.current,
         { opacity: 0.5 },
         { opacity: 1, duration: 0.8, repeat: -1, yoyo: true, ease: 'sine.inOut' }
