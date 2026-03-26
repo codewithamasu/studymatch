@@ -102,6 +102,7 @@ export default function SessionsPage() {
   const [matchedPartners, setMatchedPartners] = useState([])
   const [partnersLoading, setPartnersLoading] = useState(true)
   const [sessionsLoading, setSessionsLoading] = useState(true)
+  const [selectedLocationSession, setSelectedLocationSession] = useState(null)
   const appOrigin = typeof window === 'undefined' ? '' : window.location.origin
 
   // Load matched partners from Supabase
@@ -893,7 +894,7 @@ export default function SessionsPage() {
                       <div className="space-y-4">
                         {upcomingSessions.length > 0 ? (
                           upcomingSessions.map((session) => (
-                            <ScheduleCard key={session.id} session={session} isUpcoming onMarkAsDone={handleMarkAsDone} />
+                            <ScheduleCard key={session.id} session={session} isUpcoming onMarkAsDone={handleMarkAsDone} onViewSpot={setSelectedLocationSession} />
                           ))
                         ) : (
                           <div className="rounded-[28px] border border-dashed border-[#E9ECEF] bg-white/40 px-6 py-10 text-center">
@@ -913,7 +914,7 @@ export default function SessionsPage() {
                       <div className="space-y-4">
                         {completedSessions.length > 0 ? (
                           completedSessions.map((session) => (
-                            <ScheduleCard key={session.id} session={session} isUpcoming={false} />
+                            <ScheduleCard key={session.id} session={session} isUpcoming={false} onViewSpot={setSelectedLocationSession} />
                           ))
                         ) : (
                           <div className="rounded-[28px] opacity-60 border border-dashed border-[#E9ECEF] bg-white/20 px-6 py-8 text-center">
@@ -943,11 +944,86 @@ export default function SessionsPage() {
         }
       `}</style>
       </div>
+      <LocationDetailModal
+        session={selectedLocationSession}
+        onClose={() => setSelectedLocationSession(null)}
+      />
     </>
   )
 }
 
-function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
+function LocationDetailModal({ session, onClose }) {
+  if (!session) return null
+
+  const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(session.location || session.subject)}`
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div
+        className="absolute inset-0 bg-[#0F172A]/40 backdrop-blur-md transition-opacity"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-[440px] overflow-hidden rounded-[32px] bg-white shadow-[0_32px_64px_rgba(15,23,42,0.18)] ring-1 ring-black/5 animate-in fade-in zoom-in duration-300">
+        <div className="p-8">
+          <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F4F1EA] text-[#7A5C3A]">
+            <MapPin className="h-6 w-6" />
+          </div>
+
+          <h3 className="text-2xl font-bold tracking-tight text-[#1A1A1A]" style={{ fontFamily: DISPLAY_FONT }}>
+            Study Spot Details
+          </h3>
+          <p className="mt-2 text-[15px] leading-relaxed text-[#626B76]">
+            Showing the planned location for your session with <strong>{session.partner?.full_name || 'Study Partner'}</strong>.
+          </p>
+
+          <div className="mt-8 space-y-6">
+            <div className="rounded-[22px] bg-[#F9F9F8] p-5 ring-1 ring-[#ECEEEA]">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#8A93A0]">Location Name</p>
+              <p className="mt-1.5 text-lg font-semibold text-[#1A1A1A]">{session.location || 'Not specified'}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-[22px] bg-[#F9F9F8] p-5 ring-1 ring-[#ECEEEA]">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#8A93A0]">Date</p>
+                <p className="mt-1 text-[15px] font-semibold text-[#1A1A1A]">{formatScheduleDate(session.scheduled_at)}</p>
+              </div>
+              <div className="rounded-[22px] bg-[#F9F9F8] p-5 ring-1 ring-[#ECEEEA]">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#8A93A0]">Time</p>
+                <p className="mt-1 text-[15px] font-semibold text-[#1A1A1A]">{formatScheduleTime(session.scheduled_at)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col gap-3">
+            <a
+              href={gmapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                'inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[22px] bg-[#1F2A37] px-6 text-sm font-bold tracking-tight text-white shadow-[0_12px_24px_rgba(31,42,55,0.12)]',
+                `motion-safe:transition-[transform,background-color,box-shadow] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#111827] active:scale-[0.98]`
+              )}
+            >
+              <MapPin className="h-4 w-4" />
+              Open in Google Maps
+            </a>
+            <button
+              onClick={onClose}
+              className={cn(
+                'inline-flex min-h-[54px] items-center justify-center rounded-[22px] bg-white px-6 text-sm font-bold tracking-tight text-[#626B76] border border-[#ECEEEA]',
+                `motion-safe:transition-[transform,background-color] ${TRANSITION_TIMING} hover:bg-[#F9F9F8] active:scale-[0.98]`
+              )}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ScheduleCard({ session, isUpcoming, onMarkAsDone, onViewSpot }) {
   const navigate = useNavigate()
   const dateObj = new Date(session.scheduled_at)
 
@@ -1016,6 +1092,7 @@ function ScheduleCard({ session, isUpcoming, onMarkAsDone }) {
                 </button>
               ) : (
                 <button
+                  onClick={() => onViewSpot(session)}
                   className={cn(
                     'inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#F4F1EA] px-4 py-2 text-sm font-semibold text-[#7A5C3A]',
                     `motion-safe:transition-[transform,background-color] ${TRANSITION_TIMING} hover:-translate-y-[1px] hover:bg-[#EFE7DB] active:scale-[0.98]`

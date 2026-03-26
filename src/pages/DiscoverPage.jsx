@@ -8,7 +8,6 @@ import {
   Calendar,
   BookOpen,
   Zap,
-  RotateCcw,
   MapPin,
   Sparkles,
   ChevronDown,
@@ -20,7 +19,7 @@ import { mockUsers, mockCurrentUser, calculateCompatibility } from '@/data/mockD
 import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
-import { fetchDiscoverCandidates, saveSwipe, fetchSubjects, fetchMatchStats, clearSwipes } from '@/lib/studymatchRealtime'
+import { fetchDiscoverCandidates, saveSwipe, fetchSubjects, fetchMatchStats } from '@/lib/studymatchRealtime'
 import { DISPLAY_FONT } from '@/lib/constants'
 
 
@@ -144,30 +143,6 @@ export default function DiscoverPage() {
     setShowMatch(false)
     setMatchPartner(null)
   }, [candidates])
-
-  const handleResetSwipes = async () => {
-    if (!user?.id) return
-    setLoading(true)
-    try {
-      await clearSwipes(user.id)
-      // Refetch
-      const realCandidates = await fetchDiscoverCandidates(user.id)
-      setCandidates(
-        realCandidates
-          .map((candidate) => ({
-            ...candidate,
-            compatibility: calculateCompatibility(user, candidate),
-          }))
-          .sort((a, b) => b.compatibility.total - a.compatibility.total)
-      )
-      setCurrentIndex(0)
-      setSwiped([])
-    } catch (error) {
-      setSwipeError('Failed to reset discovery: ' + error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const currentCard = candidates[currentIndex]
 
@@ -299,14 +274,6 @@ export default function DiscoverPage() {
                     className="w-full bg-[#1a56db] hover:bg-blue-700 text-white rounded-xl py-6 font-semibold shadow-lg shadow-blue-200"
                   >
                     Refresh Search
-                  </Button>
-                  <Button
-                    onClick={handleResetSwipes}
-                    variant="ghost"
-                    className="w-full text-blue-600 hover:bg-blue-50 rounded-xl py-6 font-semibold flex items-center justify-center gap-2"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    Reset Discovery (Dev Only)
                   </Button>
                 </div>
               </div>
