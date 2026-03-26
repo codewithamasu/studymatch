@@ -20,8 +20,8 @@ import {
 import { mockUsers, mockCurrentUser, calculateCompatibility } from '@/data/mockData'
 import gsap from 'gsap'
 import { useAuthStore } from '@/store/useAuthStore'
-import { isSupabaseConfigured } from '@/lib/supabase'
-import { fetchDiscoverCandidates, saveSwipe, fetchSubjects, fetchMatchStats, clearSwipes } from '@/lib/studymatchRealtime'
+import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { fetchDiscoverCandidates, saveSwipe, fetchSubjects, fetchMatchStats, clearSwipes, fetchProfileById } from '@/lib/studymatchRealtime'
 import { DISPLAY_FONT } from '@/lib/constants'
 
 
@@ -49,6 +49,7 @@ export default function DiscoverPage() {
   const cardRef = useRef(null)
   const matchRef = useRef(null)
   const isSwipingRef = useRef(false)
+  const lastMatchIdRef = useRef(null)
 
   useEffect(() => {
     let mounted = true
@@ -140,6 +141,59 @@ export default function DiscoverPage() {
     }
   }, [user, targetSubject, skillLevel, studyMode])
 
+  // Real-time Match Listener
+  useEffect(() => {
+    if (!user?.id || !supabase) return
+
+    const channel = supabase
+      .channel('realtime_matches')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'matches',
+          filter: `profile_a_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          if (payload.new.id === lastMatchIdRef.current) return
+          lastMatchIdRef.current = payload.new.id
+          
+          const partnerId = payload.new.profile_b_id
+          const partnerProfile = await fetchProfileById(partnerId)
+          if (partnerProfile) {
+            setMatchPartner(partnerProfile)
+            setShowMatch(true)
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'matches',
+          filter: `profile_b_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          if (payload.new.id === lastMatchIdRef.current) return
+          lastMatchIdRef.current = payload.new.id
+
+          const partnerId = payload.new.profile_a_id
+          const partnerProfile = await fetchProfileById(partnerId)
+          if (partnerProfile) {
+            setMatchPartner(partnerProfile)
+            setShowMatch(true)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
   const handleRefreshStack = async () => {
     if (user?.id && isSupabaseConfigured) {
       setIsRefreshing(true)
@@ -224,6 +278,7 @@ export default function DiscoverPage() {
         setSwiped((prev) => [...prev, { userId: targetCard.id, action: direction }])
 
         if (result?.match) {
+          lastMatchIdRef.current = result.match.id
           setMatchPartner(targetCard)
           setTimeout(() => {
             setShowMatch(true)

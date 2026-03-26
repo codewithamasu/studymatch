@@ -394,6 +394,36 @@ export async function fetchCampusLeaders(currentUserId) {
   }
 }
 
+export async function fetchProfileById(profileId) {
+  if (!isSupabaseConfigured || !profileId) return null
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(`
+      *,
+      profile_subjects (
+        mastery_score,
+        is_primary,
+        subjects (
+          id,
+          slug,
+          name
+        )
+      ),
+      profile_goals (
+        study_goals (
+          code,
+          label,
+          description
+        )
+      )
+    `)
+    .eq('id', profileId)
+    .single()
+
+  if (error) throw error
+  return normalizeProfileRecord(data)
+}
+
 export async function fetchDiscoverCandidates(currentUserId, filters = {}) {
   if (!isSupabaseConfigured || !currentUserId) return []
 
