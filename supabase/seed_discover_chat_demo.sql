@@ -331,7 +331,7 @@ begin
     study_mode,
     scheduled_start,
     duration_minutes,
-    location_text,
+    location,
     status
   )
   values (
@@ -349,7 +349,7 @@ begin
   on conflict (id) do update
   set scheduled_start = excluded.scheduled_start,
       duration_minutes = excluded.duration_minutes,
-      location_text = excluded.location_text,
+      location = excluded.location,
       status = excluded.status;
 
   insert into public.session_participants (session_id, profile_id, participant_role, attendance_status)

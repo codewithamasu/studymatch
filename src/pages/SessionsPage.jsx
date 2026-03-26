@@ -311,7 +311,12 @@ export default function SessionsPage() {
         await updateSessionStatus(id, 'completed')
       } catch (err) {
         console.error('Failed to update session status in Supabase:', err)
-        alert('Maaf, update status ke database gagal: ' + err.message)
+        // Rollback optimistic update — revert to 'upcoming'
+        const reverted = localSessions.map((session) =>
+          session.id === id ? { ...session, status: 'upcoming' } : session
+        )
+        localSessions = reverted
+        setSessions(reverted)
         return
       }
     }

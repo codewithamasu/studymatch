@@ -196,15 +196,15 @@ create table if not exists public.sessions (
   scheduled_start timestamptz not null,
   duration_minutes integer not null check (duration_minutes between 15 and 360 and duration_minutes % 15 = 0),
   meeting_url text,
-  location_text text,
+  location text,
   study_location_id uuid references public.study_locations (id) on delete set null,
   status text not null default 'scheduled' check (status in ('scheduled', 'completed', 'cancelled')),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
   constraint sessions_mode_location_check check (
-    (study_mode = 'online' and meeting_url is not null and location_text is null and study_location_id is null)
+    (study_mode = 'online' and meeting_url is not null and location is null and study_location_id is null)
     or
-    (study_mode = 'in_person' and meeting_url is null and (location_text is not null or study_location_id is not null))
+    (study_mode = 'in_person' and meeting_url is null and (location is not null or study_location_id is not null))
   )
 );
 

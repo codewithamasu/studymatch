@@ -10,8 +10,8 @@ import {
 
 let realtimeChannel = null
 
-export const useDashboardStore = create(
-  devtools((set, get) => ({
+function buildDashboardStore(set, get) {
+  return {
     stats: {
       total_sessions: 0,
       completed_sessions: 0,
@@ -76,16 +76,19 @@ export const useDashboardStore = create(
           studyPartnerCount: snapshot.studyPartnerCount,
           upcomingSessions: snapshot.upcomingSessions,
         })
-      } catch {
+      } catch (err) {
+        console.error('Silent refresh sessions error:', err)
       }
     },
+
 
     refreshMatchAlerts: async (userId) => {
       if (!userId || !isSupabaseConfigured) return
       try {
         const alerts = await fetchMatchAlerts(userId)
         set({ matchAlerts: alerts })
-      } catch {
+      } catch (err) {
+        console.error('Silent refresh match alerts error:', err)
       }
     },
 
@@ -193,5 +196,12 @@ export const useDashboardStore = create(
         lastFetchedUserId: null,
       })
     },
-  }))
+  }
+}
+
+// Only activate Redux DevTools in development to avoid state exposure in production
+export const useDashboardStore = create(
+  import.meta.env.DEV
+    ? devtools(buildDashboardStore, { name: 'DashboardStore' })
+    : buildDashboardStore
 )
