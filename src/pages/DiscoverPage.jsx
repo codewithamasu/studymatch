@@ -557,39 +557,32 @@ export default function DiscoverPage() {
                         <span className="text-[14px] sm:text-[15px]">Availability: {currentCard.study_profile?.availability?.days?.length > 0 ? currentCard.study_profile.availability.days.join(', ') : 'Flexible'}</span>
                       </div>
                       <div className="flex items-center gap-3 text-[#475569]">
-                        <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#94a3b8] shrink-0" />
-                        <span className="text-[14px] sm:text-[15px] capitalize">{currentCard.study_profile?.study_mode?.replace('_', ' ') || 'Any Mode'}</span>
                       </div>
                     </div>
                   </div>
+
+                  <div className="mt-4 sm:mt-8 flex justify-center items-center gap-6 sm:gap-10 z-10">
+                    <button onClick={handleSkip}
+                      aria-label="Skip"
+                      className="w-16 h-16 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-red-500 hover:scale-110 transition-transform border border-gray-50 hover:cursor-pointer">
+                      <X className="w-8 h-8 stroke-[3]" />
+                    </button>
+                    
+                    <button onClick={handleSuperLike}
+                      aria-label="Like"
+                      className="w-24 h-24 bg-blue-600 rounded-full shadow-[0_8px_25px_rgba(37,99,235,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_8px_35px_rgba(37,99,235,0.6)] transition-all hover:cursor-pointer">
+                      <Heart className="w-12 h-12 fill-white" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-4 sm:mt-8 flex justify-center items-center gap-4 sm:gap-5 z-10">
-                  <button onClick={handleSkip}
-                    aria-label="Skip"
-                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-red-500 hover:scale-110 transition-transform border border-gray-50 hover:cursor-pointer">
-                    <X className="w-6 h-6 stroke-[3]" />
-                  </button>
-                  <button onClick={handleSuperLike}
-                    aria-label="Super Like"
-                    className="w-14 h-14 bg-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.1)] flex items-center justify-center text-blue-500 hover:scale-110 transition-transform border border-gray-50 hover:cursor-pointer">
-                    <Star className="w-6 h-6 stroke-[2.5]" />
-                  </button>
-                  <button onClick={handleLike}
-                    aria-label="Like"
-                    className="w-20 h-20 bg-blue-600 rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_8px_30px_rgba(37,99,235,0.6)] transition-all hover:cursor-pointer">
-                    <Heart className="w-10 h-10 fill-white" />
-                  </button>
-                </div>
+                <p className="hidden sm:block text-center text-[#94a3b8] font-medium tracking-wide text-[13px] mt-6 uppercase pb-8">
+                  Swipe left to pass, up to connect
+                </p>
               </div>
-
-              <p className="hidden sm:block text-center text-[#94a3b8] font-medium tracking-wide text-[13px] mt-6 uppercase pb-8">
-                Swipe left to pass, right to connect
-              </p>
             </div>
           )}
         </div>
-
       </div>
 
       {mobileFiltersOpen && (
@@ -660,12 +653,12 @@ export default function DiscoverPage() {
                   <Button variant="ghost" className="w-full rounded-2xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 h-12" onClick={() => setShowMatch(false)}>
                     Keep Swiping
                   </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </>
   )
