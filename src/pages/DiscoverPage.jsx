@@ -228,7 +228,7 @@ export default function DiscoverPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-[100px] lg:pt-[120px]">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#dbeafe] border-t-[#1a56db]" />
           <h2
@@ -245,7 +245,7 @@ export default function DiscoverPage() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-[100px] lg:pt-[120px]">
         <div className="text-center max-w-sm">
           <h2
             className="text-xl font-semibold tracking-[-0.04em] text-gray-900"
@@ -261,7 +261,7 @@ export default function DiscoverPage() {
 
   if (currentIndex >= candidates.length) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-20">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 pt-[100px] lg:pt-[120px]">
               <div className="max-w-md w-full bg-white rounded-[32px] p-10 text-center shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100">
                 <div className="w-20 h-20 bg-[#f0f9ff] rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-10 h-10 text-blue-500" />
@@ -286,6 +286,94 @@ export default function DiscoverPage() {
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=2a4365&clothing=shirtCrewNeck`
   }
 
+  const FiltersContent = () => (
+    <>
+      <h3 className="text-[16px] font-bold text-[#1e293b] mb-1">Study Filters</h3>
+      <p className="text-[13px] text-[#64748b] mb-6">Refine your study matches</p>
+
+      <div className="space-y-6">
+        <div>
+          <label className="block text-[13px] font-semibold text-[#475569] mb-2">Subject</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <BookOpen className="w-4 h-4 text-[#94a3b8]" />
+            </div>
+            <select
+              value={targetSubject}
+              onChange={(e) => setTargetSubject(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 bg-[#f8fafc] border-none rounded-[12px] text-[13px] appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-[#1e293b] shadow-sm">
+              {availableSubjects.map(s => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[13px] font-semibold text-[#475569] mb-2">Skill Level</label>
+          <div className="flex flex-wrap gap-2">
+            {['Beginner', 'Intermediate', 'Advanced'].map(level => (
+              <button key={level} onClick={() => setSkillLevel(level)}
+                aria-pressed={skillLevel === level}
+                className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
+                  skillLevel === level ? 'bg-[#1a56db] text-white shadow-sm' : 'bg-[#f1f5f9] text-[#64748b] hover:bg-gray-200'
+                }`}>{level}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[13px] font-semibold text-[#475569] mb-2">Study Mode</label>
+          <div className="flex bg-[#f1f5f9] p-[3px] rounded-full">
+            {[
+              { label: 'Online', value: 'online' },
+              { label: 'Offline', value: 'in_person' }
+            ].map(m => (
+              <button key={m.value} onClick={() => setStudyMode(m.value)}
+                aria-pressed={studyMode === m.value}
+                className={`flex-1 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
+                  studyMode === m.value ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] text-[#1a56db]' : 'text-[#64748b]'
+                }`}>{m.label}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <Button
+            onClick={() => {
+              setCurrentIndex(0)
+              setSwiped([])
+              setTargetSubject(targetSubject)
+              setStudyMode(studyMode)
+              setMobileFiltersOpen(false) // Close modal on submit
+            }}
+            className="w-full bg-[#1a56db] hover:bg-blue-700 text-white font-semibold rounded-[16px] py-[14px] text-[14px] shadow-sm">
+            Apply Filters
+          </Button>
+        </div>
+      </div>
+
+      {/* Mini Stats */}
+      <div className="mt-6 pt-5 border-t border-gray-100 grid grid-cols-2 gap-3">
+        {[
+          { label: 'Available Now', value: stats.availableNow.toString(), icon: '🟢' },
+          { label: 'New Today', value: stats.newToday.toString(), icon: '✨' },
+          { label: 'Connections', value: swiped.filter(s => s.action === 'right' || s.action === 'up').length.toString(), icon: '💙' },
+          { label: 'Remaining', value: Math.max(0, candidates.length - currentIndex).toString(), icon: '📋' },
+        ].map(s => (
+          <div key={s.label} className="bg-[#f8fafc] rounded-[14px] p-3 text-center">
+            <div className="text-lg mb-0.5">{s.icon}</div>
+            <div className="text-[18px] font-extrabold text-[#1a56db] leading-tight">{s.value}</div>
+            <div className="text-[10px] font-medium text-[#94a3b8] mt-0.5">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+
 
 
   return (
@@ -294,7 +382,7 @@ export default function DiscoverPage() {
         <title>Discover - StudyMatch</title>
         <meta name="description" content="Find the perfect study partner tailored to your academic goals and subjects." />
       </Helmet>
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col pt-[80px]">
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col pt-[100px] lg:pt-[120px]">
         <style>{`
         @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
         @keyframes floatUpSlow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
@@ -327,135 +415,12 @@ export default function DiscoverPage() {
           </button>
         </div>
 
-        {/* ── Filters Content Component ── */}
-        {/* We define it here so we can reuse it between Desktop Sidebar and Mobile Drawer */}
-        {(() => {
-          const FiltersContent = () => (
-            <>
-              <h3 className="text-[16px] font-bold text-[#1e293b] mb-1">Study Filters</h3>
-              <p className="text-[13px] text-[#64748b] mb-6">Refine your study matches</p>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-[13px] font-semibold text-[#475569] mb-2">Subject</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                    <BookOpen className="w-4 h-4 text-[#94a3b8]" />
-                  </div>
-                  <select
-                    value={targetSubject}
-                    onChange={(e) => setTargetSubject(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 bg-[#f8fafc] border-none rounded-[12px] text-[13px] appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-[#1e293b] shadow-sm">
-                    {availableSubjects.map(s => (
-                      <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                    <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[13px] font-semibold text-[#475569] mb-2">Skill Level</label>
-                <div className="flex flex-wrap gap-2">
-                  {['Beginner', 'Intermediate', 'Advanced'].map(level => (
-                    <button key={level} onClick={() => setSkillLevel(level)}
-                      aria-pressed={skillLevel === level}
-                      className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
-                        skillLevel === level ? 'bg-[#1a56db] text-white shadow-sm' : 'bg-[#f1f5f9] text-[#64748b] hover:bg-gray-200'
-                      }`}>{level}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[13px] font-semibold text-[#475569] mb-2">Study Mode</label>
-                <div className="flex bg-[#f1f5f9] p-[3px] rounded-full">
-                  {[
-                    { label: 'Online', value: 'online' },
-                    { label: 'Offline', value: 'in_person' }
-                  ].map(m => (
-                    <button key={m.value} onClick={() => setStudyMode(m.value)}
-                      aria-pressed={studyMode === m.value}
-                      className={`flex-1 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
-                        studyMode === m.value ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] text-[#1a56db]' : 'text-[#64748b]'
-                      }`}>{m.label}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <Button
-                  onClick={() => {
-                    setCurrentIndex(0)
-                    setSwiped([])
-                    setTargetSubject(targetSubject)
-                    setStudyMode(studyMode)
-                    setMobileFiltersOpen(false) // Close modal on submit
-                  }}
-                  className="w-full bg-[#1a56db] hover:bg-blue-700 text-white font-semibold rounded-[16px] py-[14px] text-[14px] shadow-sm">
-                  Apply Filters
-                </Button>
-              </div>
-            </div>
-
-            {/* Mini Stats */}
-            <div className="mt-6 pt-5 border-t border-gray-100 grid grid-cols-2 gap-3">
-              {[
-                { label: 'Available Now', value: stats.availableNow.toString(), icon: '🟢' },
-                { label: 'New Today', value: stats.newToday.toString(), icon: '✨' },
-                { label: 'Connections', value: swiped.filter(s => s.action === 'right' || s.action === 'up').length.toString(), icon: '💙' },
-                { label: 'Remaining', value: Math.max(0, candidates.length - currentIndex).toString(), icon: '📋' },
-              ].map(s => (
-                <div key={s.label} className="bg-[#f8fafc] rounded-[14px] p-3 text-center">
-                  <div className="text-lg mb-0.5">{s.icon}</div>
-                  <div className="text-[18px] font-extrabold text-[#1a56db] leading-tight">{s.value}</div>
-                  <div className="text-[10px] font-medium text-[#94a3b8] mt-0.5">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </>
-        )
-
-        return (
-          <>
-            {/* Desktop Sidebar */}
-            <div className="hidden lg:block w-[280px] xl:w-[300px] shrink-0">
-              <div className="bg-white rounded-[24px] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] sticky top-[100px] border border-gray-100">
-                <FiltersContent />
-              </div>
-            </div>
-
-            {/* Mobile Filters Drawer */}
-            {mobileFiltersOpen && (
-              <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
-                {/* Backdrop */}
-                <div
-                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                  onClick={() => setMobileFiltersOpen(false)}
-                />
-
-                {/* Content Panel */}
-                <div className="relative w-full max-w-sm bg-white h-full overflow-y-auto transform transition-transform animate-in slide-in-from-right shadow-2xl safe-p-bottom">
-                  <div className="p-6">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: DISPLAY_FONT }}>Refine Match</h2>
-                      <button
-                        onClick={() => setMobileFiltersOpen(false)}
-                        className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <FiltersContent />
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )
-      })()}
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block w-[280px] xl:w-[300px] shrink-0">
+          <div className="bg-white rounded-[24px] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] sticky top-[120px] max-h-[calc(100vh-140px)] overflow-y-auto border border-gray-100">
+            <FiltersContent />
+          </div>
+        </div>
 
       {/* ── CENTER: Swipe Area ── */}
         <div className="flex-1 flex justify-center items-start">
@@ -535,6 +500,33 @@ export default function DiscoverPage() {
         </div>
 
       </div>
+
+      {/* Mobile Filters Drawer */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+
+          {/* Content Panel */}
+          <div className="relative w-full max-w-sm bg-white h-full overflow-y-auto transform transition-transform animate-in slide-in-from-right shadow-2xl safe-p-bottom">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: DISPLAY_FONT }}>Refine Match</h2>
+                <button
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <FiltersContent />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Match Overlay */}
       {showMatch && matchPartner && (
