@@ -87,7 +87,7 @@ function Skeleton({ className = '' }) {
 
 function ChatSkeleton() {
   return (
-    <div className="flex h-screen bg-[#f0f4f8] pt-16">
+    <div className="flex h-screen bg-[#f0f4f8] pt-[4.5rem]">
       <div className="w-[270px] shrink-0 p-4 hidden lg:flex flex-col gap-4">
         <Skeleton className="h-52 rounded-[20px]" />
         <Skeleton className="h-40 rounded-[20px]" />
@@ -240,7 +240,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!thread?.conversation?.id || !user?.id || !isSupabaseConfigured) return
-    markConversationRead(thread.conversation.id, user.id).catch(() => {})
+    markConversationRead(thread.conversation.id, user.id).catch(() => { })
   }, [thread?.conversation?.id, user?.id])
 
   const sendMsg = async (e, override) => {
@@ -383,7 +383,7 @@ export default function ChatPage() {
 
         {(sidebarOpen || rightSidebarOpen) && (
           <div
-            className="fixed inset-0 bg-black/30 z-30 lg:hidden"
+            className="fixed inset-0 bg-black/30 z-[55] lg:hidden"
             onClick={() => {
               setSidebarOpen(false)
               setRightSidebarOpen(false)
@@ -395,11 +395,11 @@ export default function ChatPage() {
         <aside
           ref={leftSidebarRef}
           aria-label="Info partner"
-          className={`w-[270px] shrink-0 flex flex-col bg-[#f5f6f8] overflow-y-auto transition-transform duration-300 ease-in-out z-40
-            fixed top-[4.5rem] bottom-0 left-0 lg:static lg:translate-x-0
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          className={`w-[280px] shrink-0 flex flex-col bg-[#f5f6f8] overflow-y-auto transition-transform duration-300 ease-in-out z-[60]
+            fixed top-0 bottom-0 left-0 pt-[4.5rem] lg:static lg:translate-x-0 lg:pt-0 lg:z-auto
+            ${sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
           `}
-          style={{ height: 'calc(100dvh - 4.5rem)' }}
+          style={{ height: '100dvh' }}
         >
           <div className="p-4 flex flex-col gap-4">
 
@@ -542,9 +542,8 @@ export default function ChatPage() {
                 aria-pressed={searchActive}
                 onClick={() => { setSearchActive((v) => !v); setSearchQuery('') }}
                 className={`action-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors
- ${
-                  searchActive ? 'text-[#1a56db] bg-[#eff6ff]' : 'text-[#94a3b8] hover:text-[#1a56db] hover:bg-[#eff6ff]'
-                }`}
+ ${searchActive ? 'text-[#1a56db] bg-[#eff6ff]' : 'text-[#94a3b8] hover:text-[#1a56db] hover:bg-[#eff6ff]'
+                  }`}
               >
                 {searchActive ? <X className="w-[18px] h-[18px]" aria-hidden="true" /> : <Search className="w-[18px] h-[18px]" aria-hidden="true" />}
               </button>
@@ -554,9 +553,8 @@ export default function ChatPage() {
                 aria-label="Conversation info"
                 onClick={() => setRightSidebarOpen((v) => !v)}
                 className={`lg:hidden action-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors
- ${
-                  rightSidebarOpen ? 'text-[#1a56db] bg-[#eff6ff]' : 'text-[#94a3b8] hover:text-[#1a56db] hover:bg-[#eff6ff]'
-                }`}
+ ${rightSidebarOpen ? 'text-[#1a56db] bg-[#eff6ff]' : 'text-[#94a3b8] hover:text-[#1a56db] hover:bg-[#eff6ff]'
+                  }`}
               >
                 <Sparkles className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -723,9 +721,8 @@ export default function ChatPage() {
                       const fileMatch = msg.text?.match(/^\[file name="([^"]+)"\](.+?)\[\/file\]$/)
                       if (imageMatch) {
                         return (
-                          <div className={`rounded-[18px] overflow-hidden shadow-sm max-w-[280px] ${
-                            isMe ? 'rounded-br-[4px]' : 'rounded-bl-[4px]'
-                          }`}>
+                          <div className={`rounded-[18px] overflow-hidden shadow-sm max-w-[280px] ${isMe ? 'rounded-br-[4px]' : 'rounded-bl-[4px]'
+                            }`}>
                             <img
                               src={imageMatch[1]}
                               alt="Shared image"
@@ -743,11 +740,10 @@ export default function ChatPage() {
                             rel="noopener noreferrer"
                             aria-label={`Download file: ${fileMatch[1]}`}
                             className={`flex items-center gap-3 px-4 py-3.5 rounded-[22px] text-[14px] shadow-sm no-underline
- ${
-                              isMe
+ ${isMe
                                 ? 'bg-[#1a56db] text-white rounded-br-[4px]'
                                 : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#f1f5f9]'
-                            }`}
+                              }`}
                           >
                             <FileText className="w-5 h-5 shrink-0 opacity-80" aria-hidden="true" />
                             <span className="truncate max-w-[180px] font-medium">{fileMatch[1]}</span>
@@ -755,11 +751,10 @@ export default function ChatPage() {
                         )
                       }
                       return (
-                        <div className={`msg-bubble px-5 py-3.5 rounded-[22px] text-[14px] leading-relaxed shadow-sm ${
-                          isMe
-                            ? 'bg-[#1a56db] text-white rounded-br-[4px] shadow-blue-100'
-                            : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#f1f5f9]'
-                        }`}>
+                        <div className={`msg-bubble px-5 py-3.5 rounded-[22px] text-[14px] leading-relaxed shadow-sm ${isMe
+                          ? 'bg-[#1a56db] text-white rounded-br-[4px] shadow-blue-100'
+                          : 'bg-white text-[#1e293b] rounded-bl-[4px] border border-[#f1f5f9]'
+                          }`}>
                           {msg.text}
                         </div>
                       )
@@ -827,9 +822,8 @@ export default function ChatPage() {
             />
             <form
               onSubmit={sendMsg}
-              className={`flex items-center gap-3 rounded-[24px] px-5 py-3 border bg-[#f8fafc] transition-all duration-200 ${
-                inputFocused ? 'border-[#1a56db] ring-4 ring-[#1a56db]/10 bg-white' : 'border-[#e2e8f0]'
-              }`}
+              className={`flex items-center gap-3 rounded-[24px] px-5 py-3 border bg-[#f8fafc] transition-all duration-200 ${inputFocused ? 'border-[#1a56db] ring-4 ring-[#1a56db]/10 bg-white' : 'border-[#e2e8f0]'
+                }`}
             >
               <button
                 type="button"
@@ -837,11 +831,10 @@ export default function ChatPage() {
                 title="Attach file"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className={`action-btn shrink-0 transition-colors ${
-                  isUploading
-                    ? 'text-[#1a56db] animate-pulse cursor-not-allowed'
-                    : 'cursor-pointer text-[#94a3b8] hover:text-[#1a56db]'
-                }`}
+                className={`action-btn shrink-0 transition-colors ${isUploading
+                  ? 'text-[#1a56db] animate-pulse cursor-not-allowed'
+                  : 'cursor-pointer text-[#94a3b8] hover:text-[#1a56db]'
+                  }`}
               >
                 {isUploading
                   ? <RefreshCw className="w-[21px] h-[21px] animate-spin" aria-hidden="true" />
@@ -867,11 +860,10 @@ export default function ChatPage() {
                 type="submit"
                 disabled={!draft.trim() || isUploading}
                 aria-label="Send message"
-                className={`send-glow w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-150 ${
-                  draft.trim() && !isUploading
-                    ? 'cursor-pointer bg-[#1a56db] text-white'
-                    : 'bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed'
-                }`}
+                className={`send-glow w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-150 ${draft.trim() && !isUploading
+                  ? 'cursor-pointer bg-[#1a56db] text-white'
+                  : 'bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed'
+                  }`}
               >
                 <Send className="w-[17px] h-[17px] ml-[2px]" aria-hidden="true" />
               </button>
@@ -882,11 +874,11 @@ export default function ChatPage() {
         <aside
           ref={rightSidebarRef}
           aria-label="Informasi sesi dan tujuan"
-          className={`w-[290px] shrink-0 flex flex-col bg-[#f5f6f8] overflow-y-auto transition-transform duration-300 ease-in-out z-40
-            fixed top-[4.5rem] bottom-0 right-0 lg:static lg:translate-x-0
-            ${rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'}
+          className={`w-[290px] shrink-0 flex flex-col bg-[#f5f6f8] overflow-y-auto transition-transform duration-300 ease-in-out z-[60]
+            fixed top-0 bottom-0 right-0 pt-[4.5rem] lg:static lg:translate-x-0 lg:pt-0 lg:z-auto
+            ${rightSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}
           `}
-          style={{ height: 'calc(100dvh - 4.5rem)' }}
+          style={{ height: '100dvh' }}
         >
           <div className="p-4 flex flex-col gap-4">
 
@@ -941,9 +933,8 @@ export default function ChatPage() {
                     aria-pressed={g.done}
                     className="goal-check w-full flex items-center gap-3 px-3 py-3.5 rounded-[12px] text-left hover:bg-[#f8fafc] group border border-[#f1f5f9] hover:cursor-pointer"
                   >
-                    <div className={`goal-check w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      g.done ? 'bg-[#1a56db] border-[#1a56db]' : 'border-[#cbd5e1] group-hover:border-[#93c5fd]'
-                    }`}>
+                    <div className={`goal-check w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${g.done ? 'bg-[#1a56db] border-[#1a56db]' : 'border-[#cbd5e1] group-hover:border-[#93c5fd]'
+                      }`}>
                       {g.done && <Check className="w-3 h-3 text-white stroke-[3]" aria-hidden="true" />}
                     </div>
                     <span className={`text-[13px] font-medium transition-all ${g.done ? 'line-through text-[#94a3b8]' : 'text-[#1e293b]'}`}>
