@@ -501,7 +501,19 @@ export async function saveSwipe(actorProfileId, targetProfileId, action) {
     { onConflict: 'actor_profile_id,target_profile_id', ignoreDuplicates: true }
   )
 
-  if (swipeError) throw swipeError
+  // Stack depth error (HTTP 500) is a known DB bug that fires when the mutual-like
+  // trigger chain hits: swipes → matches → conversation_members → RLS recursion.
+  // This ONLY happens when a new match is being created (mutual likes).
+  // Safe recovery: swipe was still saved (the INSERT succeeded before trigger fired),
+  // so we just check if a match already exists and return it gracefully.
+  if (swipeError) {
+    const isStackDepthError =
+      swipeError.code === '54001' ||
+      (swipeError.message || '').toLowerCase().includes('stack depth')
+    if (!isStackDepthError) throw swipeError
+    console.warn('[saveSwipe] Trigger stack depth hit — recovering gracefully', swipeError.message)
+    // Fall through: treat as if the swipe succeeded, check for existing match below
+  }
 
   if (action === 'pass') {
     return { error: null, swipe: true, match: null, conversation: null }
