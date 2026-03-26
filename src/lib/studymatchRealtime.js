@@ -498,7 +498,7 @@ export async function saveSwipe(actorProfileId, targetProfileId, action) {
       target_profile_id: targetProfileId,
       action,
     },
-    { onConflict: 'actor_profile_id,target_profile_id' }
+    { onConflict: 'actor_profile_id,target_profile_id', ignoreDuplicates: true }
   )
 
   if (swipeError) throw swipeError
