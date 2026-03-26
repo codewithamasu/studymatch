@@ -272,17 +272,19 @@ $$;
 
 create or replace function public.is_conversation_member(p_conversation_id uuid, p_profile_id uuid)
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (
+begin
+  return exists (
     select 1
     from public.conversation_members cm
     where cm.conversation_id = p_conversation_id
       and cm.profile_id = p_profile_id
   );
+end;
 $$;
 
 create or replace function public.is_session_organizer(p_session_id uuid, p_profile_id uuid)
